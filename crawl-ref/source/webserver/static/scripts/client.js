@@ -75,6 +75,8 @@ function (exports, $, key_conversion, chat, comm) {
                 msgs = [ msgobj ];
             for (var i in msgs)
             {
+                if (!msgs[i] || typeof msgs[i] !== "object")
+                    continue;
                 if (window.log_messages && window.log_messages !== 2)
                     console.log("Message: " + msgs[i].msg, msgs[i]);
                 if (!comm.handle_message_immediately(msgs[i]))

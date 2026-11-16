@@ -100,15 +100,17 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
         var state = ui_state;
         set_ui_state(enums.ui.NORMAL);
 
-        // Determine width of stats area
+        // Determine width of stats area cleanly without layout drift
+        var $probe = $('<div style="display:inline-block; position:absolute; visibility:hidden; font-family:var(--er-font-mono, monospace); font-size:13px; font-weight:600; white-space:pre; padding:0; margin:0; border:0;">' + '&nbsp;'.repeat(enums.stat_width || 42) + '</div>').appendTo('body');
+        var measured_char_width = $probe.outerWidth();
+        $probe.remove();
 
-        var old_stats = $("#stats").contents().detach();
-        var s = "";
-        for (var i = 0; i < enums.stat_width; i++)
-            s = s + "&nbsp;";
-        $("#stats").html(s);
-        var stat_width_px = $("#stats").outerWidth();
-        $("#stats").empty().append(old_stats);
+        var max_stat_ratio = window_width > 1200 ? 0.32 : 0.36;
+        var max_stat_px = Math.round(window_width * max_stat_ratio);
+        var stat_width_px = Math.max(300, Math.min(max_stat_px, measured_char_width + 32));
+
+        if (window_width < 640)
+            stat_width_px = Math.min(window_width, 320);
 
         // Determine height of messages area
 
@@ -116,7 +118,7 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
         // embedded in here on an input box.
         var old_messages = $("#messages").clone(true);
         var old_scroll_top = $("#messages_container").scrollTop();
-        s = "";
+        var s = "";
         for (var i = 0; i < msg_height+1; i++)
             s = s + "<br>";
         $("#messages").html(s);
@@ -124,8 +126,8 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
         $("#messages").replaceWith(old_messages);
         $("#messages_container").scrollTop(old_scroll_top);
 
-        var remaining_width = window_width - stat_width_px;
-        var remaining_height = window_height - msg_height_px;
+        var remaining_width = Math.max(320, window_width - stat_width_px - 8);
+        var remaining_height = Math.max(240, window_height - msg_height_px);
 
         layout_parameters.remaining_width = remaining_width;
         layout_parameters.remaining_height = remaining_height;
@@ -141,9 +143,18 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
 
         minimap.fit_to(stat_width_px, layout_parameters);
 
-        $("#stats").width(stat_width_px);
-        $("#monster_list").width(stat_width_px);
+        $("#stats").css("width", stat_width_px + "px");
+        $("#monster_list").css("width", stat_width_px + "px");
         $("#mobile_input input").width(remaining_width-12); // 2*padding+2*border
+
+        // Position Elden Ring floating action dock centered in the dungeon area
+        var dock_center_x = Math.round(remaining_width / 2);
+        var max_dock_w = Math.max(260, remaining_width - 16);
+        $("#elden-action-dock").css({
+            "left": dock_center_x + "px",
+            "transform": "translateX(-50%)",
+            "max-width": max_dock_w + "px"
+        });
 
         // Go back to the old layer
         set_ui_state(state);
@@ -484,15 +495,19 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
     }
 
     $(document).ready(function () {
+        var resize_timer = null;
         $(window)
             .off("resize.game")
             .on("resize.game", function () {
-            if (layout_parameters)
-            {
-                var params = $.extend({}, layout_parameters);
-                layout(params);
-            }
-            $("#action-panel").triggerHandler("update");
+            if (resize_timer) clearTimeout(resize_timer);
+            resize_timer = setTimeout(function () {
+                if (layout_parameters)
+                {
+                    var params = $.extend({}, layout_parameters);
+                    layout(params, true);
+                }
+                $("#action-panel").triggerHandler("update");
+            }, 30);
         });
     });
 

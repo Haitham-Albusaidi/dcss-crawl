@@ -747,6 +747,319 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
             update_server_scroll_timeout = setTimeout(update_server_scroll, 100);
     }
 
+    function parse_resists_text(raw_text)
+    {
+        var text = (raw_text || "").replace(/<[^>]+>/g, "");
+        var lines = text.split("\n");
+
+        var data = {
+            heroName: "Player",
+            heroClass: "",
+            turns: "0",
+            time: "00:00:00",
+            hp: "0/0",
+            ac: "0",
+            str: "0",
+            xl: "1",
+            nextExp: "0%",
+            mp: "0/0",
+            ev: "0",
+            intStat: "0",
+            god: "No God",
+            gold: "0",
+            sh: "0",
+            dex: "0",
+            spells: "0/0 levels left",
+            resists: [],
+            equipment: [],
+            passives: "",
+            status: "",
+            mutations: ""
+        };
+
+        if (lines.length > 0)
+        {
+            var mTitle = lines[0].match(/^(.*?)\s+Turns:\s*(\d+),\s*Time:\s*([\d:]+)/);
+            if (mTitle)
+            {
+                var fullTitle = mTitle[1].trim();
+                var mParen = fullTitle.match(/^(.*?)\s*\((.*?)\)$/);
+                if (mParen)
+                {
+                    data.heroName = mParen[1].trim();
+                    data.heroClass = mParen[2].trim();
+                }
+                else
+                {
+                    data.heroName = fullTitle;
+                }
+                data.turns = mTitle[2];
+                data.time = mTitle[3];
+            }
+        }
+
+        for (var i = 1; i < lines.length; i++)
+        {
+            var line = lines[i];
+            var trimmed = line.trim();
+            if (!trimmed)
+                continue;
+
+            // Stats
+            var mHp = line.match(/Health:\s*([\d/]+)\s+AC:\s*(-?\d+)\s+Str:\s*(-?\d+)\s+XL:\s*(\d+)\s+Next:\s*([\d%]+)/);
+            if (mHp)
+            {
+                data.hp = mHp[1];
+                data.ac = mHp[2];
+                data.str = mHp[3];
+                data.xl = mHp[4];
+                data.nextExp = mHp[5];
+                continue;
+            }
+
+            var mMp = line.match(/Magic:\s*([\d/]+)\s+EV:\s*(-?\d+)\s+Int:\s*(-?\d+)\s+God:\s*(.*?)(?=\s{2,}|\s*$)/);
+            if (mMp)
+            {
+                data.mp = mMp[1];
+                data.ev = mMp[2];
+                data.intStat = mMp[3];
+                data.god = mMp[4].trim();
+                continue;
+            }
+
+            var mGold = line.match(/Gold:\s*(\d+)\s+SH:\s*(-?\d+)\s+Dex:\s*(-?\d+)\s+Spells:\s*(.*)/);
+            if (mGold)
+            {
+                data.gold = mGold[1];
+                data.sh = mGold[2];
+                data.dex = mGold[3];
+                data.spells = mGold[4].trim();
+                continue;
+            }
+
+            // Bottom tags
+            if (trimmed.startsWith("%:"))
+            {
+                data.passives = trimmed.substring(2).trim();
+                continue;
+            }
+            if (trimmed.startsWith("@:"))
+            {
+                data.status = trimmed.substring(2).trim();
+                continue;
+            }
+            if (trimmed.startsWith("A:"))
+            {
+                data.mutations = trimmed.substring(2).trim();
+                continue;
+            }
+
+            // Resistances & Equipment
+            var mEq = line.match(/\s{2,}([a-zA-Z]\s*-\s*.+|\(no\s+[a-z]+\))$/);
+            var resStr = line;
+            if (mEq)
+            {
+                data.equipment.push(mEq[1].trim());
+                resStr = line.substring(0, mEq.index).trim();
+            }
+
+            var mRes = resStr.match(/^(rFire|rCold|rNeg|rPois|rElec|rCorr|SInv|Will|Stlth|HPRegen|MPRegen)\s+(.*)/);
+            if (mRes)
+            {
+                data.resists.push({
+                    name: mRes[1],
+                    value: mRes[2].trim()
+                });
+            }
+        }
+
+        return data;
+    }
+
+    function render_elden_ring_resists_html(data)
+    {
+        var resistIcons = {
+            "rFire": { icon: "🔥", label: "Fire Resistance" },
+            "rCold": { icon: "❄️", label: "Cold Resistance" },
+            "rNeg": { icon: "💀", label: "Negative Energy" },
+            "rPois": { icon: "🧪", label: "Poison Resistance" },
+            "rElec": { icon: "⚡", label: "Electricity Resistance" },
+            "rCorr": { icon: "💧", label: "Corrosion Resistance" },
+            "SInv": { icon: "👁️", label: "See Invisible" },
+            "Will": { icon: "🔮", label: "Willpower" },
+            "Stlth": { icon: "👣", label: "Stealth" },
+            "HPRegen": { icon: "❤️", label: "HP Regen" },
+            "MPRegen": { icon: "💙", label: "MP Regen" }
+        };
+
+        var html = '<div class="er-resists-container">';
+
+        // 1. Header Banner
+        html += '<div class="er-profile-header-bar">';
+        html += '  <div class="er-profile-header-left">';
+        html += '    <span class="er-profile-header-icon">🛡️</span>';
+        html += '    <div class="er-profile-title-group">';
+        html += '      <span class="er-profile-hero-name">' + (data.heroName || "Hero") + '</span>';
+        if (data.heroClass)
+            html += '      <span class="er-profile-hero-class">' + data.heroClass + '</span>';
+        html += '    </div>';
+        html += '  </div>';
+        html += '  <div class="er-profile-header-right">';
+        html += '    <div class="er-profile-meta-pill">';
+        html += '      <span>TURNS: <b>' + data.turns + '</b></span>';
+        html += '      <span class="er-dot">•</span>';
+        html += '      <span>TIME: <b>' + data.time + '</b></span>';
+        html += '    </div>';
+        html += '    <button class="er-profile-close-btn" title="Close (Esc)">✕ Esc</button>';
+        html += '  </div>';
+        html += '</div>';
+
+        // 2. Stats Grid (Vitals, Defenses, Attributes, Progress)
+        html += '<div class="er-profile-stats-grid">';
+        
+        // Vitals card
+        html += '  <div class="er-stat-card er-card-vitals">';
+        html += '    <div class="er-card-header">VITALS</div>';
+        html += '    <div class="er-stat-row"><span class="er-stat-lbl">Health</span><span class="er-stat-val val-hp">' + data.hp + '</span></div>';
+        html += '    <div class="er-stat-row"><span class="er-stat-lbl">Magic</span><span class="er-stat-val val-mp">' + data.mp + '</span></div>';
+        html += '    <div class="er-stat-row"><span class="er-stat-lbl">Gold</span><span class="er-stat-val val-gold">💰 ' + data.gold + '</span></div>';
+        html += '  </div>';
+
+        // Defenses card
+        html += '  <div class="er-stat-card er-card-defenses">';
+        html += '    <div class="er-card-header">DEFENSES</div>';
+        html += '    <div class="er-stat-row"><span class="er-stat-lbl">Armour (AC)</span><span class="er-stat-val val-ac">' + data.ac + '</span></div>';
+        html += '    <div class="er-stat-row"><span class="er-stat-lbl">Evasion (EV)</span><span class="er-stat-val val-ev">' + data.ev + '</span></div>';
+        html += '    <div class="er-stat-row"><span class="er-stat-lbl">Shield (SH)</span><span class="er-stat-val val-sh">' + data.sh + '</span></div>';
+        html += '  </div>';
+
+        // Attributes card
+        html += '  <div class="er-stat-card er-card-attributes">';
+        html += '    <div class="er-card-header">ATTRIBUTES</div>';
+        html += '    <div class="er-stat-row"><span class="er-stat-lbl">Strength</span><span class="er-stat-val val-str">' + data.str + '</span></div>';
+        html += '    <div class="er-stat-row"><span class="er-stat-lbl">Intelligence</span><span class="er-stat-val val-int">' + data.intStat + '</span></div>';
+        html += '    <div class="er-stat-row"><span class="er-stat-lbl">Dexterity</span><span class="er-stat-val val-dex">' + data.dex + '</span></div>';
+        html += '  </div>';
+
+        // Progress card
+        html += '  <div class="er-stat-card er-card-progress">';
+        html += '    <div class="er-card-header">PROGRESS</div>';
+        html += '    <div class="er-stat-row"><span class="er-stat-lbl">Level (XL)</span><span class="er-stat-val val-xl">' + data.xl + ' (' + data.nextExp + ')</span></div>';
+        html += '    <div class="er-stat-row"><span class="er-stat-lbl">Deity</span><span class="er-stat-val val-god">' + data.god + '</span></div>';
+        html += '    <div class="er-stat-row"><span class="er-stat-lbl">Spell Cap</span><span class="er-stat-val val-spells">' + data.spells + '</span></div>';
+        html += '  </div>';
+
+        html += '</div>'; // end stats grid
+
+        // 3. Main Split (Resistances Table on Left, Equipment Loadout on Right)
+        html += '<div class="er-profile-columns">';
+
+        // Left Column: Resistances
+        html += '  <div class="er-column er-resists-col">';
+        html += '    <div class="er-section-header"><span class="er-sec-icon">✨</span> RESISTANCES & RECOVERY</div>';
+        html += '    <div class="er-resists-list">';
+        for (var r = 0; r < data.resists.length; r++)
+        {
+            var item = data.resists[r];
+            var info = resistIcons[item.name] || { icon: "🔹", label: item.name };
+            
+            var valClean = item.value;
+            var isPositive = valClean.indexOf("+") !== -1;
+            var isRegen = item.name.indexOf("Regen") !== -1;
+            
+            html += '      <div class="er-resist-row' + (isPositive ? ' active' : '') + '">';
+            html += '        <span class="er-res-icon">' + info.icon + '</span>';
+            html += '        <span class="er-res-name">' + item.name + '</span>';
+            html += '        <span class="er-res-label">' + info.label + '</span>';
+            html += '        <span class="er-res-val' + (isPositive ? ' val-pos' : (isRegen ? ' val-regen' : '')) + '">' + valClean + '</span>';
+            html += '      </div>';
+        }
+        html += '    </div>';
+        html += '  </div>';
+
+        // Right Column: Equipment
+        html += '  <div class="er-column er-equip-col">';
+        html += '    <div class="er-section-header"><span class="er-sec-icon">⚔️</span> EQUIPPED GEAR</div>';
+        html += '    <div class="er-equip-list">';
+        for (var e = 0; e < data.equipment.length; e++)
+        {
+            var eq = data.equipment[e];
+            var isEmpty = eq.startsWith("(no ");
+            var mLetter = eq.match(/^([a-zA-Z])\s*-\s*(.*)/);
+            
+            if (isEmpty)
+            {
+                var slotName = eq.replace(/^\(no\s+|\)$/g, "");
+                html += '      <div class="er-equip-row empty">';
+                html += '        <span class="er-slot-icon">◽</span>';
+                html += '        <span class="er-slot-name">' + slotName + '</span>';
+                html += '        <span class="er-slot-empty">Empty</span>';
+                html += '      </div>';
+            }
+            else if (mLetter)
+            {
+                var letter = mLetter[1];
+                var name = mLetter[2];
+                var isPlus = name.indexOf("+") !== -1;
+                html += '      <div class="er-equip-row equipped' + (isPlus ? ' enchanted' : '') + '">';
+                html += '        <span class="er-equip-key">[' + letter + ']</span>';
+                html += '        <span class="er-equip-name">' + name + '</span>';
+                html += '      </div>';
+            }
+            else
+            {
+                html += '      <div class="er-equip-row equipped"><span class="er-equip-name">' + eq + '</span></div>';
+            }
+        }
+        html += '    </div>';
+        html += '  </div>';
+
+        html += '</div>'; // end columns
+
+        // 4. Bottom Section: Passives, Status, Mutations
+        html += '<div class="er-profile-bottom-cards">';
+        
+        if (data.passives)
+        {
+            html += '  <div class="er-trait-card">';
+            html += '    <span class="er-trait-badge">PASSIVES</span>';
+            html += '    <span class="er-trait-text">' + data.passives + '</span>';
+            html += '  </div>';
+        }
+        if (data.status)
+        {
+            html += '  <div class="er-trait-card">';
+            html += '    <span class="er-trait-badge">STATUS</span>';
+            html += '    <span class="er-trait-text">' + data.status + '</span>';
+            html += '  </div>';
+        }
+        if (data.mutations)
+        {
+            html += '  <div class="er-trait-card">';
+            html += '    <span class="er-trait-badge badge-mut">TRAITS & MUTATIONS</span>';
+            html += '    <div class="er-mutation-pills">';
+            var muts = data.mutations.split(",");
+            for (var m = 0; m < muts.length; m++)
+            {
+                var mut = muts[m].trim();
+                if (mut)
+                {
+                    html += '<span class="er-mut-pill">' + mut + '</span>';
+                }
+            }
+            html += '    </div>';
+            html += '  </div>';
+        }
+
+        html += '</div>'; // end bottom cards
+
+        // 5. Footer Hint
+        html += '<div class="er-profile-footer-hint">[Press <kbd>Esc</kbd> or <kbd>Space</kbd> or click anywhere to return]</div>';
+
+        html += '</div>'; // end container
+        return html;
+    }
+
     function formatted_scroller(desc)
     {
         var $popup = $(".templates > .formatted-scroller").clone();
@@ -761,7 +1074,23 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
             });
         }
         $popup.attr("data-tag", desc.tag);
-        $body.html(body_html);
+
+        if (desc.tag === "resists")
+        {
+            var parsed = parse_resists_text(desc.text);
+            var custom_html = render_elden_ring_resists_html(parsed);
+            $body.html(custom_html);
+            $popup.addClass("er-profile-popup");
+            $popup.find(".er-profile-close-btn").on("click", function(e) {
+                e.stopPropagation();
+                comm.send_message("key", { keycode: 27 });
+            });
+        }
+        else
+        {
+            $body.html(body_html);
+        }
+
         if (desc.more)
             $popup.children(".more").html(util.formatted_string_to_html(desc.more));
         else
@@ -802,9 +1131,23 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
         if (msg.text !== undefined)
         {
             var $body = $(s.contentElement);
-            $body.html(util.formatted_string_to_html(msg.text));
+            if ($popup.attr("data-tag") === "resists")
+            {
+                var parsed = parse_resists_text(msg.text);
+                var custom_html = render_elden_ring_resists_html(parsed);
+                $body.html(custom_html);
+                $popup.find(".er-profile-close-btn").on("click", function(e) {
+                    e.stopPropagation();
+                    comm.send_message("key", { keycode: 27 });
+                });
+            }
+            else
+            {
+                $body.html(util.formatted_string_to_html(msg.text));
+            }
             var ss = $popup.find(".body").eq(0).data("scroller");
-            ss.recalculateImmediate();
+            if (ss && ss.recalculateImmediate)
+                ss.recalculateImmediate();
         }
         if (msg.scroll !== undefined && (!msg.from_webtiles || client.is_watching()))
         {
@@ -900,7 +1243,16 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
                 $button.addClass("hlc-" + button.highlight_colour);
                 $container.append($button);
 
-                $button.on('hover', function () { focus_button($(this)) });
+                $button.on('mouseenter', function () { focus_button($(this)); });
+                $button.on('click', function (e) {
+                    focus_button($(this));
+                    var hotkey = $(this).attr("data-hotkey");
+                    var keycode = ui.utf8_from_key_value(hotkey);
+                    if (keycode) {
+                        comm.send_message("key", { keycode: keycode });
+                    }
+                    e.stopPropagation();
+                });
             });
             $.each(data.labels, function (i, button) {
                 var $button = $("<div class=label>");
@@ -1027,6 +1379,11 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
             popup = $("<div>Buggy UI of type " + msg.type + "</div>");
         }
         ui.show_popup(popup, msg["ui-centred"], msg.generation_id);
+        if (msg.type === "formatted-scroller")
+        {
+            popup.closest(".ui-popup-outer").addClass("popup-inventory-outer");
+            popup.closest(".ui-popup").addClass("popup-inventory-wrapper");
+        }
     }
 
     function recv_ui_pop(msg)

@@ -106,7 +106,7 @@ static_path = "./webserver/static"
 template_path = "./webserver/templates/"
 
 # Path for server-side unix sockets (to be used to communicate with crawl)
-# server_socket_path = None # None: Uses global temp dir
+server_socket_path = "/tmp/crawl-sockets"
 
 # Server name, so far only used in the ttyrec metadata
 server_id = ""
@@ -444,4 +444,4 @@ hup_reloads_config = True
 # Disable caching of static files which are not part of game data.
 # no_cache = development_mode
 # Automatically log in all users with the username given here.
-autologin = None
+autologin = "player"

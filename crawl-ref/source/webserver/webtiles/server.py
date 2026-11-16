@@ -195,9 +195,13 @@ def all_tasks_compat():
 
 def stop_everything(shutdown_event):
     # prevent reload signals from interacting with shutdown
-    if config.get('hup_reloads_config'):
-        asyncio.get_event_loop().remove_signal_handler(signal.SIGHUP)
-    asyncio.get_event_loop().remove_signal_handler(signal.SIGUSR1)
+    try:
+        loop = asyncio.get_running_loop()
+        if config.get('hup_reloads_config'):
+            loop.remove_signal_handler(signal.SIGHUP)
+        loop.remove_signal_handler(signal.SIGUSR1)
+    except Exception:
+        pass
 
     global servers
     # shut down servers first -- stop accepting new connections
@@ -719,7 +723,10 @@ def run_util():
 
 def init_signals(shutdown_event):
     # if we can ensure >=py37 (probably?) this should be get_running_loop
-    loop = asyncio.get_event_loop()
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.get_event_loop_policy().get_event_loop()
     stop_sigs = [signal.SIGTERM, signal.SIGINT]
     reload_sigs = []
     reload_game_sigs = [signal.SIGUSR1]

@@ -1109,6 +1109,7 @@ class CrawlProcessHandler(CrawlProcessHandlerBase):
         except ValueError:
             self.logger.warning("Invalid JSON output from Crawl process: %s",
                                 line)
+            return
 
         # send messages from wrapper scripts only to the player
         for receiver in self._receivers:

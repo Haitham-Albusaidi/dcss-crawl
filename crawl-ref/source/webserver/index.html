@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DCSS Modern UI Preview - Dungeon Crawl Stone Soup</title>
+  <link rel="stylesheet" href="game_data/static/style.css">
+  <style>
+    /* Preview host styles */
+    body {
+      background: #080c14;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 16px;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+    }
+    .preview-banner {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 12px;
+      padding: 12px 20px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .preview-banner h2 {
+      margin: 0;
+      font-size: 16px;
+      color: #fbbf24;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .preview-banner p {
+      margin: 4px 0 0 0;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+    .preview-container {
+      display: flex;
+      gap: 16px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .preview-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .preview-dungeon-mock {
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      height: 480px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      background-image: 
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 60%),
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 32px 32px, 32px 32px;
+    }
+    .preview-dungeon-mock .hero-avatar {
+      font-size: 42px;
+      filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.6));
+      animation: float 2s infinite ease-in-out;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    .preview-sidebar {
+      width: 380px;
+    }
+    .log-box {
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 8px;
+      padding: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #38bdf8;
+      margin-top: 8px;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="preview-banner">
+    <div>
+      <h2>⚡ DCSS Modern UI Live Preview</h2>
+      <p>Interactive demonstration of the new Quick-Action Toolbar, modern Glassmorphic HUD, and vital indicators.</p>
+    </div>
+    <div>
+      <span style="font-size: 12px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; padding: 4px 10px; border-radius: 20px;">● Live Interactive Mode</span>
+    </div>
+  </div>
+
+  <div class="preview-container">
+    
+    <!-- Left Main Column -->
+    <div class="preview-main">
+      
+      <!-- Mock Dungeon Map -->
+      <div class="preview-dungeon-mock">
+        <div class="hero-avatar">🧙‍♂️</div>
+        <div style="margin-top: 12px; color: #94a3b8; font-size: 14px;">Dungeon Floor: <strong>D:1</strong> | Health: <strong>100%</strong></div>
+        <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Click any button below to trigger real-time game commands!</div>
+      </div>
+
+      <!-- Modern Quick Action Bar -->
+      <div id="modern-action-bar" class="modern-action-bar"></div>
+
+      <!-- Messages Pane -->
+      <div id="message_pane">
+        <div style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 4px;">Recent Combat & Exploration Messages</div>
+        <div id="messages_container">
+          <div style="color: #94a3b8;">Welcome to Dungeon Crawl Stone Soup!</div>
+          <div style="color: #38bdf8;">You wield a +0 short sword.</div>
+          <div style="color: #f59e0b;">An adder comes into view!</div>
+          <div id="preview-command-log" class="log-box">Ready. Click any action button above (e.g. Auto-Explore [o] or Auto-Fight [Tab]) to test...</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Sidebar Column -->
+    <div class="preview-sidebar">
+      <div id="stats">
+        <div id="stats_wizmode" style="float: right; color: #38bdf8; font-weight: 700;">*EXPLORE*</div>
+        <div id="stats_titleline">Haitham the Wanderer</div>
+        <div style="margin-bottom: 8px;">
+          <span id="stats_species_god">Human Wanderer</span>
+          <span id="stats_piety">******</span>
+        </div>
+
+        <!-- Health Line -->
+        <div id="stats_hpline">
+          <span class="stats_caption">HP:</span>
+          <span id="stats_hp" style="color: #34d399; font-weight: 700;">22</span>
+          <span id="stats_hp_separator">/</span>
+          <span id="stats_hp_max">22</span>
+          <span id="stats_hp_bar" class="bar" style="float: right; width: 60%; height: 14px; margin-left: auto;">
+            <span id="stats_hp_bar_full" style="width: 100%;"></span>
+          </span>
+        </div>
+
+        <!-- Magic Line -->
+        <div id="stats_mpline">
+          <span class="stats_caption">Magic:</span>
+          <span id="stats_mp" style="color: #60a5fa; font-weight: 700;">7</span>
+          <span id="stats_mp_separator">/</span>
+          <span id="stats_mp_max">7</span>
+          <span id="stats_mp_bar" class="bar" style="float: right; width: 60%; height: 14px; margin-left: auto;">
+            <span id="stats_mp_bar_full" style="width: 100%;"></span>
+          </span>
+        </div>
+
+        <!-- Defenses & Stats Grid -->
+        <div style="display: flex; gap: 8px; margin: 10px 0;">
+          <div id="stats_leftcolumn" style="flex: 1;">
+            <div><span class="stats_caption">AC:</span> <span id="stats_ac">4</span></div>
+            <div><span class="stats_caption">EV:</span> <span id="stats_ev">13</span></div>
+            <div><span class="stats_caption">SH:</span> <span id="stats_sh">0</span></div>
+            <div><span class="stats_caption">XL:</span> <span id="stats_xl">1</span> <span class="stats_caption">Next:</span> 0%</div>
+          </div>
+          <div id="stats_rightcolumn" style="flex: 1;">
+            <div><span class="stats_caption">Str:</span> <span id="stats_str">15</span></div>
+            <div><span class="stats_caption">Int:</span> <span id="stats_int">12</span></div>
+            <div><span class="stats_caption">Dex:</span> <span id="stats_dex">14</span></div>
+            <div><span class="stats_caption">Place:</span> <span>D:1</span></div>
+          </div>
+        </div>
+
+        <!-- Equipment -->
+        <div id="stats_weapon_container">
+          <span class="stats_caption" style="color: #818cf8 !important;">(a)</span>
+          <span style="font-size: 13px; color: #f1f5f9; margin-left: 6px;">+0 short sword</span>
+        </div>
+        <div id="stats_quiver_line">
+          <span class="stats_caption" style="color: #818cf8 !important;">(b)</span>
+          <span style="font-size: 13px; color: #f1f5f9; margin-left: 6px;">25 stones (quivered)</span>
+        </div>
+
+        <!-- Status Effects -->
+        <div id="stats_status_lights">
+          <span style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.4); color: #34d399;">Fast</span>
+          <span style="background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4); color: #60a5fa;">Regen</span>
+          <span style="background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">Glow</span>
+        </div>
+      </div>
+
+      <!-- Minimap Card -->
+      <div id="minimap_block">
+        <div style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 6px;">Minimap</div>
+        <div style="height: 160px; background: #030712; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #475569; font-size: 13px;">
+          🗺️ Level Map Canvas
+        </div>
+      </div>
+
+      <!-- Monster Tracker Card -->
+      <div id="monster_list">
+        <div style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 6px;">Threats Nearby</div>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+          <span>🐍 adder</span>
+          <span style="color: #ef4444; font-size: 11px; font-weight: 700;">Hostile</span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0;">
+          <span>🦇 giant bat</span>
+          <span style="color: #f59e0b; font-size: 11px; font-weight: 700;">Wandering</span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- jQuery & RequireJS Stub for Standalone Preview -->
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <script>
+    // Mock RequireJS / WebTiles Environment for Preview
+    window.define = function(deps, factory) {
+      var mockComm = {
+        send_message: function(msg, data) {
+          logCommand("comm.send_message('" + msg + "', " + JSON.stringify(data) + ")");
+        }
+      };
+      var mockClient = {
+        is_watching: function() { return false; }
+      };
+      window.modern_ui = factory(window.jQuery, mockComm, mockClient);
+    };
+    window.define.amd = true;
+
+    window.socket = {
+      readyState: 1,
+      send: function(jsonStr) {
+        var parsed = JSON.parse(jsonStr);
+        logCommand("WebSocket Send -> " + JSON.stringify(parsed));
+      }
+    };
+
+    function logCommand(text) {
+      var $log = $("#preview-command-log");
+      var now = new Date().toLocaleTimeString();
+      $log.prepend("<div><span style='color: #64748b;'>[" + now + "]</span> " + text + "</div>");
+    }
+  </script>
+  <script src="game_data/static/modern_ui.js"></script>
+  <script>
+    $(document).ready(function() {
+      if (window.modern_ui && window.modern_ui.init) {
+        window.modern_ui.init();
+      }
+    });
+  </script>
+</body>
+</html>

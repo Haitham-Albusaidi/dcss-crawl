@@ -9,9 +9,28 @@
       $(document).trigger("game_preinit");
       $(document).trigger("game_init");
       client.uninhibit_messages();
+
+      // Safely initialize Modern Quick Action Toolbar
+      try {
+        require(["game-{{ version }}/modern_ui"], function (modern_ui) {
+          if (modern_ui && modern_ui.init) {
+            modern_ui.init();
+          }
+        }, function (err) {
+          console.warn("Modern UI require error:", err);
+        });
+      } catch (e) {
+        console.warn("Modern UI init error:", e);
+      }
+    }, function (err) {
+      console.error("Game core load error:", err);
+      client.uninhibit_messages();
     });
   });
 </script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link
   rel="stylesheet"
   type="text/css"

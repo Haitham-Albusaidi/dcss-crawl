@@ -35,7 +35,7 @@ templates:
     rcfile_path: ./rcs/
     macro_path: ./rcs/
     morgue_path: ./rcs/%n
-    socket_path: ./rcs
+    socket_path: /tmp/crawl-sockets
     # # Optional: `dir_path` is where save games + logfile/milestones are written.
     # # if not set, it uses local crawl system settings.
     # dir_path: .

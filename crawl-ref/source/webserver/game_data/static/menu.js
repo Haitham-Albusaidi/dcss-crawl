@@ -55,11 +55,12 @@ function ($, comm, client, ui, enums, cr, util, options, scroller) {
                 .on("contextmenu.menu_item", item_click_handler);
         }
 
+        var canvas = null;
         if (item.tiles && item.tiles.length > 0
             && options.get("tile_display_mode") == "tiles")
         {
             var renderer = new cr.DungeonCellRenderer();
-            var canvas = $("<canvas>");
+            canvas = $("<canvas>");
             util.init_canvas(canvas[0], renderer.cell_width,
                                         renderer.cell_height);
             canvas.css("vertical-align", "middle");
@@ -70,6 +71,126 @@ function ($, comm, client, ui, enums, cr, util, options, scroller) {
             });
 
             elem.prepend(canvas);
+        }
+
+        // --- UNIVERSAL RPG GRID MENU FORMATTING ---
+        var defaultIcons = {
+            ability: "⚡",
+            spell: "🪄",
+            shop: "💰",
+            help: "📖",
+            pickup: "📥",
+            drop: "📤",
+            use_item: "🧪",
+            stash: "🔍",
+            resists: "🛡️",
+            deck: "🃏"
+        };
+
+        if (menu && menu.type !== "crt")
+        {
+            if (item_selectable(item))
+            {
+                var rawText = (item_text(item) || "").trim();
+                // Match hotkey e.g. "f - Golden Breath...", "a ) Manual", "1. Item"
+                var match = rawText.match(/^([a-zA-Z0-9?*!#+=-])(?:\s*[-.)]\s*|\s{2,})(.*)$/);
+                var hotkey = match ? match[1] : (item.hotkeys && item.hotkeys.length ? String.fromCharCode(item.hotkeys[0]) : "");
+                var desc = match ? match[2].trim() : rawText;
+
+                // Split multiple column fields (e.g. abilities / spells have: Name | Type/Cost | Failure/Level)
+                var cols = desc.split(/\s{2,}/);
+                var mainTitle = cols[0];
+                var subPills = [];
+
+                // 1. Check for price tag (e.g. "150 gold")
+                var priceMatch = mainTitle.match(/\((\d+\s*gold)\)/i);
+                if (priceMatch)
+                {
+                    subPills.push({ text: "💰 " + priceMatch[1].toUpperCase(), cls: "pill-gold" });
+                    mainTitle = mainTitle.replace(/\s*\(\d+\s*gold\)/i, "").trim();
+                }
+
+                // 2. Check for equipped / status tag (e.g. worn, weapon, quivered)
+                var statusMatch = mainTitle.match(/\((worn|weapon|wielded|quivered|melded|equipped|in hand)\)$/i);
+                var statusText = statusMatch ? statusMatch[1].toUpperCase() : "";
+                if (statusText)
+                {
+                    mainTitle = mainTitle.replace(/\s*\([^)]+\)$/, "").trim();
+                }
+
+                // 3. For multi-column lines (abilities & spells)
+                if (cols.length > 1)
+                {
+                    for (var c = 1; c < cols.length; c++)
+                    {
+                        var colText = cols[c].trim();
+                        if (!colText) continue;
+                        if (colText.match(/%/)) {
+                            subPills.push({ text: colText, cls: "pill-fail" });
+                        } else if (colText.match(/\b(mp|uses|turn|none|instant)\b/i)) {
+                            subPills.push({ text: colText, cls: "pill-cost" });
+                        } else if (colText.match(/^\d+$/)) {
+                            subPills.push({ text: "Lvl " + colText, cls: "pill-level" });
+                        } else {
+                            subPills.push({ text: colText, cls: "pill-type" });
+                        }
+                    }
+                }
+
+                var $card = $('<div class="inv-grid-card"></div>');
+                if (hotkey)
+                    $card.append('<span class="inv-hotkey-badge">' + hotkey.toUpperCase() + '</span>');
+
+                var $iconBox = $('<div class="inv-tile-box"></div>');
+                var $c = elem.find("canvas");
+                if ($c.length > 0)
+                {
+                    $iconBox.append($c.detach());
+                }
+                else
+                {
+                    var fallbackIcon = defaultIcons[menu.tag] || "✦";
+                    $iconBox.append('<span class="inv-tile-placeholder">' + fallbackIcon + '</span>');
+                }
+                $card.append($iconBox);
+
+                var $info = $('<div class="inv-info-box"></div>');
+                $info.append('<div class="inv-item-name" title="' + desc.replace(/"/g, '&quot;') + '">' + mainTitle + '</div>');
+                
+                if (statusText)
+                {
+                    $card.addClass("inv-status-" + statusText.toLowerCase().replace(/\s+/g, '-'));
+                    $info.append('<span class="inv-status-badge">' + statusText + '</span>');
+                }
+
+                if (subPills.length > 0)
+                {
+                    var $pillsBox = $('<div class="inv-sub-pills"></div>');
+                    $.each(subPills, function(i, p) {
+                        $pillsBox.append('<span class="inv-sub-pill ' + (p.cls || '') + '">' + p.text + '</span>');
+                    });
+                    $info.append($pillsBox);
+                }
+
+                $card.append($info);
+                elem.empty().append($card);
+            }
+            else if (item.level < 2)
+            {
+                var rawCat = (item_text(item) || "").trim();
+                if (rawCat)
+                {
+                    var matchCat = rawCat.match(/^([^(]+)(?:\((.*)\))?$/);
+                    var catTitle = matchCat ? matchCat[1].trim() : rawCat;
+                    var catHint = (matchCat && matchCat[2]) ? matchCat[2].trim() : "";
+                    elem.html(
+                        '<div class="inv-category-header">' +
+                        '  <span class="inv-cat-title">' + catTitle + '</span>' +
+                        (catHint ? '  <span class="inv-cat-hint">(' + catHint + ')</span>' : '') +
+                        '</div>'
+                    );
+                }
+            }
         }
     }
 
@@ -161,6 +282,175 @@ function ($, comm, client, ui, enums, cr, util, options, scroller) {
         mouse_hover_suppressed = null;
     }
 
+    function init_skills_menu(menu_div)
+    {
+        // 1. Append Elden Ring Header
+        var header = $(
+            '<div class="skills-er-header">' +
+                '<div class="skills-er-header-left">' +
+                    '<span class="skills-header-icon">⚔️</span>' +
+                    '<div class="skills-title-group">' +
+                        '<span class="skills-header-title">SKILLS & PROFICIENCIES</span>' +
+                    '</div>' +
+                    '<div class="skills-active-modes" id="skills-mode-badges"></div>' +
+                '</div>' +
+                '<div class="skills-er-header-right">' +
+                    '<button class="skills-btn-ctrl" data-key="47" title="Toggle Auto/Manual Mode (/)">[/] Mode</button>' +
+                    '<button class="skills-btn-ctrl" data-key="42" title="Toggle Useful/All Skills (*)">[*] Filter</button>' +
+                    '<button class="skills-btn-ctrl" data-key="33" title="Toggle Training View (!)">[!] View</button>' +
+                    '<button class="skills-btn-ctrl" data-key="61" title="Set Skill Target (=)">[=] Target</button>' +
+                    '<button class="skills-btn-ctrl" data-key="63" title="Help (?)">[?] Help</button>' +
+                    '<button class="skills-btn-close" data-key="27" title="Close (Esc)">✕ Esc</button>' +
+                '</div>' +
+            '</div>'
+        );
+        menu_div.prepend(header);
+
+        // 2. Container for cards
+        var grid_view = $('<div class="skills-cards-grid"></div>');
+        menu_div.append(grid_view);
+
+        // 3. Bottom controls bar
+        var footer = $(
+            '<div class="skills-er-footer">' +
+                '<div class="skills-footer-btns">' +
+                    '<button class="skills-action-pill" data-key="47"><kbd>[/]</kbd> Auto / Manual</button>' +
+                    '<button class="skills-action-pill" data-key="42"><kbd>[*]</kbd> Useful / All</button>' +
+                    '<button class="skills-action-pill" data-key="33"><kbd>[!]</kbd> Training / Target View</button>' +
+                    '<button class="skills-action-pill" data-key="61"><kbd>[=]</kbd> Set Target</button>' +
+                    '<button class="skills-action-pill" data-key="63"><kbd>[?]</kbd> Help & Aptitudes</button>' +
+                '</div>' +
+                '<div class="skills-footer-hint">Click a skill to toggle training / focus • Press hotkey letter or <kbd>Esc</kbd> to return</div>' +
+            '</div>'
+        );
+        menu_div.append(footer);
+
+        // Bind clicks for control buttons
+        menu_div.on("click", ".skills-btn-ctrl, .skills-btn-close, .skills-action-pill", function(e) {
+            e.stopPropagation();
+            var keycode = parseInt($(this).attr("data-key"), 10);
+            if (keycode)
+                comm.send_message("key", { keycode: keycode });
+        });
+
+        // 4. Update renderer
+        function update_skills_display()
+        {
+            var raw_text = "";
+            menu_div.children("span").each(function() {
+                raw_text += $(this).text() + "\n";
+            });
+
+            // Parse skills
+            var skill_pattern = /([a-zA-Z])\s+([+*\- ])\s+([A-Za-z\s]+?)\s{2,}(\d+\.\d+)(?:\s+(\d+%|\d+\.\d+|\*+))?\s+([+\-]?\d+)/g;
+            var skills = [];
+            var match;
+            while ((match = skill_pattern.exec(raw_text)) !== null)
+            {
+                var letter = match[1];
+                var status = match[2].trim(); // "+", "*", "-", or ""
+                var name = match[3].trim();
+                var level = match[4];
+                var train = match[5] || "";
+                var apt = match[6];
+                skills.push({
+                    letter: letter,
+                    status: status,
+                    name: name,
+                    level: level,
+                    train: train,
+                    apt: apt
+                });
+            }
+
+            // Parse modes from footer lines
+            var modePillsHtml = "";
+            if (raw_text.indexOf("auto|") !== -1 || raw_text.indexOf("|manual") !== -1)
+            {
+                var isAuto = true;
+                menu_div.children("span").each(function() {
+                    var $sp = $(this);
+                    if ($sp.text().indexOf("manual") !== -1)
+                    {
+                        if ($sp.find(".fg15:contains('manual')").length > 0)
+                            isAuto = false;
+                    }
+                });
+                modePillsHtml += '<span class="skills-mode-pill">' + (isAuto ? 'AUTO TRAINING' : 'MANUAL TRAINING') + '</span>';
+            }
+
+            if (raw_text.indexOf("useful|") !== -1 || raw_text.indexOf("|all") !== -1)
+            {
+                var isUseful = true;
+                menu_div.children("span").each(function() {
+                    var $sp = $(this);
+                    if ($sp.text().indexOf("all") !== -1)
+                    {
+                        if ($sp.find(".fg15:contains('all')").length > 0)
+                            isUseful = false;
+                    }
+                });
+                modePillsHtml += '<span class="skills-mode-pill">' + (isUseful ? 'USEFUL SKILLS' : 'ALL SKILLS') + '</span>';
+            }
+
+            $("#skills-mode-badges").html(modePillsHtml);
+
+            // Render skill cards
+            var cardsHtml = "";
+            for (var i = 0; i < skills.length; i++)
+            {
+                var s = skills[i];
+                var isFocus = s.status === "*";
+                var isTrain = s.status === "+";
+                
+                var statusIcon = isFocus ? "★" : (isTrain ? "+" : "−");
+                var statusClass = isFocus ? "stat-focus" : (isTrain ? "stat-train" : "stat-off");
+                var statusTitle = isFocus ? "Focused (Double XP)" : (isTrain ? "Training Active" : "Disabled");
+                
+                var cardClass = "er-skill-card" + (isFocus ? " is-focus" : (isTrain ? " is-training" : " is-off"));
+                
+                var aptNum = parseInt(s.apt, 10);
+                var aptClass = aptNum > 0 ? "apt-pos" : (aptNum < 0 ? "apt-neg" : "apt-zero");
+                var aptStr = (aptNum > 0 ? "+" : "") + s.apt;
+
+                var trainPercent = parseInt(s.train, 10) || 0;
+
+                cardsHtml += '<div class="' + cardClass + '" data-key="' + s.letter.charCodeAt(0) + '">';
+                cardsHtml += '  <span class="er-skill-key">[' + s.letter + ']</span>';
+                cardsHtml += '  <span class="er-skill-status ' + statusClass + '" title="' + statusTitle + '">' + statusIcon + '</span>';
+                cardsHtml += '  <span class="er-skill-name">' + s.name + '</span>';
+                cardsHtml += '  <span class="er-skill-level" title="Level ' + s.level + '">' + s.level + '</span>';
+                
+                cardsHtml += '  <div class="er-skill-train-box" title="Training: ' + (s.train || '0%') + '">';
+                if (trainPercent > 0)
+                    cardsHtml += '    <div class="er-skill-train-bar" style="width: ' + trainPercent + '%"></div>';
+                cardsHtml += '    <span class="er-skill-train-lbl">' + (s.train || '0%') + '</span>';
+                cardsHtml += '  </div>';
+
+                cardsHtml += '  <span class="er-skill-apt ' + aptClass + '" title="Species Aptitude: ' + aptStr + '">' + aptStr + '</span>';
+                cardsHtml += '</div>';
+            }
+
+            grid_view.html(cardsHtml);
+        }
+
+        // Click on skill card sends hotkey
+        menu_div.on("click", ".er-skill-card", function(e) {
+            e.stopPropagation();
+            var keycode = parseInt($(this).attr("data-key"), 10);
+            if (keycode)
+                comm.send_message("key", { keycode: keycode });
+        });
+
+        // Listen for server text updates
+        menu_div.on("text_update", function() {
+            update_skills_display();
+        });
+
+        // Initial render
+        setTimeout(update_skills_display, 20);
+    }
+
     function display_menu()
     {
         var menu_div = $(".templates > .menu").clone();
@@ -172,6 +462,12 @@ function ($, comm, client, ui, enums, cr, util, options, scroller) {
             // Custom-drawn CRT menu
             menu_div.removeClass("menu").addClass("menu_txt");
             ui.show_popup(menu_div, menu["ui-centred"]);
+            if (menu.tag === "skills")
+            {
+                menu_div.closest(".ui-popup-outer").addClass("popup-inventory-outer");
+                menu_div.closest(".ui-popup").addClass("popup-inventory-wrapper");
+                init_skills_menu(menu_div);
+            }
             return;
         }
 
@@ -209,6 +505,11 @@ function ($, comm, client, ui, enums, cr, util, options, scroller) {
         suppress_mouse_hover();
 
         ui.show_popup(menu_div, menu["ui-centred"]);
+        if (menu.type !== "crt")
+        {
+            menu_div.closest(".ui-popup-outer").addClass("popup-inventory-outer");
+            menu_div.closest(".ui-popup").addClass("popup-inventory-wrapper");
+        }
         handle_size_change();
 
         // if we get focus back after a popup over this one, don't use mouse
@@ -660,7 +961,91 @@ function ($, comm, client, ui, enums, cr, util, options, scroller) {
 
     function update_title()
     {
-        var title = menu.elem.find(".menu_title")
+        var title = menu.elem.find(".menu_title");
+        if (menu && menu.type !== "crt")
+        {
+            var rawTitle = (menu.title && menu.title.text) ? menu.title.text.trim() : "Menu";
+
+            var iconMap = {
+                inventory: "🎒",
+                ability: "⚡",
+                spell: "🪄",
+                pickup: "📥",
+                drop: "📤",
+                use_item: "🧪",
+                shop: "🏪",
+                stash: "🔍",
+                resists: "🛡️",
+                help: "📖",
+                deck: "🃏",
+                travel: "🗺️",
+                description: "📜"
+            };
+            var icon = iconMap[menu.tag] || "✦";
+
+            var slotsMatch = rawTitle.match(/(\d+\/\d+\s*(?:gear\s*)?slots?)/i);
+            var slotsStr = slotsMatch ? slotsMatch[1].toUpperCase() : "";
+
+            var mainHeading = rawTitle;
+            if (menu.tag === "inventory") mainHeading = "INVENTORY";
+            else if (menu.tag === "ability") mainHeading = "TALENTS & ABILITIES";
+            else if (menu.tag === "spell") mainHeading = "GRIMOIRE & SPELLS";
+            else if (menu.tag === "pickup") mainHeading = "GROUND ITEMS";
+            else if (menu.tag === "drop") mainHeading = "DROP ITEMS";
+            else if (menu.tag === "use_item") mainHeading = "SELECT ITEM TO USE";
+            else if (menu.tag === "shop") mainHeading = "BAZAAR & SHOP";
+            else if (menu.tag === "stash") mainHeading = "SEARCH & STASHES";
+            else if (menu.tag === "resists") mainHeading = "CHARACTER PROFILE";
+            else if (menu.tag === "help") mainHeading = "MANUAL & GUIDE";
+            else
+            {
+                mainHeading = rawTitle.replace(/\([^)]+\)/g, "")
+                                      .replace(/-.*(?:do what|what)\?/i, "")
+                                      .split(/\s{2,}/)[0]
+                                      .trim().toUpperCase();
+                if (!mainHeading) mainHeading = (menu.tag ? menu.tag.toUpperCase() : "MENU");
+            }
+
+            var hasTab = rawTitle.match(/tab/i) || rawTitle.match(/switch category/i);
+            var hasToggle = (menu.tag === "spell" || menu.tag === "ability") || rawTitle.match(/toggle/i) || rawTitle.match(/describe/i);
+
+            var html = '<div class="inv-header-bar">';
+            html += '  <div class="inv-header-left">';
+            html += '    <span class="inv-header-title">' + icon + ' ' + mainHeading + '</span>';
+            if (slotsStr) {
+                html += '    <span class="inv-slots-pill">' + slotsStr + '</span>';
+            }
+            html += '  </div>';
+            html += '  <div class="inv-header-actions">';
+            if (hasTab) {
+                html += '    <button type="button" class="inv-action-btn" id="inv-switch-cat-btn" title="Switch Category (Tab)">⇥ Category <span class="inv-kbd">Tab</span></button>';
+            }
+            if (hasToggle) {
+                html += '    <button type="button" class="inv-action-btn" id="inv-mode-btn" title="Toggle Mode / Help (! / ?)">⇄ Describe <span class="inv-kbd">!</span></button>';
+            }
+            html += '    <button type="button" class="inv-action-btn inv-close-btn" id="inv-close-btn" title="Close (Esc)">✕ <span class="inv-kbd">Esc</span></button>';
+            html += '  </div>';
+            html += '</div>';
+
+            title.html(html);
+
+            title.find("#inv-switch-cat-btn").off("click").on("click", function (e) {
+                e.stopPropagation();
+                comm.send_message("key", { keycode: 9 }); // Tab
+            });
+
+            title.find("#inv-mode-btn").off("click").on("click", function (e) {
+                e.stopPropagation();
+                comm.send_message("key", { keycode: 33 }); // !
+            });
+
+            title.find("#inv-close-btn").off("click").on("click", function (e) {
+                e.stopPropagation();
+                comm.send_message("key", { keycode: 27 }); // Esc
+            });
+            return;
+        }
+
         title.html(util.formatted_string_to_html(menu.title.text));
         title.css("padding-left", menu_title_indent()+"px");
     }
