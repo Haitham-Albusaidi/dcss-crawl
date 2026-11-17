@@ -1,6 +1,9 @@
 <script>
   require.config({
-    paths: { "game-{{ version }}": "/gamedata/{{ version }}" },
+    paths: {
+      "game-{{ version }}": "/gamedata/{{ version }}",
+      "tiles_tab_panel": "/gamedata/{{ version }}/tiles_tab_panel"
+    },
   });
   require(["jquery", "client"], function ($, client) {
     client.inhibit_messages();
@@ -21,6 +24,19 @@
         });
       } catch (e) {
         console.warn("Modern UI init error:", e);
+      }
+
+      // Initialize Desktop Tiles Tab & Inventory Panel
+      try {
+        require(["game-{{ version }}/tiles_tab_panel"], function (ttp) {
+          if (ttp && ttp.init) {
+            ttp.init("#tiles_tab_panel");
+          }
+        }, function (err) {
+          console.warn("Tiles Tab Panel require error:", err);
+        });
+      } catch (e) {
+        console.warn("Tiles Tab Panel init error:", e);
       }
     }, function (err) {
       console.error("Game core load error:", err);
@@ -181,6 +197,7 @@
       <canvas id="minimap_overlay"></canvas>
     </div>
     <div id="monster_list"></div>
+    <div id="tiles_tab_panel" class="tiles-tab-panel"></div>
   </div>
   <div id="tooltip" style="display: none"></div>
 </div>

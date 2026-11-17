@@ -1,6 +1,6 @@
 define(["jquery", "comm", "client", "./ui", "./enums", "./cell_renderer",
-        "./util", "./options", "./scroller"],
-function ($, comm, client, ui, enums, cr, util, options, scroller) {
+        "./util", "./options", "./scroller", "./tiles_tab_panel"],
+function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
     "use strict";
 
     // Helpers
@@ -282,6 +282,20 @@ function ($, comm, client, ui, enums, cr, util, options, scroller) {
         mouse_hover_suppressed = null;
     }
 
+    function init_inventory_tiles_menu(menu_div)
+    {
+        menu_div.find(".menu_contents").hide();
+        menu_div.find(".menu_more").hide();
+        menu_div.find(".dcss-tiles-menu-container").remove();
+
+        var $gridContainer = $("<div class='dcss-tiles-menu-container'><div class='dcss-tiles-panel-wrap'></div></div>");
+        menu_div.append($gridContainer);
+
+        if (ttp && ttp.create_panel) {
+            ttp.create_panel($gridContainer.find(".dcss-tiles-panel-wrap"), true);
+        }
+    }
+
     function init_skills_menu(menu_div)
     {
         // 1. Append Elden Ring Header
@@ -511,6 +525,11 @@ function ($, comm, client, ui, enums, cr, util, options, scroller) {
             menu_div.closest(".ui-popup").addClass("popup-inventory-wrapper");
         }
         handle_size_change();
+
+        if (menu.tag === "inventory")
+        {
+            init_inventory_tiles_menu(menu_div);
+        }
 
         // if we get focus back after a popup over this one, don't use mouse
         // position at the time to set hover:
@@ -1023,7 +1042,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller) {
             if (hasToggle) {
                 html += '    <button type="button" class="inv-action-btn" id="inv-mode-btn" title="Toggle Mode / Help (! / ?)">⇄ Describe <span class="inv-kbd">!</span></button>';
             }
-            html += '    <button type="button" class="inv-action-btn inv-close-btn" id="inv-close-btn" title="Close (Esc)">✕ <span class="inv-kbd">Esc</span></button>';
+            html += '    <button type="button" class="inv-action-btn inv-close-btn" data-hotkey="Escape" id="inv-close-btn" title="Close (Esc)">✕ <span class="inv-kbd">Esc</span></button>';
             html += '  </div>';
             html += '</div>';
 
@@ -1147,6 +1166,9 @@ function ($, comm, client, ui, enums, cr, util, options, scroller) {
 
     function close_menu()
     {
+        $(document).off("keydown.tiles_popup");
+        $("#tiles-inv-tooltip").hide();
+
         if (menu_stack.length > 1
             && menu_stack[menu_stack.length - 2].last_hovered >= 0)
         {
@@ -1317,6 +1339,10 @@ function ($, comm, client, ui, enums, cr, util, options, scroller) {
         // TODO: this should interface somehow with key_conversion.js
         switch (event.which)
         {
+        case 27: // Escape key closes menu
+            comm.send_message("key", { keycode: 27 });
+            event.preventDefault();
+            return false;
         case 109: // numpad -
             if (menu_has_custom_dash())
                 break;
