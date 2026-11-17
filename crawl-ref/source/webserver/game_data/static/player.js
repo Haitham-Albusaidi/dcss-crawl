@@ -544,7 +544,11 @@ function ($, comm, client, enums, map_knowledge, messages, options, util) {
         }
 
         if (data.inv)
+        {
             $("#action-panel").triggerHandler("update");
+            $("#tiles_tab_panel").triggerHandler("update");
+            $(document).trigger("dcss_inv_update");
+        }
 
         delete data.inv;
         delete data.msg;

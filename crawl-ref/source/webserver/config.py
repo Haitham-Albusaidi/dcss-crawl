@@ -45,7 +45,7 @@ server_path = os.path.dirname(os.path.abspath(__file__))
 # the nonsecure ports as indicated, but redirect them to an SSL port.
 bind_nonsecure = True
 bind_address = ""
-bind_port = 8080
+bind_port = 8088
 
 # Or listen on multiple address/port pairs (overriding the above) with:
 # bind_pairs = (
@@ -444,4 +444,4 @@ hup_reloads_config = True
 # Disable caching of static files which are not part of game data.
 # no_cache = development_mode
 # Automatically log in all users with the username given here.
-autologin = "player"
+autologin = "Player"
