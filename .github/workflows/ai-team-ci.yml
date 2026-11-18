@@ -5,16 +5,11 @@ on:
     branches:
       - main
       - 'feature/**'
-    paths:
-      - '.ai-team/**'
-      - '.github/workflows/ai-team-ci.yml'
   pull_request:
     branches:
       - main
       - 'feature/**'
-    paths:
-      - '.ai-team/**'
-      - '.github/workflows/ai-team-ci.yml'
+  workflow_dispatch:
 
 jobs:
   test-ai-team:
