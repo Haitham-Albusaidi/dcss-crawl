@@ -84,7 +84,8 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
             use_item: "🧪",
             stash: "🔍",
             resists: "🛡️",
-            deck: "🃏"
+            deck: "🃏",
+            prompt: "⚠️"
         };
 
         if (menu && menu.type !== "crt")
@@ -139,7 +140,10 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
 
                 var $card = $('<div class="inv-grid-card"></div>');
                 if (hotkey)
+                {
                     $card.append('<span class="inv-hotkey-badge">' + hotkey.toUpperCase() + '</span>');
+                    elem.attr("data-hotkey", hotkey.toLowerCase());
+                }
 
                 var $iconBox = $('<div class="inv-tile-box"></div>');
                 var $c = elem.find("canvas");
@@ -150,6 +154,13 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                 else
                 {
                     var fallbackIcon = defaultIcons[menu.tag] || "✦";
+                    if (menu.tag === "prompt")
+                    {
+                        var lk = hotkey.toLowerCase();
+                        if (lk === "y") fallbackIcon = "✔️";
+                        else if (lk === "n") fallbackIcon = "❌";
+                        else fallbackIcon = "⚡";
+                    }
                     $iconBox.append('<span class="inv-tile-placeholder">' + fallbackIcon + '</span>');
                 }
                 $card.append($iconBox);
@@ -550,7 +561,13 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                 suppress_mouse_hover();
             });
 
-        if (menu.flags & enums.menu_flag.START_AT_END)
+        if (menu.tag === "prompt")
+        {
+            if (menu.scroller && menu.scroller.scrollElement) {
+                $(menu.scroller.scrollElement).scrollTop(0);
+            }
+        }
+        else if (menu.flags & enums.menu_flag.START_AT_END)
             scroll_bottom_to_item(menu.items.length - 1, true);
         else if (menu.jump_to)
             scroll_to_item(menu.jump_to, true);
@@ -865,6 +882,8 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
 
     function scroll_to_item(item_or_index, was_server_initiated)
     {
+        if (!menu || menu.tag === "prompt")
+            return;
         var index = (item_or_index.elem ?
                      item_or_index.index : item_or_index);
         if (menu.items.length == 0)
@@ -892,6 +911,8 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
 
     function scroll_bottom_to_item(item_or_index, was_server_initiated)
     {
+        if (!menu || menu.tag === "prompt")
+            return;
         var index = (item_or_index.elem ?
                      item_or_index.index : item_or_index);
         if (menu.items.length == 0 || menu.last_visible == index)
@@ -1009,7 +1030,8 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                 help: "📖",
                 deck: "🃏",
                 travel: "🗺️",
-                description: "📜"
+                description: "📜",
+                prompt: "⚠️"
             };
             var icon = iconMap[menu.tag] || "✦";
 
@@ -1027,6 +1049,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
             else if (menu.tag === "stash") mainHeading = "SEARCH & STASHES";
             else if (menu.tag === "resists") mainHeading = "CHARACTER PROFILE";
             else if (menu.tag === "help") mainHeading = "MANUAL & GUIDE";
+            else if (menu.tag === "prompt") mainHeading = rawTitle.replace(/\s*\([^)]+\)$/, "").trim();
             else
             {
                 mainHeading = rawTitle.replace(/\([^)]+\)/g, "")
@@ -1388,6 +1411,13 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
         // TODO: this should interface somehow with key_conversion.js
         switch (event.which)
         {
+        case 13: // Enter key confirms default choice in prompt
+            if (menu.tag === "prompt") {
+                comm.send_message("key", { keycode: 13 });
+                event.preventDefault();
+                return false;
+            }
+            break;
         case 27: // Escape key closes menu
             comm.send_message("key", { keycode: 27 });
             event.preventDefault();
@@ -1446,6 +1476,12 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
         case 37: // left
             if (raw_arrow_keys())
                 break; // Treat input as raw, no need to scroll anyway
+            if (menu.tag === "prompt")
+            {
+                cycle_hover(true);
+                event.preventDefault();
+                return false;
+            }
             if (event.shiftKey)
             {
                 line_up();
@@ -1456,6 +1492,12 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
         case 39: // right
             if (raw_arrow_keys())
                 break; // Treat input as raw, no need to scroll anyway
+            if (menu.tag === "prompt")
+            {
+                cycle_hover(false);
+                event.preventDefault();
+                return false;
+            }
             if (event.shiftKey)
             {
                 line_down();
@@ -1485,6 +1527,18 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
         if (!ui.top_popup() || ui.top_popup()[0] !== menu.elem[0]) return;
         if (menu.tag == "macro_mapping") return; // Treat input as raw, no need
                                                  // to scroll anyway
+
+        if (menu.tag === "prompt")
+        {
+            var pKey = String.fromCharCode(event.which).toLowerCase();
+            if (pKey === "y" || pKey === "n" || pKey === "a")
+            {
+                comm.send_message("key", { keycode: event.which });
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+        }
 
         if (menu.tag === "pickup")
         {
@@ -1606,6 +1660,12 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
 
         var item = $(this).data("item");
         if (!item) return;
+
+        if (menu.tag === "prompt" && item.hotkeys && item.hotkeys.length && event.which === 1)
+        {
+            comm.send_message("key", { keycode: item.hotkeys[0] });
+            return;
+        }
         if (menu.flags & enums.menu_flag.ARROWS_SELECT)
         {
             set_hovered($(this).index()); // should be unnecesssary?
