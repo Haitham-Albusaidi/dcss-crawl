@@ -22,17 +22,18 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
     ];
 
     var DRAWER_SLOTS = [
-        { id: "skills", icon: "📊", label: "Skills Training", key: "m", desc: "Train weapon masteries, fighting, magic schools, and stealth." },
-        { id: "sheet", icon: "📜", label: "Character Profile", key: "%", desc: "View attributes, resistances (rF, rC, rElec, rPois), AC, EV, and SH." },
-        { id: "religion", icon: "⛩️", label: "Divine Altar / God", key: "^", desc: "Review piety rating, divine boons, passive prayers, and divine wrath." },
-        { id: "mutations", icon: "🧬", label: "Mutations", key: "A", desc: "Review demonic, innate, and potion-induced mutations and boons." },
-        { id: "messages", icon: "💬", label: "Chronicle Log", key: "M", desc: "Review full battle log and history of dungeon events." },
-        { id: "find", icon: "🔍", label: "Search Memory", key: "f", ctrlKey: true, desc: "Search entire dungeon memory for items, altars, shops, or portals." },
-        { id: "overview", icon: "🏰", label: "Dungeon Overview", key: "o", ctrlKey: true, desc: "Overview of discovered branches, depths, runes of Zot, and shops." },
-        { id: "pickup", icon: "📥", label: "Pick Up", key: ",", desc: "Pick up item from current ground tile into your backpack." },
-        { id: "drop", icon: "📤", label: "Drop Item", key: "d", desc: "Drop selected items from inventory onto current tile." },
-        { id: "help", icon: "❓", label: "Guide & Hotkeys", key: "?", desc: "Open comprehensive in-game manual and keybinding compendium." },
-        { id: "save", icon: "💾", label: "Save & Quit", key: "s", ctrlKey: true, desc: "Save progress safely and return to title screen." }
+        { id: "skills", icon: "📊", label: "Skills Training", key: "m", badge: "m", desc: "Train weapon masteries, fighting, magic schools, and stealth." },
+        { id: "sheet", icon: "📜", label: "Character Profile", key: "%", badge: "%", desc: "View attributes, resistances (rF, rC, rElec, rPois), AC, EV, and SH." },
+        { id: "religion", icon: "⛩️", label: "Divine Altar / God", key: "^", badge: "^", desc: "Review piety rating, divine boons, passive prayers, and divine wrath." },
+        { id: "mutations", icon: "🧬", label: "Mutations", key: "A", badge: "A", desc: "Review demonic, innate, and potion-induced mutations and boons." },
+        { id: "messages", icon: "💬", label: "Chronicle Log", key: "p", ctrlKey: true, badge: "Ctrl+P", desc: "Review full battle log and history of dungeon events." },
+        { id: "find", icon: "🔍", label: "Search Memory", key: "f", ctrlKey: true, badge: "Ctrl+F", desc: "Search entire dungeon memory for items, altars, shops, or portals." },
+        { id: "overview", icon: "🏰", label: "Dungeon Overview", key: "o", ctrlKey: true, badge: "Ctrl+O", desc: "Overview of discovered branches, depths, runes of Zot, and shops." },
+        { id: "pickup", icon: "📥", label: "Pick Up", key: ",", badge: ",", desc: "Pick up item from current ground tile into your backpack." },
+        { id: "drop", icon: "📤", label: "Drop Item", key: "d", badge: "d", desc: "Drop selected items from inventory onto current tile." },
+        { id: "known", icon: "✨", label: "Known Items", key: "\\", badge: "\\", desc: "Review identified weapons, armour, jewellery, and runes of Zot." },
+        { id: "help", icon: "❓", label: "Guide & Hotkeys", key: "?", badge: "?", desc: "Open comprehensive in-game manual and keybinding compendium." },
+        { id: "save", icon: "💾", label: "Save & Quit", key: "s", ctrlKey: true, badge: "Ctrl+S", desc: "Save progress safely and return to title screen." }
     ];
 
     var DPAD_COMPASS = [
@@ -56,6 +57,11 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
         if (client.is_watching && client.is_watching())
             return;
 
+        // If any modal/menu is currently open, dismiss it first
+        if ($(".menu:visible").length > 0 || $(".ui-popup:visible").length > 0) {
+            comm.send_message("key", { keycode: 27 }); // Esc
+        }
+
         var code;
         if (action.keycode) {
             code = action.keycode;
@@ -69,10 +75,10 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
         }
 
         if (code !== undefined) {
-            if (window.socket && window.socket.readyState === 1) {
-                window.socket.send('{"msg":"key","keycode":' + code + '}');
-            } else if (comm && comm.send_message) {
+            if (comm && comm.send_message) {
                 comm.send_message("key", { keycode: code });
+            } else if (window.socket && window.socket.readyState === 1) {
+                window.socket.send('{"msg":"key","keycode":' + code + '}');
             }
         }
     }
@@ -122,20 +128,31 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
         $primaryRow.append($moreToggle);
 
         // 2. Secondary Tray Drawer (Expands smoothly above)
-        var $drawer = $('<div class="elden-drawer hidden" id="elden-drawer"></div>');
-        var $drawerGrid = $('<div class="elden-drawer-grid"></div>');
+        var $drawer = $(
+            '<div class="elden-drawer hidden" id="elden-drawer">' +
+            '  <div class="elden-drawer-header">' +
+            '    <div class="elden-drawer-title"><span class="drawer-header-icon">📜</span> COMMAND GRIMOIRE &amp; UTILITIES</div>' +
+            '    <div class="elden-drawer-actions">' +
+            '      <span class="elden-drawer-hint">Click card or press key</span>' +
+            '      <button type="button" class="elden-drawer-close" id="elden-drawer-close" title="Close (Esc)">✕ Esc</button>' +
+            '    </div>' +
+            '  </div>' +
+            '  <div class="elden-drawer-grid"></div>' +
+            '</div>'
+        );
+        var $drawerGrid = $drawer.find(".elden-drawer-grid");
         $.each(DRAWER_SLOTS, function (i, item) {
+            var badgeText = item.badge || (item.ctrlKey ? "Ctrl+" + item.key.toUpperCase() : item.key);
             var $itemBtn = $(
-                '<button type="button" class="elden-drawer-item">' +
-                '  <span class="item-icon">' + item.icon + '</span>' +
+                '<button type="button" class="elden-drawer-item" data-id="' + item.id + '">' +
+                '  <span class="item-icon-box">' + item.icon + '</span>' +
                 '  <span class="item-label">' + item.label + '</span>' +
-                '  <span class="item-kbd">' + (item.ctrlKey ? "Ctrl+" + item.key.toUpperCase() : item.key) + '</span>' +
+                '  <span class="item-kbd">' + badgeText + '</span>' +
                 '</button>'
             );
             $itemBtn.data("action", item);
             $drawerGrid.append($itemBtn);
         });
-        $drawer.append($drawerGrid);
 
         // 3. Floating 8-Directional D-Pad Popover
         var $dpadPopover = $('<div class="elden-dpad-popover hidden" id="elden-dpad-popover"></div>');
@@ -165,8 +182,39 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
     }
 
     function bind_events() {
-        // Click action execution
-        $dock.on("click", ".elden-slot:not(.elden-toggle-slot), .elden-drawer-item, .elden-compass-btn", function (e) {
+        function close_drawer() {
+            show_drawer = false;
+            $dock.find("#elden-drawer").addClass("hidden");
+            $dock.find("#elden-more-toggle").removeClass("active");
+            $tooltip.removeClass("visible");
+        }
+
+        function close_dpad() {
+            show_dpad = false;
+            $dock.find("#elden-dpad-popover").addClass("hidden");
+            $dock.find("#elden-dpad-toggle").removeClass("active");
+        }
+
+        // Close button inside drawer header
+        $dock.on("click", "#elden-drawer-close", function (e) {
+            e.stopPropagation();
+            close_drawer();
+        });
+
+        // Click on drawer item: executes command and dismisses drawer
+        $dock.on("click", ".elden-drawer-item", function (e) {
+            var action = $(this).data("action");
+            if (action) {
+                var $el = $(this);
+                $el.addClass("elden-active");
+                setTimeout(function () { $el.removeClass("elden-active"); }, 150);
+                close_drawer();
+                send_game_command(action);
+            }
+        });
+
+        // Click on primary slot / compass btn
+        $dock.on("click", ".elden-slot:not(.elden-toggle-slot), .elden-compass-btn", function (e) {
             var action = $(this).data("action");
             if (action) {
                 var $el = $(this);
@@ -183,9 +231,7 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
             $(this).toggleClass("active", show_dpad);
             $dock.find("#elden-dpad-popover").toggleClass("hidden", !show_dpad);
             if (show_dpad && show_drawer) {
-                show_drawer = false;
-                $dock.find("#elden-drawer").addClass("hidden");
-                $dock.find("#elden-more-toggle").removeClass("active");
+                close_drawer();
             }
         });
 
@@ -196,9 +242,63 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
             $(this).toggleClass("active", show_drawer);
             $dock.find("#elden-drawer").toggleClass("hidden", !show_drawer);
             if (show_drawer && show_dpad) {
-                show_dpad = false;
-                $dock.find("#elden-dpad-popover").addClass("hidden");
-                $dock.find("#elden-dpad-toggle").removeClass("active");
+                close_dpad();
+            }
+        });
+
+        // Physical Keyboard listener for drawer
+        $(document).off("keydown.elden_drawer").on("keydown.elden_drawer", function (e) {
+            if (!show_drawer) return;
+
+            // Escape closes drawer
+            if (e.which === 27) {
+                e.preventDefault();
+                e.stopPropagation();
+                close_drawer();
+                return false;
+            }
+
+            // Route keypress to matching drawer action
+            for (var i = 0; i < DRAWER_SLOTS.length; i++) {
+                var item = DRAWER_SLOTS[i];
+                var matches = false;
+
+                if (item.ctrlKey) {
+                    if (e.ctrlKey && !e.altKey) {
+                        var targetCode = item.key.toUpperCase().charCodeAt(0);
+                        if (e.which === targetCode) {
+                            matches = true;
+                        }
+                    }
+                } else {
+                    if (!e.ctrlKey && !e.altKey) {
+                        if (item.key === "%" && e.shiftKey && (e.which === 53 || e.key === "%")) {
+                            matches = true;
+                        } else if (item.key === "^" && e.shiftKey && (e.which === 54 || e.key === "^")) {
+                            matches = true;
+                        } else if (item.key === "A" && e.shiftKey && (e.which === 65 || e.key === "A")) {
+                            matches = true;
+                        } else if (item.key === "?" && (e.key === "?" || (e.shiftKey && e.which === 191))) {
+                            matches = true;
+                        } else if (item.key === "\\" && (e.key === "\\" || e.which === 220)) {
+                            matches = true;
+                        } else if (item.key === "," && (e.key === "," || e.which === 188)) {
+                            matches = true;
+                        } else if (item.key === "m" && !e.shiftKey && (e.which === 77 || e.key === "m")) {
+                            matches = true;
+                        } else if (item.key === "d" && !e.shiftKey && (e.which === 68 || e.key === "d")) {
+                            matches = true;
+                        }
+                    }
+                }
+
+                if (matches) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    close_drawer();
+                    send_game_command(item);
+                    return false;
+                }
             }
         });
 
