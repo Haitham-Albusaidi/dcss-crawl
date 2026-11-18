@@ -17,7 +17,7 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
         { id: "rest", tile: gui.CMD_REST, key: "5", label: "Rest / Heal (5)" },
         { id: "wait", tile: gui.CMD_WAIT, key: ".", label: "Wait 1 Turn (.)" },
         { id: "autofight", tile: gui.CMD_AUTOFIGHT, keycode: 9, key: "Tab", label: "Auto-Fight (Tab)" },
-        { id: "pickup", tile: null, iconText: "📥", key: ",", label: "Pick Up Floor (,)", pickupAll: true },
+        { id: "pickup", tile: null, iconText: "📥", key: ",", label: "Pick Up Floor (,)" },
         { id: "drop", tile: gui.CMD_DROP, key: "d", label: "Drop Item (d)" },
         { id: "cast", tile: gui.CMD_CAST_SPELL, key: "z", label: "Cast Spell (z)" },
         { id: "ability", tile: gui.CMD_USE_ABILITY, key: "a", label: "Use Ability (a)" },
@@ -122,9 +122,8 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
         var lines = [
             letter + " - " + item.name,
             "[L-Click] " + action.verb + (action.hotkey ? " (" + action.hotkey + ")" : ""),
-            "[R-Click] Describe (v)",
-            "[Shift + L-Click] Drop (d)",
-            "[Key '" + letter + "'] Select / Inspect"
+            "[R-Click] Describe",
+            "[Shift + L-Click] Drop"
         ];
         return lines.join("\n");
     }
@@ -151,7 +150,7 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
                  + '<div class="tiles-cmd-bar"><canvas class="tp_cmd_canvas"></canvas></div>'
                  + '<div class="tiles-body">'
                  + '  <div class="tiles-tabs-col"><canvas class="tp_tabs_canvas"></canvas></div>'
-                 + '  <div class="tiles-grid-area"><canvas class="tp_grid_canvas"></canvas></div>'
+                 + '  <div class="tiles-grid-area"><canvas class="tp_grid_canvas" tabindex="0" aria-label="Inventory. Use arrow keys to inspect items."></canvas></div>'
                  + '</div>';
         this.$container.html(html);
 
@@ -164,6 +163,39 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
     TilesPanel.prototype.bindEvents = function () {
         var self = this;
 
+        function inspectSlot(direction) {
+            for (var i = 0; i < 52; i++) {
+                self.hoverSlot = (self.hoverSlot + direction + 52) % 52;
+                var item = player.inv && player.inv[self.hoverSlot];
+                if (!item || !item.name || !item.quantity) continue;
+                var rect = self.$gridCanvas[0].getBoundingClientRect();
+                var text = formatItemTooltip(item);
+                self.$gridCanvas.attr("aria-label", text);
+                showTooltip(rect.left + (self.hoverSlot % NUM_COLS + 1) * CELL_SIZE,
+                    rect.top + Math.floor(self.hoverSlot / NUM_COLS) * CELL_SIZE, text);
+                self.drawGrid();
+                return;
+            }
+            self.hoverSlot = -1;
+            hideTooltip();
+            self.drawGrid();
+        }
+        this.$gridCanvas.on("focus", function () {
+            if (this.matches(":focus-visible")) inspectSlot(1);
+        }).on("keydown", function (ev) {
+            var steps = {37: -1, 38: -1, 39: 1, 40: 1};
+            if (steps[ev.which]) {
+                ev.preventDefault();
+                ev.stopPropagation();
+                inspectSlot(steps[ev.which]);
+            } else if (ev.which === 9) {
+                ev.stopPropagation();
+            }
+        }).on("blur", function () {
+            self.hoverSlot = -1;
+            self.drawGrid();
+            hideTooltip();
+        });
         // Grid Canvas
         this.$gridCanvas.on("mousemove", function (e) {
             var rect = this.getBoundingClientRect();
@@ -275,13 +307,6 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
                 var isModal = self.isPopup || $(".menu_inventory:visible").length > 0;
                 if (isModal) {
                     comm.send_message("key", { keycode: 27 }); // Close inventory modal
-                }
-                if (cmd.pickupAll) {
-                    window._dcss_auto_pickup_all = true;
-                    if (window._dcss_auto_pickup_timer) clearTimeout(window._dcss_auto_pickup_timer);
-                    window._dcss_auto_pickup_timer = setTimeout(function () {
-                        window._dcss_auto_pickup_all = false;
-                    }, 1200);
                 }
                 if (cmd.keycode) {
                     comm.send_message("key", { keycode: cmd.keycode });

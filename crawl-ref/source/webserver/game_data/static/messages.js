@@ -79,6 +79,13 @@ function ($, comm, client, textinput, util, options) {
         prefix_glyph.html("&nbsp;");
         msg_elem.html(prefix_glyph);
         msg_elem.append(util.formatted_string_to_html(data.text));
+        if (data.channel === 2)
+        {
+            var prompt = msg_elem.text().trim();
+            var aim = prompt.match(/^(?:Aiming|Casting|Restarting spell|Throw(?:ing)?|Fir(?:e|ing)|Shoot(?:ing)?|Zap|Cast):\s*(.+)/i);
+            if (aim)
+                $("#dungeon").trigger("aim_label", [aim[1].split(" (")[0]]);
+        }
         $("#messages_container").scrollTop($("#messages").height());
     }
 
@@ -121,15 +128,7 @@ function ($, comm, client, textinput, util, options) {
             for (var i = 0; i < msg.messages.length; ++i)
             {
                 add_message(msg.messages[i]);
-                if (window._dcss_auto_pickup_all && msg.messages[i] && msg.messages[i].text)
-                {
-                    var txt = msg.messages[i].text;
-                    if (txt.indexOf("Pick up ") !== -1 && txt.indexOf("(a)ll") !== -1)
-                    {
-                        window._dcss_auto_pickup_all = false;
-                        comm.send_message("key", { keycode: 97 }); // 'a' picks up all
-                    }
-                }
+
             }
         }
         var cursor = $("#text_cursor");

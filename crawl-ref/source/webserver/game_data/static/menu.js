@@ -92,7 +92,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
         {
             if (item_selectable(item))
             {
-                var rawText = (item_text(item) || "").trim();
+                var rawText = (menu.tag === "pickup" ? elem.text() : item_text(item) || "").trim();
                 // Match hotkey e.g. "f - Golden Breath...", "a ) Manual", "1. Item"
                 var match = rawText.match(/^([a-zA-Z0-9?*!#+=-])(?:\s*[-.)]\s*|\s{2,})(.*)$/);
                 var hotkey = match ? match[1] : (item.hotkeys && item.hotkeys.length ? String.fromCharCode(item.hotkeys[0]) : "");
@@ -223,10 +223,17 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                     }
                     $iconBox.append('<span class="inv-tile-placeholder">' + fallbackIcon + '</span>');
                 }
+                if (menu.tag === "pickup") {
+                    $("<span class='pickup-quantity'>").text("×" + item.q).appendTo($iconBox);
+                    mainTitle = desc.replace(/^[a-zA-Z]\s+[+#-]\s+/, "").replace(/^\d+\s+/, "");
+                }
                 $card.append($iconBox);
 
                 var $info = $('<div class="inv-info-box"></div>');
-                $info.append('<div class="inv-item-name" title="' + desc.replace(/"/g, '&quot;') + '">' + mainTitle + '</div>');
+                if (menu.tag === "pickup")
+                    $("<div class='inv-item-name'>").attr("title", desc).text(mainTitle).appendTo($info);
+                else
+                    $info.append('<div class="inv-item-name" title="' + desc.replace(/"/g, '&quot;') + '">' + mainTitle + '</div>');
                 
                 if (statusText)
                 {
@@ -601,17 +608,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
         {
             init_inventory_tiles_menu(menu_div);
         }
-        else if (menu.tag === "pickup")
-        {
-            if (window._dcss_auto_pickup_all)
-            {
-                window._dcss_auto_pickup_all = false;
-                setTimeout(function () {
-                    comm.send_message("key", { keycode: 44 }); // , selects all
-                    comm.send_message("key", { keycode: 13 }); // Enter confirms
-                }, 20);
-            }
-        }
+
 
         // if we get focus back after a popup over this one, don't use mouse
         // position at the time to set hover:
@@ -1131,6 +1128,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
             html += '  </div>';
             html += '  <div class="inv-header-actions">';
             if (menu.tag === "pickup") {
+                html += '<button type="button" class="inv-action-btn" id="inv-pickup-selected">Pick up selected <kbd>Enter</kbd></button>';
                 html += '    <button type="button" class="inv-action-btn inv-pickup-all-btn" id="inv-pickup-all-btn" title="Pick Up All (,)">📥 Pick Up All <span class="inv-kbd">,</span></button>';
             }
             if (hasTab) {
@@ -1144,6 +1142,10 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
             html += '</div>';
 
             title.html(html);
+            title.find("#inv-pickup-selected").on("click", function (e) {
+                e.stopPropagation();
+                comm.send_message("key", { keycode: 13 });
+            });
 
             title.find("#inv-pickup-all-btn").off("click").on("click", function (e) {
                 e.stopPropagation();
@@ -1603,7 +1605,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
         if (menu.tag === "pickup")
         {
             var pChr = String.fromCharCode(event.which);
-            if (pChr === "," || pChr === "a")
+            if (pChr === ",")
             {
                 comm.send_message("key", { keycode: 44 }); // , selects all
                 comm.send_message("key", { keycode: 13 }); // Enter confirms

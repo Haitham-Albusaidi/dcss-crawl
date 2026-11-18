@@ -8,7 +8,7 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
     var PRIMARY_SLOTS = [
         { id: "autoexplore", icon: "🧭", label: "Auto-Explore", key: "o", desc: "Automap and explore level, collect safe items, and halt immediately on monster threats." },
         { id: "autofight", icon: "⚔️", label: "Auto-Fight", key: "Tab", keycode: 9, desc: "Attack adjacent enemy or step towards closest visible foe." },
-        { id: "pickup", icon: "📥", label: "Pick Up Floor", key: ",", badge: ",", pickupAll: true, desc: "Pick up all items on current floor tile into backpack." },
+        { id: "pickup", icon: "📥", label: "Pick Up Floor", key: ",", badge: ",", desc: "Choose items on your tile to pick up." },
         { id: "rest", icon: "💤", label: "Rest / Heal", key: "5", desc: "Rest in place until HP and MP are fully restored or danger appears." },
         { id: "cast", icon: "🪄", label: "Cast Spell", key: "z", desc: "Open spell grimoire to choose and cast memorised incantations." },
         { id: "ability", icon: "⚡", label: "Invoke Talent", key: "a", desc: "Unleash divine God powers, racial gifts, and supernatural mutations." },
@@ -30,7 +30,7 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
         { id: "messages", icon: "💬", label: "Chronicle Log", key: "p", ctrlKey: true, badge: "Ctrl+P", desc: "Review full battle log and history of dungeon events." },
         { id: "find", icon: "🔍", label: "Search Memory", key: "f", ctrlKey: true, badge: "Ctrl+F", desc: "Search entire dungeon memory for items, altars, shops, or portals." },
         { id: "overview", icon: "🏰", label: "Dungeon Overview", key: "o", ctrlKey: true, badge: "Ctrl+O", desc: "Overview of discovered branches, depths, runes of Zot, and shops." },
-        { id: "pickup", icon: "📥", label: "Pick Up Floor", key: ",", badge: ",", pickupAll: true, desc: "Pick up all items on current ground tile into your backpack." },
+        { id: "pickup", icon: "📥", label: "Pick Up Floor", key: ",", badge: ",", desc: "Choose items on your tile to pick up." },
         { id: "drop", icon: "📤", label: "Drop Item", key: "d", badge: "d", desc: "Drop selected items from inventory onto current tile." },
         { id: "known", icon: "✨", label: "Known Items", key: "\\", badge: "\\", desc: "Review identified weapons, armour, jewellery, and runes of Zot." },
         { id: "help", icon: "❓", label: "Guide & Hotkeys", key: "?", badge: "?", desc: "Open comprehensive in-game manual and keybinding compendium." },
@@ -63,13 +63,6 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
             comm.send_message("key", { keycode: 27 }); // Esc
         }
 
-        if (action.id === "pickup" || action.pickupAll) {
-            window._dcss_auto_pickup_all = true;
-            if (window._dcss_auto_pickup_timer) clearTimeout(window._dcss_auto_pickup_timer);
-            window._dcss_auto_pickup_timer = setTimeout(function () {
-                window._dcss_auto_pickup_all = false;
-            }, 1200);
-        }
 
         var code;
         if (action.keycode) {

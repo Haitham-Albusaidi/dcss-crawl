@@ -4867,3 +4867,38 @@ body {
     color: var(--er-gold-bright) !important;
     box-shadow: 0 0 12px rgba(197, 160, 89, 0.35) !important;
 }
+
+#aim_marker {
+    position: fixed;
+    z-index: 20;
+    pointer-events: none;
+    box-sizing: border-box;
+    border: 2px solid #ffd877;
+    background: rgba(255, 216, 119, .13);
+}
+#aim_marker span {
+    position: absolute;
+    width: max-content;
+    max-width: min(240px, 85vw);
+    background: #19171a;
+    color: #ffe5a1;
+    padding: 3px 7px;
+    font: 12px var(--er-font-sans);
+}
+button.status_light {
+    font: inherit;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: help;
+}
+.menu_pickup .inv-tile-box { position: relative; }
+.pickup-quantity {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: #141418;
+    color: #ffe5a1;
+    padding: 0 2px;
+    font: bold 10px monospace;
+}
