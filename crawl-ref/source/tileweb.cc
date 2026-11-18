@@ -2295,6 +2295,7 @@ void TilesFramework::redraw()
 {
     if (!has_receivers())
     {
+        m_gameplay_events.clear();
         if (m_mcache_ref_done)
         {
             _mcache_ref(false);
@@ -2329,8 +2330,47 @@ void TilesFramework::redraw()
     if (m_need_redraw && m_view_loaded)
         _send_map(false);
 
+    _send_gameplay_events();
+
     m_need_redraw = false;
     m_last_tick_redraw = get_milliseconds();
+}
+
+void TilesFramework::queue_gameplay_event(const actor& target, const char* kind,
+                                         const string& text, int amount)
+{
+    // Bound bursts such as area damage, and never reveal unseen monsters.
+    if (!has_receivers() || !you.on_current_level || !in_bounds(target.pos())
+        || m_gameplay_events.size() >= 32
+        || (!target.is_player() && !you.can_see(target)))
+    {
+        return;
+    }
+
+    m_gameplay_events.push_back({target.pos(), kind, text, amount,
+                                 target.is_player()});
+}
+
+void TilesFramework::_send_gameplay_events()
+{
+    // Redraw sends the map first. Its origin also applies to these cells.
+    for (const auto& event : m_gameplay_events)
+    {
+        const coord_def pos = event.pos - m_origin;
+        json_open_object();
+        json_write_string("msg", "gameplay_event");
+        json_write_string("kind", event.kind);
+        json_write_string("target", event.player ? "player" : "monster");
+        json_write_int("x", pos.x);
+        json_write_int("y", pos.y);
+        if (!event.text.empty())
+            json_write_string("text", event.text);
+        if (event.amount > 0)
+            json_write_int("amount", event.amount);
+        json_close_object();
+        finish_message();
+    }
+    m_gameplay_events.clear();
 }
 
 void TilesFramework::update_minimap(const coord_def& gc)
@@ -2343,6 +2383,7 @@ void TilesFramework::update_minimap(const coord_def& gc)
 
 void TilesFramework::clear_minimap()
 {
+    m_gameplay_events.clear();
     m_origin = coord_def(-1, -1);
     // Changing the origin invalidates coordinates on the client side
     m_current_gc = coord_def(-1, -1);

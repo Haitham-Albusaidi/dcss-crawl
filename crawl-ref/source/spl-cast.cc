@@ -79,6 +79,7 @@
 #include "teleport.h"
 #include "terrain.h"
 #include "tilepick.h"
+#include "tileweb.h"
 #include "timed-effects.h"
 #include "transform.h"
 #include "unicode.h"
@@ -1073,6 +1074,12 @@ spret cast_a_spell(bool check_range, spell_type spell, dist *_target,
 
     const spret cast_result = your_spells(spell, 0, !you.divine_exegesis,
                                           nullptr, _target, force_failure);
+#ifdef USE_TILE_WEB
+    if (cast_result == spret::success)
+        tiles.queue_gameplay_event(you, "spell", string(spell_title(spell)) + "!");
+    else if (cast_result == spret::fail)
+        tiles.queue_gameplay_event(you, "warning", "Spell Failed!");
+#endif
     if (cast_result == spret::abort
         || you.divine_exegesis && cast_result == spret::fail)
     {
