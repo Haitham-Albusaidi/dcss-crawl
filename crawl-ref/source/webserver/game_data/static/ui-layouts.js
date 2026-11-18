@@ -442,6 +442,7 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
 
     function _fmt_mon_stats_grid(raw)
     {
+        var clean = raw.replace(/<[^>]+>/g, "");
         var regex = /([A-Za-z\s]+):\s*([^\s][^:]*?)(?=(?:\s{2,}[A-Za-z\s]+:|$|\n))/g;
         var match;
         var cellsHtml = "";
@@ -451,14 +452,16 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
             "will": "🔮",
             "ac": "🛡️",
             "ev": "💨",
+            "sh": "🛡️",
             "class": "🧬",
             "size": "📏",
             "int": "🧠",
             "speed": "⚡",
+            "regen": "💖",
             "hd": "⭐"
         };
 
-        while ((match = regex.exec(raw)) !== null) {
+        while ((match = regex.exec(clean)) !== null) {
             var k = match[1].trim();
             var v = match[2].trim();
             var kl = k.toLowerCase();
@@ -492,7 +495,8 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
 
     function _fmt_mon_combat_odds(raw)
     {
-        var lines = raw.split("\n");
+        var clean = raw.replace(/<[^>]+>/g, "");
+        var lines = clean.split("\n");
         var html = '<div class="mon-combat-odds-box">';
         for (var i = 0; i < lines.length; i++) {
             var line = lines[i].trim();
@@ -509,8 +513,10 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
                 var colorClass = isPlayer ? "green" : "amber";
                 html += '  <span class="mon-odds-val ' + colorClass + '">' + pct + '</span>';
             }
-            var descText = line.replace(/^(?:You have|It has)\s+about\s+\d+%?\s*/i, "");
-            html += '  <span class="mon-odds-desc">' + (isPlayer ? "to hit " : "") + util.formatted_string_to_html(descText) + '</span>';
+            var descText = isPlayer
+                ? line.replace(/^You have\s+about\s+\d+%?\s*(?:to hit\s+)?/i, "")
+                : line.replace(/^It has\s+about\s+\d+%?\s*/i, "");
+            html += '  <span class="mon-odds-desc">' + util.formatted_string_to_html(descText) + '</span>';
             html += '</div>';
         }
         html += '</div>';
@@ -519,7 +525,8 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
 
     function _fmt_mon_attacks(raw)
     {
-        var lines = raw.split("\n");
+        var clean = raw.replace(/<[^>]+>/g, "");
+        var lines = clean.split("\n");
         var html = '<div class="mon-attacks-card">';
         html += '  <div class="mon-attacks-header">⚔️ Attack Arsenal</div>';
 
@@ -554,7 +561,8 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
 
     function _fmt_mon_traits(raw)
     {
-        var lines = raw.split("\n");
+        var clean = raw.replace(/<[^>]+>/g, "");
+        var lines = clean.split("\n");
         var html = '<div class="mon-traits-box">';
         for (var i = 0; i < lines.length; i++) {
             var line = lines[i].trim();
