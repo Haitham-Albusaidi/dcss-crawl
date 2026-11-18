@@ -61,8 +61,23 @@
 <div id="crt" style="display: none"></div>
 
 <div id="normal" style="display: none">
+  <section id="empty_grimoire" aria-labelledby="empty_grimoire_title" hidden>
+    <h2 id="empty_grimoire_title">Grimoire</h2>
+    <p role="status">No spells memorised.</p>
+    <div class="empty-grimoire-actions">
+      <button type="button" class="empty-grimoire-memorise">Memorise a spell <kbd>M</kbd></button>
+      <button type="button" class="empty-grimoire-close">Close <kbd>Esc</kbd></button>
+    </div>
+  </section>
+  <div id="monster_hud">
+    <details id="monster_roster" hidden>
+      <summary>Nearby monsters</summary>
+      <div id="monster_list"></div>
+    </details>
+  </div>
   <div id="left_column">
     <canvas id="dungeon"></canvas>
+    <div id="aim_marker" hidden><span></span></div>
     <div id="mobile_input" style="display: none">
       <input
         autocomplete="off"
@@ -196,7 +211,6 @@
       <canvas id="minimap"></canvas>
       <canvas id="minimap_overlay"></canvas>
     </div>
-    <div id="monster_list"></div>
     <div id="tiles_tab_panel" class="tiles-tab-panel"></div>
   </div>
   <div id="tooltip" style="display: none"></div>

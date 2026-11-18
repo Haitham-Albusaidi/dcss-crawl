@@ -8,7 +8,7 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
     var PRIMARY_SLOTS = [
         { id: "autoexplore", icon: "🧭", label: "Auto-Explore", key: "o", desc: "Automap and explore level, collect safe items, and halt immediately on monster threats." },
         { id: "autofight", icon: "⚔️", label: "Auto-Fight", key: "Tab", keycode: 9, desc: "Attack adjacent enemy or step towards closest visible foe." },
-        { id: "pickup", icon: "📥", label: "Pick Up Floor", key: ",", badge: ",", pickupAll: true, desc: "Pick up all items on current floor tile into backpack." },
+        { id: "pickup", icon: "📥", label: "Pick Up Floor", key: ",", badge: ",", desc: "Choose items on your tile to pick up." },
         { id: "rest", icon: "💤", label: "Rest / Heal", key: "5", desc: "Rest in place until HP and MP are fully restored or danger appears." },
         { id: "cast", icon: "🪄", label: "Cast Spell", key: "z", desc: "Open spell grimoire to choose and cast memorised incantations." },
         { id: "ability", icon: "⚡", label: "Invoke Talent", key: "a", desc: "Unleash divine God powers, racial gifts, and supernatural mutations." },
@@ -30,7 +30,7 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
         { id: "messages", icon: "💬", label: "Chronicle Log", key: "p", ctrlKey: true, badge: "Ctrl+P", desc: "Review full battle log and history of dungeon events." },
         { id: "find", icon: "🔍", label: "Search Memory", key: "f", ctrlKey: true, badge: "Ctrl+F", desc: "Search entire dungeon memory for items, altars, shops, or portals." },
         { id: "overview", icon: "🏰", label: "Dungeon Overview", key: "o", ctrlKey: true, badge: "Ctrl+O", desc: "Overview of discovered branches, depths, runes of Zot, and shops." },
-        { id: "pickup", icon: "📥", label: "Pick Up Floor", key: ",", badge: ",", pickupAll: true, desc: "Pick up all items on current ground tile into your backpack." },
+        { id: "pickup", icon: "📥", label: "Pick Up Floor", key: ",", badge: ",", desc: "Choose items on your tile to pick up." },
         { id: "drop", icon: "📤", label: "Drop Item", key: "d", badge: "d", desc: "Drop selected items from inventory onto current tile." },
         { id: "known", icon: "✨", label: "Known Items", key: "\\", badge: "\\", desc: "Review identified weapons, armour, jewellery, and runes of Zot." },
         { id: "help", icon: "❓", label: "Guide & Hotkeys", key: "?", badge: "?", desc: "Open comprehensive in-game manual and keybinding compendium." },
@@ -63,13 +63,6 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
             comm.send_message("key", { keycode: 27 }); // Esc
         }
 
-        if (action.id === "pickup" || action.pickupAll) {
-            window._dcss_auto_pickup_all = true;
-            if (window._dcss_auto_pickup_timer) clearTimeout(window._dcss_auto_pickup_timer);
-            window._dcss_auto_pickup_timer = setTimeout(function () {
-                window._dcss_auto_pickup_all = false;
-            }, 1200);
-        }
 
         var code;
         if (action.keycode) {
@@ -95,12 +88,11 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
     function create_slot(item, extraClass) {
         var $slot = $('<button type="button" class="elden-slot ' + (extraClass || '') + '"></button>');
         $slot.data("action", item);
+        $slot.attr("aria-label", item.label);
 
         var displayKey = item.ctrlKey ? "^" + item.key.toUpperCase() : item.key;
-        $slot.html(
-            '<span class="elden-slot-icon">' + item.icon + '</span>' +
-            '<span class="elden-slot-badge">' + displayKey + '</span>'
-        );
+        $slot.append($('<span class="elden-slot-icon"></span>').text(item.icon),
+            $('<span class="elden-slot-badge"></span>').text(displayKey));
         return $slot;
     }
 
@@ -109,7 +101,7 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
             $("#elden-action-dock").remove();
         }
 
-        $dock = $('<div id="elden-action-dock" class="elden-dock"></div>');
+        $dock = $('<div id="elden-action-dock" class="elden-dock" role="group" aria-label="Action dock" aria-keyshortcuts="Alt+Shift+D"></div>');
         var $inner = $('<div class="elden-dock-inner"></div>');
 
         // 1. Primary Action Row (Always sleek floating at center-bottom)
@@ -125,6 +117,8 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
             '  <span class="elden-slot-badge">DIR</span>' +
             '</button>'
         );
+        $dpadToggle.removeAttr("title").attr("aria-label", "Movement Compass")
+            .data("action", {label: "Movement Compass", desc: "Show the eight movement directions."});
         $primaryRow.append($dpadToggle);
 
         // More Drawer button
@@ -134,6 +128,8 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
             '  <span class="elden-slot-badge">MORE</span>' +
             '</button>'
         );
+        $moreToggle.removeAttr("title").attr("aria-label", "More Actions")
+            .data("action", {label: "More Actions", desc: "Open skills, character tools, and game commands."});
         $primaryRow.append($moreToggle);
 
         // 2. Secondary Tray Drawer (Expands smoothly above)
@@ -168,7 +164,8 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
         var $dpadGrid = $('<div class="elden-dpad-grid"></div>');
         $.each(DPAD_COMPASS, function (i, d) {
             var $btn = $('<button type="button" class="elden-compass-btn">' + d.label + '</button>');
-            $btn.data("action", { key: d.key, desc: d.desc });
+            $btn.attr("aria-label", d.desc)
+                .data("action", {key: d.key, label: d.desc.split(" (")[0]});
             $dpadGrid.append($btn);
         });
         $dpadPopover.append($dpadGrid);
@@ -181,10 +178,10 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
 
         // Tooltip
         if ($("#elden-tooltip").length === 0) {
-            $tooltip = $('<div id="elden-tooltip" class="elden-tooltip"></div>');
+            $tooltip = $('<div id="elden-tooltip" class="elden-tooltip" aria-hidden="true"></div>');
             $("body").append($tooltip);
         } else {
-            $tooltip = $("#elden-tooltip");
+            $tooltip = $("#elden-tooltip").removeClass("visible");
         }
 
         bind_events();
@@ -202,7 +199,22 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
             show_dpad = false;
             $dock.find("#elden-dpad-popover").addClass("hidden");
             $dock.find("#elden-dpad-toggle").removeClass("active");
+            $tooltip.removeClass("visible");
         }
+
+        // Let focused dock buttons use native navigation and activation.
+        $dock.on("keydown", "button", function (e) {
+            var key = (e.originalEvent || e).key;
+            if (key === "Tab" || key === "Enter" || key === " ")
+                e.stopPropagation();
+            else if (key === "Escape" && !show_drawer) {
+                e.stopPropagation();
+                if (show_dpad)
+                    close_dpad();
+                this.blur();
+                $tooltip.removeClass("visible");
+            }
+        });
 
         // Close button inside drawer header
         $dock.on("click", "#elden-drawer-close", function (e) {
@@ -257,6 +269,14 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
 
         // Physical Keyboard listener for drawer
         $(document).off("keydown.elden_drawer").on("keydown.elden_drawer", function (e) {
+            if (e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey
+                && (e.originalEvent || e).code === "KeyD"
+                && $("#normal").is(":visible") && !$(".ui-popup:visible, .menu:visible").length
+                && !$(e.target).is("input, textarea, [contenteditable]")) {
+                e.preventDefault();
+                $dock.find(".elden-slots-row button").first().focus();
+                return;
+            }
             if (!show_drawer) return;
 
             // Escape closes drawer
@@ -311,35 +331,34 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
             }
         });
 
-        // Hover Tooltip
-        $dock.on("mouseenter", ".elden-slot, .elden-drawer-item, .elden-compass-btn", function () {
+        var tooltip_targets = ".elden-slot, .elden-drawer-item, .elden-compass-btn";
+        $dock.on("mouseenter focusin", tooltip_targets, function () {
             var action = $(this).data("action");
-            if (!action || !action.desc) return;
+            if (!action) return;
 
-            var offset = $(this).offset();
-            var title = action.label || "Action";
-            var keyStr = action.ctrlKey ? "Ctrl+" + action.key.toUpperCase() : (action.key || "");
+            var key = action.ctrlKey ? "Ctrl+" + action.key.toUpperCase() : action.key;
+            var $header = $('<div class="elden-tooltip-header"></div>')
+                .append($('<span class="elden-tooltip-title"></span>').text(action.label));
+            if (key)
+                $header.append($('<kbd class="elden-tooltip-badge"></kbd>').text(key));
+            $tooltip.empty().append($header);
+            if (action.desc)
+                $tooltip.append($('<div class="elden-tooltip-body"></div>').text(action.desc));
 
-            $tooltip.html(
-                '<div class="elden-tooltip-header">' +
-                '  <span class="elden-tooltip-title">' + (action.icon ? action.icon + ' ' : '') + title + '</span>' +
-                (keyStr ? '  <span class="elden-tooltip-badge">' + keyStr + '</span>' : '') +
-                '</div>' +
-                '<div class="elden-tooltip-body">' + action.desc + '</div>'
-            );
-
-            var top = offset.top - $tooltip.outerHeight() - 10;
-            var left = offset.left + ($(this).outerWidth() / 2) - ($tooltip.outerWidth() / 2);
-            if (left < 12) left = 12;
-            if (left + $tooltip.outerWidth() > $(window).width() - 12) {
-                left = $(window).width() - $tooltip.outerWidth() - 12;
-            }
+            var rect = this.getBoundingClientRect();
+            var width = $tooltip.outerWidth();
+            var top = rect.top - $tooltip.outerHeight() - 10;
+            if (top < 12)
+                top = rect.bottom + 10;
+            var left = Math.max(12, Math.min(rect.left + (rect.width - width) / 2,
+                $(window).width() - width - 12));
 
             $tooltip.css({ top: top + "px", left: left + "px" }).addClass("visible");
         });
 
-        $dock.on("mouseleave", ".elden-slot, .elden-drawer-item, .elden-compass-btn", function () {
-            $tooltip.removeClass("visible");
+        $dock.on("mouseleave focusout", tooltip_targets, function (e) {
+            if (e.type === "mouseleave" ? !this.matches(":focus-visible") : !this.matches(":hover"))
+                $tooltip.removeClass("visible");
         });
     }
 

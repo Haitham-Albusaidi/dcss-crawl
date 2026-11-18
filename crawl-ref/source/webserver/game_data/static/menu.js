@@ -92,7 +92,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
         {
             if (item_selectable(item))
             {
-                var rawText = (item_text(item) || "").trim();
+                var rawText = (menu.tag === "pickup" ? elem.text() : item_text(item) || "").trim();
                 // Match hotkey e.g. "f - Golden Breath...", "a ) Manual", "1. Item"
                 var match = rawText.match(/^([a-zA-Z0-9?*!#+=-])(?:\s*[-.)]\s*|\s{2,})(.*)$/);
                 var hotkey = match ? match[1] : (item.hotkeys && item.hotkeys.length ? String.fromCharCode(item.hotkeys[0]) : "");
@@ -120,19 +120,63 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                 }
 
                 // 3. For multi-column lines (abilities & spells)
+                var detectedSchool = "";
                 if (cols.length > 1)
                 {
                     for (var c = 1; c < cols.length; c++)
                     {
                         var colText = cols[c].trim();
                         if (!colText) continue;
-                        if (colText.match(/%/)) {
-                            subPills.push({ text: colText, cls: "pill-fail" });
-                        } else if (colText.match(/\b(mp|uses|turn|none|instant)\b/i)) {
-                            subPills.push({ text: colText, cls: "pill-cost" });
-                        } else if (colText.match(/^\d+$/)) {
+
+                        var failMatch = colText.match(/^(\d+)%/);
+                        if (failMatch)
+                        {
+                            var fval = parseInt(failMatch[1], 10);
+                            var fcls = "pill-fail-safe";
+                            if (fval > 25) fcls = "pill-fail-danger";
+                            else if (fval > 5) fcls = "pill-fail-warn";
+                            subPills.push({ text: "💥 " + colText, cls: "pill-fail " + fcls });
+                        }
+                        else if (colText.match(/\b(mp)\b/i))
+                        {
+                            subPills.push({ text: "💧 " + colText.toUpperCase(), cls: "pill-cost pill-cost-mp" });
+                        }
+                        else if (colText.match(/piety/i))
+                        {
+                            subPills.push({ text: "⭐ " + colText, cls: "pill-cost pill-cost-piety" });
+                        }
+                        else if (colText.match(/breath/i))
+                        {
+                            subPills.push({ text: "💨 " + colText, cls: "pill-cost pill-cost-breath" });
+                        }
+                        else if (colText.match(/\b(instant)\b/i))
+                        {
+                            subPills.push({ text: "⚡ INSTANT", cls: "pill-type pill-type-instant" });
+                        }
+                        else if (colText.match(/^\d+$/))
+                        {
                             subPills.push({ text: "Lvl " + colText, cls: "pill-level" });
-                        } else {
+                        }
+                        else if (menu.tag === "spell" || menu.tag === "memorise")
+                        {
+                            // Spell schools detection
+                            var schoolIcon = "🔮 ";
+                            var schoolCls = "pill-school";
+                            var lcol = colText.toLowerCase();
+                            if (lcol.indexOf("fire") !== -1) { schoolIcon = "🔥 "; schoolCls += " pill-school-fire"; detectedSchool = "fire"; }
+                            else if (lcol.indexOf("ice") !== -1) { schoolIcon = "❄️ "; schoolCls += " pill-school-ice"; detectedSchool = "ice"; }
+                            else if (lcol.indexOf("air") !== -1) { schoolIcon = "⚡ "; schoolCls += " pill-school-air"; detectedSchool = "air"; }
+                            else if (lcol.indexOf("earth") !== -1) { schoolIcon = "🪨 "; schoolCls += " pill-school-earth"; detectedSchool = "earth"; }
+                            else if (lcol.indexOf("necro") !== -1) { schoolIcon = "💀 "; schoolCls += " pill-school-necro"; detectedSchool = "necro"; }
+                            else if (lcol.indexOf("transloc") !== -1) { schoolIcon = "🌀 "; schoolCls += " pill-school-transloc"; detectedSchool = "transloc"; }
+                            else if (lcol.indexOf("summon") !== -1) { schoolIcon = "🐺 "; schoolCls += " pill-school-summon"; detectedSchool = "summon"; }
+                            else if (lcol.indexOf("alch") !== -1 || lcol.indexOf("poison") !== -1) { schoolIcon = "🧪 "; schoolCls += " pill-school-alch"; detectedSchool = "alch"; }
+                            else if (lcol.indexOf("hex") !== -1) { schoolIcon = "👁️ "; schoolCls += " pill-school-hex"; detectedSchool = "hex"; }
+                            else if (lcol.indexOf("forge") !== -1) { schoolIcon = "⚔️ "; schoolCls += " pill-school-forge"; detectedSchool = "forge"; }
+                            subPills.push({ text: schoolIcon + colText, cls: schoolCls });
+                        }
+                        else
+                        {
                             subPills.push({ text: colText, cls: "pill-type" });
                         }
                     }
@@ -161,12 +205,35 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                         else if (lk === "n") fallbackIcon = "❌";
                         else fallbackIcon = "⚡";
                     }
+                    else if (menu.tag === "spell" || menu.tag === "memorise")
+                    {
+                        if (detectedSchool === "fire") fallbackIcon = "🔥";
+                        else if (detectedSchool === "ice") fallbackIcon = "❄️";
+                        else if (detectedSchool === "air") fallbackIcon = "⚡";
+                        else if (detectedSchool === "earth") fallbackIcon = "🪨";
+                        else if (detectedSchool === "necro") fallbackIcon = "💀";
+                        else if (detectedSchool === "transloc") fallbackIcon = "🌀";
+                        else if (detectedSchool === "summon") fallbackIcon = "🐺";
+                        else if (detectedSchool === "alch") fallbackIcon = "🧪";
+                        else fallbackIcon = "📜";
+                    }
+                    else if (menu.tag === "ability")
+                    {
+                        fallbackIcon = "✨";
+                    }
                     $iconBox.append('<span class="inv-tile-placeholder">' + fallbackIcon + '</span>');
+                }
+                if (menu.tag === "pickup") {
+                    $("<span class='pickup-quantity'>").text("×" + item.q).appendTo($iconBox);
+                    mainTitle = desc.replace(/^[a-zA-Z]\s+[+#-]\s+/, "").replace(/^\d+\s+/, "");
                 }
                 $card.append($iconBox);
 
                 var $info = $('<div class="inv-info-box"></div>');
-                $info.append('<div class="inv-item-name" title="' + desc.replace(/"/g, '&quot;') + '">' + mainTitle + '</div>');
+                if (menu.tag === "pickup")
+                    $("<div class='inv-item-name'>").attr("title", desc).text(mainTitle).appendTo($info);
+                else
+                    $info.append('<div class="inv-item-name" title="' + desc.replace(/"/g, '&quot;') + '">' + mainTitle + '</div>');
                 
                 if (statusText)
                 {
@@ -541,17 +608,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
         {
             init_inventory_tiles_menu(menu_div);
         }
-        else if (menu.tag === "pickup")
-        {
-            if (window._dcss_auto_pickup_all)
-            {
-                window._dcss_auto_pickup_all = false;
-                setTimeout(function () {
-                    comm.send_message("key", { keycode: 44 }); // , selects all
-                    comm.send_message("key", { keycode: 13 }); // Enter confirms
-                }, 20);
-            }
-        }
+
 
         // if we get focus back after a popup over this one, don't use mouse
         // position at the time to set hover:
@@ -1071,6 +1128,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
             html += '  </div>';
             html += '  <div class="inv-header-actions">';
             if (menu.tag === "pickup") {
+                html += '<button type="button" class="inv-action-btn" id="inv-pickup-selected">Pick up selected <kbd>Enter</kbd></button>';
                 html += '    <button type="button" class="inv-action-btn inv-pickup-all-btn" id="inv-pickup-all-btn" title="Pick Up All (,)">📥 Pick Up All <span class="inv-kbd">,</span></button>';
             }
             if (hasTab) {
@@ -1084,6 +1142,10 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
             html += '</div>';
 
             title.html(html);
+            title.find("#inv-pickup-selected").on("click", function (e) {
+                e.stopPropagation();
+                comm.send_message("key", { keycode: 13 });
+            });
 
             title.find("#inv-pickup-all-btn").off("click").on("click", function (e) {
                 e.stopPropagation();
@@ -1543,7 +1605,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
         if (menu.tag === "pickup")
         {
             var pChr = String.fromCharCode(event.which);
-            if (pChr === "," || pChr === "a")
+            if (pChr === ",")
             {
                 comm.send_message("key", { keycode: 44 }); // , selects all
                 comm.send_message("key", { keycode: 13 }); // Enter confirms

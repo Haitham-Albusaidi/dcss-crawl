@@ -75,11 +75,16 @@ function ($, comm, cr, map_knowledge, options, dngn, util, view_data, enums,
         {
             var renderer = this;
             $(element)
-                .off("update_cells mousemove mouseleave mousedown")
+                .off("aim_label update_cells mousemove mouseleave mousedown")
+                .on("aim_label", function (ev, label) {
+                    renderer.aim_label = label;
+                    renderer.update_aim_marker();
+                })
                 .on("update_cells", function (ev, cells) {
                     $.each(cells, function (i, loc) {
                         renderer.render_loc(loc.x, loc.y);
                     });
+                    renderer.update_aim_marker();
                 })
                 .on("mousemove mouseleave mousedown", function (ev) {
                     renderer.handle_mouse(ev);
@@ -404,10 +409,33 @@ function ($, comm, cr, map_knowledge, options, dngn, util, view_data, enums,
             this.ui_state = s;
         },
 
+        update_aim_marker: function ()
+        {
+            var marker = $("#aim_marker");
+            var loc = view_data.cursor_locs[enums.CURSOR_MOUSE];
+            if (!this.element || !this.aim_label || !game.can_target() || !loc
+                || !this.in_view(loc.x, loc.y)) {
+                marker.prop("hidden", true);
+                return;
+            }
+            var rect = this.element.getBoundingClientRect();
+            var w = rect.width / this.cols, h = rect.height / this.rows;
+            var left = rect.left + (loc.x - this.view.x) * w;
+            var top = rect.top + (loc.y - this.view.y) * h;
+            marker.css({left: left, top: top, width: w, height: h}).prop("hidden", false);
+            var label = marker.children().text(this.aim_label);
+            label.css({left: Math.min(0, rect.right - left - label.outerWidth()),
+                top: top - rect.top < label.outerHeight() ? h : -label.outerHeight()});
+        },
+
         update_mouse_mode: function (m)
         {
             if (!game.can_target())
+            {
                 this.last_sent_cursor = { x: 0, y: 0 };
+                this.aim_label = "";
+            }
+            this.update_aim_marker();
         },
     });
 
@@ -434,6 +462,7 @@ function ($, comm, cr, map_knowledge, options, dngn, util, view_data, enums,
     $(document).off("game_init.dungeon_renderer");
     $(document).on("game_init.dungeon_renderer", function () {
         renderer.cols = 0;
+        renderer.aim_label = "";
         renderer.rows = 0;
         renderer.view = { x: 0, y: 0 };
         renderer.view_center = { x: 0, y: 0 };

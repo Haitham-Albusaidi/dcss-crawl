@@ -501,7 +501,7 @@ function ($, comm, client, enums, map_knowledge, messages, options, util) {
         {
             let status_inf = player.status[i];
             if (!status_inf.light) continue;
-            let status = $("<span>");
+            let status = $(status_inf.desc ? '<button type="button">' : "<span>");
             status.addClass("status_light");
             status.addClass("fg" + status_inf.col);
             if (status_inf.use_html)
@@ -509,12 +509,19 @@ function ($, comm, client, enums, map_knowledge, messages, options, util) {
             else
                 status.text(status_inf.light);
 
-            status.on("mouseenter mousemove", ev => {
-                tooltip.css({top: ev.pageY + "px"});
+            status.on("focus click mouseenter", () => {
+                if (!status_inf.desc) return;
+                tooltip.css({top: status[0].getBoundingClientRect().bottom + 4 + "px"});
+                tooltip.css("position", "fixed");
                 tooltip.html(util.formatted_string_to_html(status_inf.desc));
                 tooltip.show();
             });
-            status.on("mouseleave", ev => tooltip.hide());
+            status.on("mouseleave blur", () => {
+                if (!status.is(":focus")) tooltip.hide();
+            }).on("keydown keypress", ev => {
+                if ([9, 13, 32].includes(ev.which)) ev.stopPropagation();
+                if (ev.which === 27) { status.blur(); ev.stopPropagation(); }
+            });
             $("#stats_status_lights").append(status, " ");
         }
 

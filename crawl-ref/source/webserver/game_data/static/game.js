@@ -141,10 +141,9 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
         dungeon_renderer.fit_to(remaining_width, remaining_height,
                                 show_diameter);
 
-        minimap.fit_to(stat_width_px, layout_parameters);
+        minimap.fit_to(stat_width_px, window_height);
 
         $("#stats").css("width", stat_width_px + "px");
-        $("#monster_list").css("width", stat_width_px + "px");
         $("#mobile_input input").width(remaining_width-12); // 2*padding+2*border
 
         // Position Elden Ring floating action dock centered in the dungeon area
