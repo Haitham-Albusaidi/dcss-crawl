@@ -17,6 +17,7 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
         { id: "rest", tile: gui.CMD_REST, key: "5", label: "Rest / Heal (5)" },
         { id: "wait", tile: gui.CMD_WAIT, key: ".", label: "Wait 1 Turn (.)" },
         { id: "autofight", tile: gui.CMD_AUTOFIGHT, keycode: 9, key: "Tab", label: "Auto-Fight (Tab)" },
+        { id: "pickup", tile: null, iconText: "📥", key: ",", label: "Pick Up Floor (,)", pickupAll: true },
         { id: "drop", tile: gui.CMD_DROP, key: "d", label: "Drop Item (d)" },
         { id: "cast", tile: gui.CMD_CAST_SPELL, key: "z", label: "Cast Spell (z)" },
         { id: "ability", tile: gui.CMD_USE_ABILITY, key: "a", label: "Use Ability (a)" },
@@ -275,6 +276,13 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
                 if (isModal) {
                     comm.send_message("key", { keycode: 27 }); // Close inventory modal
                 }
+                if (cmd.pickupAll) {
+                    window._dcss_auto_pickup_all = true;
+                    if (window._dcss_auto_pickup_timer) clearTimeout(window._dcss_auto_pickup_timer);
+                    window._dcss_auto_pickup_timer = setTimeout(function () {
+                        window._dcss_auto_pickup_all = false;
+                    }, 1200);
+                }
                 if (cmd.keycode) {
                     comm.send_message("key", { keycode: cmd.keycode });
                 } else if (cmd.key) {
@@ -383,7 +391,7 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
     TilesPanel.prototype.drawMonsterHeader = function () {
         if (!this.$monCanvas || this.$monCanvas.length === 0) return;
         var ratio = window.devicePixelRatio || 1;
-        var w = 416;
+        var w = COMMANDS.length * CELL_SIZE;
         var h = 28;
 
         util.init_canvas(this.$monCanvas[0], w, h);
@@ -430,7 +438,17 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
             ctx.strokeStyle = isHover ? "#c5a059" : "rgba(60, 60, 70, 0.35)";
             ctx.strokeRect(x + 0.5, 0.5, (CELL_SIZE - 1) * ratio, (CELL_SIZE - 1) * ratio);
 
-            this.renderer.draw_gui(COMMANDS[i].tile, x, 0);
+            if (COMMANDS[i].tile !== null && COMMANDS[i].tile !== undefined) {
+                this.renderer.draw_gui(COMMANDS[i].tile, x, 0);
+            } else if (COMMANDS[i].iconText) {
+                ctx.save();
+                ctx.font = Math.round(18 * ratio) + "px 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillStyle = "#f0dba0";
+                ctx.fillText(COMMANDS[i].iconText, x + (CELL_SIZE * ratio / 2), (CELL_SIZE * ratio / 2));
+                ctx.restore();
+            }
         }
     };
 
