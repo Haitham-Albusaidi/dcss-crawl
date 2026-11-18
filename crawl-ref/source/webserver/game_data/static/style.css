@@ -1667,71 +1667,166 @@ body {
     box-shadow: 0 0 12px rgba(197, 160, 89, 0.5);
 }
 
-/* Secondary Grimoire Drawer */
+/* Secondary Grimoire Drawer - Modernized Dark Fantasy Glassmorphism */
 .elden-drawer {
-    margin-bottom: 8px;
-    background: var(--er-obsidian-95);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid var(--er-gold-border);
-    border-radius: 6px;
-    padding: 10px 14px;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.9);
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    margin-bottom: 12px;
+    background: linear-gradient(145deg, rgba(16, 18, 26, 0.96) 0%, rgba(10, 12, 18, 0.98) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-radius: 10px;
+    padding: 12px 16px 14px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.92), 0 0 24px rgba(212, 175, 55, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 860px;
 }
 
 .elden-drawer.hidden {
     display: none !important;
 }
 
+.elden-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.elden-drawer-title {
+    font-family: var(--er-font-title, 'Cinzel', serif);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #e6c587;
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.elden-drawer-title .drawer-header-icon {
+    font-size: 15px;
+}
+
+.elden-drawer-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.elden-drawer-hint {
+    font-family: var(--er-font-sans, system-ui, sans-serif);
+    font-size: 10.5px;
+    color: #8c897f;
+    letter-spacing: 0.02em;
+}
+
+.elden-drawer-close {
+    background: rgba(40, 20, 20, 0.6);
+    border: 1px solid rgba(200, 60, 60, 0.4);
+    color: #ff9999;
+    font-family: var(--er-font-sans, system-ui, sans-serif);
+    font-size: 10.5px;
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.elden-drawer-close:hover {
+    background: rgba(80, 25, 25, 0.85);
+    border-color: #ff5555;
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(255, 80, 80, 0.4);
+}
+
 .elden-drawer-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
+    gap: 8px;
 }
 
 .elden-drawer-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    background: rgba(24, 25, 30, 0.8);
-    border: 1px solid rgba(197, 160, 89, 0.2);
-    border-radius: 4px;
+    gap: 10px;
+    padding: 8px 12px;
+    background: linear-gradient(180deg, rgba(30, 34, 46, 0.8) 0%, rgba(18, 20, 28, 0.9) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.22);
+    border-radius: 6px;
     cursor: pointer;
-    color: var(--er-text-primary);
-    font-family: var(--er-font-sans);
-    font-size: 11px;
+    color: #e0ded9;
+    font-family: var(--er-font-sans, system-ui, sans-serif);
+    font-size: 12px;
     outline: none;
-    transition: all 0.15s ease;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    user-select: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .elden-drawer-item:hover {
-    background: rgba(40, 42, 50, 0.9);
-    border-color: var(--er-gold-bright);
-    color: #fff;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(197, 160, 89, 0.25);
+    background: linear-gradient(180deg, rgba(45, 50, 68, 0.92) 0%, rgba(26, 30, 42, 0.96) 100%);
+    border-color: #f0cb6b;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.65), 0 0 12px rgba(212, 175, 55, 0.3);
 }
 
-.elden-drawer-item .item-icon {
-    font-size: 14px;
+.elden-drawer-item:active,
+.elden-drawer-item.elden-active {
+    transform: translateY(1px) scale(0.98);
+    background: linear-gradient(180deg, rgba(55, 62, 85, 0.95) 0%, rgba(35, 40, 56, 0.98) 100%);
+    border-color: #ffd700;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), 0 0 16px rgba(255, 215, 0, 0.4);
+}
+
+.elden-drawer-item .item-icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    font-size: 15px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
 }
 
 .elden-drawer-item .item-label {
     flex: 1;
     text-align: left;
     font-weight: 500;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .elden-drawer-item .item-kbd {
-    font-family: var(--er-font-title);
-    font-size: 9px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 10px;
     font-weight: 700;
-    color: var(--er-gold-dim);
-    background: rgba(0, 0, 0, 0.5);
-    padding: 1px 4px;
-    border-radius: 2px;
+    color: #f7d479;
+    background: rgba(0, 0, 0, 0.65);
+    border: 1px solid rgba(212, 175, 55, 0.38);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    text-transform: none; /* Keep case faithful: m is m, A is A */
+}
+
+.elden-drawer-item:hover .item-kbd {
+    border-color: #f7d479;
+    color: #fff4cc;
+    background: rgba(212, 175, 55, 0.15);
+    box-shadow: 0 0 6px rgba(212, 175, 55, 0.3);
 }
 
 /* 8-Directional Movement Compass Popover */
