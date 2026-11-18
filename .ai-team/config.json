@@ -1,0 +1,79 @@
+{
+  "parallelism": 2,
+  "max_retries": 1,
+  "max_revisions": 2,
+  "agent_timeout": 1200,
+  "test_timeout": 3600,
+  "agents": {
+    "codex": {
+      "executables": [
+        "codex"
+      ],
+      "subcommand": [
+        "exec"
+      ],
+      "args": [
+        "--sandbox",
+        "workspace-write",
+        "-"
+      ]
+    },
+    "antigravity": {
+      "executables": [
+        "agy"
+      ],
+      "subcommand": [],
+      "args": [
+        "--input-format",
+        "stream-json",
+        "--output-format",
+        "stream-json"
+      ],
+      "transport": "agy-stream"
+    }
+  },
+  "checks": [
+    {
+      "paths": [
+        "."
+      ],
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "{base}",
+        "HEAD"
+      ]
+    },
+    {
+      "paths": [
+        "crawl-ref/source/webserver"
+      ],
+      "cwd": "crawl-ref/source/webserver",
+      "argv": [
+        "{python}",
+        "-m",
+        "unittest",
+        "webtiles.auth_test",
+        "webtiles.util_test"
+      ]
+    },
+    {
+      "paths": [
+        "crawl-ref/source"
+      ],
+      "exclude": [
+        "crawl-ref/source/webserver"
+      ],
+      "cwd": "crawl-ref/source",
+      "argv": [
+        "make",
+        "test"
+      ]
+    }
+  ],
+  "pull_request": {
+    "enabled": false,
+    "base": "main"
+  }
+}
