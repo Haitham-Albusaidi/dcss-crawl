@@ -22,7 +22,7 @@ class TestAntigravityAdapter(unittest.TestCase):
 
     def setUp(self):
         parent = os.path.dirname(AI_TEAM_ROOT)
-        if os.path.basename(parent) in ("antigravity-dev", "ai-team-dev", "crawl"):
+        if os.path.basename(parent) in ("antigravity-dev", "ai-team-dev", "crawl", "integration-dev") or os.path.basename(parent).endswith("-dev"):
             self.workspace_root = os.path.dirname(parent)
         else:
             self.workspace_root = parent

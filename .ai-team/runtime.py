@@ -78,7 +78,7 @@ def command(argv, cwd, timeout=120, stdin=None, log=None):
     if expired or proc.returncode:
         why = "timed out" if expired else f"exit {proc.returncode}"
         raise Failure(f"{argv[0]} {why}: {(err or out)[-1500:]}")
-    return out
+    return out or err
 
 
 def git(cwd, *args):
