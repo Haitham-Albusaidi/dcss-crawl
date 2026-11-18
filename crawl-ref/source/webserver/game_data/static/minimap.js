@@ -32,7 +32,7 @@ function ($, map_knowledge, dungeon_renderer, view_data,
                                dungeon_renderer.rows * cell_h - 1);
     }
 
-    function fit_to(width)
+    function fit_to(width, viewport_height)
     {
         var gxm = enums.gxm;
         var gym = enums.gym;
@@ -43,13 +43,14 @@ function ($, map_knowledge, dungeon_renderer, view_data,
         var canvas = $("#minimap")[0];
         if (!canvas) return;
 
-        block.width(width);
-        canvas.width = width;
-        cell_w = cell_h = Math.floor(width / gxm);
+        // Fit the whole floor into the sidebar while leaving room for inventory.
+        var height = Math.min(210, viewport_height * 0.28);
+        cell_w = cell_h = Math.max(1, Math.floor(Math.min(width / gxm, height / gym)));
         if (options.get("tile_map_pixels") > 0)
             cell_w = cell_h = Math.min(cell_w, options.get("tile_map_pixels"));
-        block.height(gym * cell_h);
+        canvas.width = gxm * cell_w;
         canvas.height = gym * cell_h;
+        block.width(canvas.width).height(canvas.height);
         ctx = canvas.getContext("2d");
 
         overlay = $("#minimap_overlay")[0];
@@ -57,11 +58,9 @@ function ($, map_knowledge, dungeon_renderer, view_data,
         overlay.height = canvas.height;
         overlay_ctx = overlay.getContext("2d");
 
-        if (cell_x !== 0 || cell_y !== 0)
-        {
-            clear();
+        clear();
+        if (map_knowledge.bounds())
             center();
-        }
 
         $("#minimap, #minimap_overlay").css("display", display);
         // suppress rclick menu (so we can rclick to view)
@@ -200,7 +199,7 @@ function ($, map_knowledge, dungeon_renderer, view_data,
     {
         if (ev.which == 3 || farview_old_vc)
         {
-            var offset = $("#minimap").offset();
+            var offset = $(overlay).offset();
             if (farview_old_vc === undefined)
             {
                 farview_old_vc = {

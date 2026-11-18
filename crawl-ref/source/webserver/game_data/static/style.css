@@ -275,14 +275,38 @@ canvas {
 }
 .game_message {
     white-space: pre-wrap;
+    border-inline-start: 2px solid transparent;
+    padding-inline-start: 4px;
+}
+
+#messages .message-damage {
+    border-color: #fdba74;
+    background: rgba(251, 146, 60, 0.08);
+    color: #fdba74;
+}
+
+#messages .message-status {
+    border-color: #93c5fd;
+    background: rgba(96, 165, 250, 0.08);
+    color: #bfdbfe;
+}
+
+#messages .message-warning {
+    border-color: #fb7185;
+    background: rgba(244, 63, 94, 0.12);
+    color: #fda4af;
+    font-weight: 700;
 }
 
 #minimap_block {
     display: block;
+    position: relative;
+    margin: 6px auto;
 }
 
 #minimap, #minimap_overlay {
     position: absolute;
+    inset: 0;
 }
 
 
@@ -301,7 +325,7 @@ canvas {
     display: flex !important;
     flex-direction: column !important;
     gap: 4px !important;
-    width: 416px !important;
+    width: 100% !important;
     box-sizing: border-box !important;
     padding: 4px 0 !important;
     margin-bottom: 6px !important;
@@ -506,14 +530,41 @@ canvas {
    Top Screen Middle Monster Threat Banner (#top_target_card)
    ========================================================================== */
 
+#monster_hud {
+    position: fixed;
+    top: 14px;
+    inset-inline: 0;
+    margin-inline: auto;
+    z-index: 10000;
+    width: min(440px, calc(100% - 24px));
+    pointer-events: none;
+}
+
+#monster_roster {
+    margin-top: 4px;
+    pointer-events: auto;
+}
+
+#monster_roster summary {
+    width: fit-content;
+    margin-inline: auto;
+    padding: 3px 8px;
+    background: #11141b;
+    color: var(--er-gold-bright);
+    border: 1px solid rgba(197, 160, 89, 0.4);
+    border-radius: 4px;
+    font: 11px var(--er-font-sans);
+    cursor: pointer;
+}
+
+#monster_roster #monster_list {
+    max-height: 40vh;
+    overflow-y: auto;
+}
+
 #top_target_card {
-    position: fixed !important;
-    top: 14px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    z-index: 10000 !important;
-    width: 440px !important;
-    max-width: 92vw !important;
+    width: 100%;
+    pointer-events: auto;
     padding: 8px 14px !important;
     background: radial-gradient(circle at 50% 20%, rgba(22, 25, 34, 0.96) 0%, rgba(10, 12, 16, 0.99) 100%) !important;
     backdrop-filter: blur(16px) !important;
@@ -526,17 +577,20 @@ canvas {
     display: flex !important;
     align-items: center !important;
     gap: 12px !important;
-    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+    transition: box-shadow 0.25s ease-out;
     animation: target-slide-down 0.25s ease-out !important;
 }
 
+#top_target_card[hidden] {
+    display: none !important;
+}
+
 @keyframes target-slide-down {
-    0% { opacity: 0; transform: translate(-50%, -10px); }
-    100% { opacity: 1; transform: translate(-50%, 0); }
+    0% { opacity: 0; transform: translateY(-10px); }
+    100% { opacity: 1; transform: translateY(0); }
 }
 
 #top_target_card:hover {
-    transform: translateX(-50%) scale(1.02) !important;
     box-shadow: 0 20px 48px rgba(0, 0, 0, 0.98), 0 0 28px rgba(197, 160, 89, 0.45) !important;
 }
 
@@ -574,6 +628,14 @@ canvas {
     display: block !important;
 }
 
+#top_target_card.mon-unseen {
+    cursor: default !important;
+}
+
+.mon-unseen .er-target-canvas {
+    visibility: hidden;
+}
+
 .er-target-main {
     flex: 1 1 auto !important;
     min-width: 0 !important;
@@ -586,6 +648,7 @@ canvas {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
+    gap: 6px;
     width: 100% !important;
 }
 
@@ -640,6 +703,8 @@ canvas {
     border-radius: 3px !important;
     white-space: nowrap !important;
     text-transform: uppercase !important;
+    border: 1px solid rgba(197, 160, 89, 0.4);
+    color: var(--er-text-secondary);
 }
 
 /* HP Track */
@@ -661,6 +726,8 @@ canvas {
 
 .er-target-footer {
     display: flex !important;
+    flex-wrap: wrap;
+    gap: 2px 8px;
     align-items: center !important;
     justify-content: space-between !important;
     width: 100% !important;
@@ -680,6 +747,11 @@ canvas {
     font-size: 9px !important;
     font-weight: 600 !important;
     letter-spacing: 0.04em !important;
+}
+
+.er-target-status {
+    color: #fde68a;
+    font-weight: 600;
 }
 
 .er-target-nearby-count {
@@ -1324,11 +1396,8 @@ canvas {
     font-family: var(--crt-font);
 }
 
-/* Hide floating target card whenever any popup/dialog is active */
-#ui-stack:not(:empty) ~ #top_target_card,
-body:has(#ui-stack:not(:empty)) #top_target_card,
-body:has(.ui-popup) #top_target_card,
-body:has(.describe-monster) #top_target_card {
+/* Match active popups in the stack, including when dialog templates exist. */
+#game:has(#ui-stack > .ui-popup:not(.hidden)) #monster_hud {
     display: none !important;
 }
 
@@ -2211,10 +2280,16 @@ body {
     border-radius: 4px;
     box-shadow: 0 14px 40px rgba(0, 0, 0, 0.9), 0 0 1px 1px rgba(197, 160, 89, 0.2);
     padding: 8px 12px;
-    max-width: 280px;
+    box-sizing: border-box;
+    max-width: min(280px, calc(100vw - 24px));
     opacity: 0;
     transform: translateY(4px);
     transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.elden-dock button:focus-visible {
+    outline: 2px solid var(--er-gold-bright);
+    outline-offset: 1px;
 }
 
 .elden-tooltip.visible {
@@ -2390,13 +2465,12 @@ body {
 /* ==========================================================================
    3. Minimap & Messages Integration
    ========================================================================== */
-#minimap {
+#minimap_block {
     background: var(--er-obsidian-85) !important;
     border: 1px solid var(--er-gold-border) !important;
     border-radius: 6px !important;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8) !important;
     overflow: hidden !important;
-    margin: 6px !important;
 }
 
 #messages {

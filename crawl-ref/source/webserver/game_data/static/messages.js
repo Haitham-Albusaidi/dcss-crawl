@@ -6,6 +6,19 @@ function ($, comm, client, textinput, util, options) {
     var old_scroll_top;
     var message_pane_height = 7; // default value, overridden by client
 
+    // Message channel IDs sent by the game (msg_channel_type in mpr.h).
+    var message_classes = {
+        4: "message-status", // duration
+        5: "message-warning", // danger
+        6: "message-warning", // warn
+        7: "message-status", // recovery
+        12: "message-status", // mutation
+        14: "message-status", // monster enchantment
+        16: "message-status", // ally enchantment
+        17: "message-damage", // monster damage
+        31: "message-warning" // monster warning
+    };
+
     function hide()
     {
         old_scroll_top = $("#messages_container").scrollTop();
@@ -60,7 +73,7 @@ function ($, comm, client, textinput, util, options) {
         remove_old_messages();
         var msg_elem = $("<div>");
         $("#messages").append(msg_elem);
-        msg_elem.addClass("game_message");
+        msg_elem.addClass("game_message").addClass(message_classes[data.channel] || "");
         var prefix_glyph = $("<span></span>");
         prefix_glyph.addClass("prefix_glyph");
         prefix_glyph.html("&nbsp;");

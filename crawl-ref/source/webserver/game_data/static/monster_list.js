@@ -134,7 +134,7 @@ function ($, comm, map_knowledge, cr, dungeon_renderer, options, util, player, m
         if ($card.length === 0)
         {
             $card = $(
-                '<div id="top_target_card" class="er-top-mon-card" style="display: none;">' +
+                '<div id="top_target_card" class="er-top-mon-card" hidden>' +
                 '  <div class="er-target-avatar-box"><canvas class="er-target-canvas"></canvas></div>' +
                 '  <div class="er-target-main">' +
                 '    <div class="er-target-header">' +
@@ -150,12 +150,13 @@ function ($, comm, map_knowledge, cr, dungeon_renderer, options, util, player, m
                 '    <div class="er-target-footer">' +
                 '      <span class="er-target-hp-text">100% • Uninjured</span>' +
                 '      <span class="er-target-avg-hp"></span>' +
+                '      <span class="er-target-status" style="display:none;"></span>' +
                 '      <span class="er-target-nearby-count" style="display:none;"></span>' +
                 '    </div>' +
                 '  </div>' +
                 '</div>'
             );
-            $("body").append($card);
+            $("#monster_hud").prepend($card);
         }
         return $card;
     }
@@ -165,21 +166,22 @@ function ($, comm, map_knowledge, cr, dungeon_renderer, options, util, player, m
         var $card = getTopTargetCard();
         if (show_inv)
         {
-            $card.removeClass("mon-unique mon-nasty mon-tough mon-friendly").addClass("mon-nasty");
+            $card.removeClass("mon-unique mon-nasty mon-tough mon-friendly").addClass("mon-nasty mon-unseen");
+            $card.off("click contextmenu");
             $card.find(".er-target-name").text(show_inv);
             $card.find(".er-target-badge").text("👁️ UNSEEN").removeClass("badge-unique badge-tough badge-friendly").addClass("badge-nasty").show();
             $card.find(".er-target-dist").text("⚠️ Proximity").removeClass("dist-melee").addClass("dist-ranged");
             $card.find(".er-target-hp-fill").css("width", "100%").removeClass().addClass("er-target-hp-fill hp-uninjured");
             $card.find(".er-target-hp-text").text("Location Unknown");
             $card.find(".er-target-avg-hp").text("");
-            $card.find(".er-target-nearby-count").hide();
-            $card.show();
+            $card.find(".er-target-status, .er-target-nearby-count").hide();
+            $card.prop("hidden", false);
             return;
         }
 
         if (!grouped_monsters || grouped_monsters.length === 0)
         {
-            $card.hide();
+            $card.prop("hidden", true);
             return;
         }
 
@@ -220,7 +222,7 @@ function ($, comm, map_knowledge, cr, dungeon_renderer, options, util, player, m
 
         if (!bestGroup || bestGroup.length === 0)
         {
-            $card.hide();
+            $card.prop("hidden", true);
             return;
         }
 
@@ -279,12 +281,14 @@ function ($, comm, map_knowledge, cr, dungeon_renderer, options, util, player, m
         }
         else
         {
-            $badge.hide();
+            var badgeLabel = mon.att === 0 ? mthreat_classes[threatLevel] : "Neutral";
+            $badge.text(badgeLabel || "Hostile")
+                  .removeClass("badge-unique badge-nasty badge-tough badge-friendly").show();
         }
 
         // Health Status & Meter
         var map_cell = map_knowledge.get(mloc.x, mloc.y);
-        var fg = (map_cell && map_cell.t) ? map_cell.t.fg : {};
+        var fg = (map_cell && map_cell.t && map_cell.t.fg) || {};
         var mdam = "uninjured";
         var hpPercent = 100;
         var hpLabel = "100% • Uninjured";
@@ -300,6 +304,18 @@ function ($, comm, map_knowledge, cr, dungeon_renderer, options, util, player, m
             .addClass("hp-" + mdam);
 
         $card.find(".er-target-hp-text").text(hpLabel);
+
+        // Show one tactical condition to keep the banner compact.
+        var status = "";
+        if (fg.PARALYSED)
+            status = "Paralysed";
+        else if (fg.NET || fg.WEB)
+            status = "Held";
+        else if (fg.FLEEING)
+            status = "Fleeing";
+        else if (fg.POISON || fg.MORE_POISON || fg.MAX_POISON)
+            status = "Poisoned";
+        $card.find(".er-target-status").text(status).toggle(status !== "");
 
         // Average HP if known
         var $avgHp = $card.find(".er-target-avg-hp");
@@ -325,7 +341,8 @@ function ($, comm, map_knowledge, cr, dungeon_renderer, options, util, player, m
         }
 
         // Card theming classes
-        $card.toggleClass("mon-unique", !!isUnique)
+        $card.removeClass("mon-unseen")
+             .toggleClass("mon-unique", !!isUnique)
              .toggleClass("mon-nasty", threatLevel === 3)
              .toggleClass("mon-tough", threatLevel === 2)
              .toggleClass("mon-friendly", mon.att === 4);
@@ -349,7 +366,7 @@ function ($, comm, map_knowledge, cr, dungeon_renderer, options, util, player, m
             return false;
         });
 
-        $card.show();
+        $card.prop("hidden", false);
     }
 
     function update(show_inv)
@@ -360,6 +377,10 @@ function ($, comm, map_knowledge, cr, dungeon_renderer, options, util, player, m
         var rows = Math.min(grouped_monsters.length, max_rows);
         if (show_inv)
             rows++;
+        var $roster = $("#monster_roster");
+        $roster.prop("hidden", rows < 2);
+        if (rows < 2)
+            $roster.prop("open", false);
 
         var i = 0;
         for (; i < rows; ++i)
@@ -373,7 +394,8 @@ function ($, comm, map_knowledge, cr, dungeon_renderer, options, util, player, m
                 monsters = grouped_monsters[i-1];
             else
                 monsters = grouped_monsters[i];
-            var group, canvas, renderer;
+            let group;
+            var canvas, renderer;
 
             if (i >= monster_groups.length)
             {
@@ -577,8 +599,8 @@ function ($, comm, map_knowledge, cr, dungeon_renderer, options, util, player, m
         $list.empty();
         monster_groups = [];
         monsters = {};
-        if ($("#top_target_card").length > 0)
-            $("#top_target_card").hide();
+        $("#top_target_card").prop("hidden", true);
+        $("#monster_roster").prop({hidden: true, open: false});
     }
 
     options.add_listener(function ()
