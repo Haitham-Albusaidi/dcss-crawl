@@ -176,7 +176,11 @@ class Coordinator:
             if len(results) != 1 or not isinstance(results[0].get("response"), str):
                 raise Failure("Antigravity did not return one completed turn")
             response = results[0]["response"]
-        data = json.loads(response)
+        text = response.strip()
+        if text.startswith("```"):
+            text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+            text = re.sub(r"\s*```$", "", text)
+        data = json.loads(text)
         if not isinstance(data, dict):
             raise Failure("Expected one agent result object")
         if not isinstance(data.get("summary"), str) or not data["summary"].strip() or not isinstance(data.get("tests"), list):

@@ -14,7 +14,7 @@
       ],
       "args": [
         "--sandbox",
-        "workspace-write",
+        "danger-full-access",
         "-"
       ]
     },
