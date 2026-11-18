@@ -1,6 +1,6 @@
-define(["jquery", "./map_knowledge", "./cell_renderer", "./dungeon_renderer",
+define(["jquery", "comm", "./map_knowledge", "./cell_renderer", "./dungeon_renderer",
         "./options", "./util", "./player", "./tileinfo-main"],
-function ($, map_knowledge, cr, dungeon_renderer, options, util, player, main) {
+function ($, comm, map_knowledge, cr, dungeon_renderer, options, util, player, main) {
     "use strict";
 
     var monsters, $list, monster_groups, max_rows;
@@ -150,12 +150,17 @@ function ($, map_knowledge, cr, dungeon_renderer, options, util, player, main) {
 
             if (i >= monster_groups.length)
             {
-                // Create a new row
-                var node = $("<span class='group'>\
-                                <canvas class='picture'></canvas>\
-                                <span class='health'></span>\
-                                <span class='name'></span>\
-                              </span>");
+                // Create a new modern threat card row
+                var node = $("<div class='mon-card group'>\
+                                <div class='mon-avatar-box'><canvas class='picture'></canvas></div>\
+                                <div class='mon-info-box'>\
+                                    <div class='mon-header-row'>\
+                                        <span class='name'></span>\
+                                        <span class='threat-badge'></span>\
+                                    </div>\
+                                    <div class='mon-hp-track'><div class='mon-hp-bar'></div></div>\
+                                </div>\
+                              </div>");
                 $list.append(node);
                 canvas = node.find("canvas")[0];
                 renderer = new cr.DungeonCellRenderer();
@@ -163,10 +168,40 @@ function ($, map_knowledge, cr, dungeon_renderer, options, util, player, main) {
                     node: node,
                     canvas: canvas,
                     renderer: renderer,
-                    health_span: node.find(".health"),
+                    health_span: node.find(".mon-hp-bar"),
                     name_span: node.find(".name"),
+                    badge_span: node.find(".threat-badge"),
                     monsters: monsters,
                 };
+
+                // Click on threat card to target or examine monster
+                node.on("click", function (ev) {
+                    if (group.monsters && group.monsters.length > 0) {
+                        var m = group.monsters[0];
+                        if (m && m.loc) {
+                            comm.send_message("click_cell", {
+                                x: m.loc.x,
+                                y: m.loc.y,
+                                button: 1
+                            });
+                        }
+                    }
+                });
+                node.on("contextmenu", function (ev) {
+                    ev.preventDefault();
+                    if (group.monsters && group.monsters.length > 0) {
+                        var m = group.monsters[0];
+                        if (m && m.loc) {
+                            comm.send_message("click_cell", {
+                                x: m.loc.x,
+                                y: m.loc.y,
+                                button: 3
+                            });
+                        }
+                    }
+                    return false;
+                });
+
                 monster_groups.push(group);
             }
             else
@@ -186,7 +221,8 @@ function ($, map_knowledge, cr, dungeon_renderer, options, util, player, main) {
                 renderer.draw_main(main.UNSEEN_INVISIBLE, 0, 0, 1);
                 var invis_desc = util.formatted_string_to_html("<magenta>" + show_inv + "</magenta>");
                 group.name_span.html(invis_desc);
-                group.health_span.hide();
+                group.badge_span.text("👁️ UNSEEN").removeClass("badge-unique badge-tough badge-friendly").addClass("badge-nasty").show();
+                group.health_span.css("width", "100%").removeClass().addClass("mon-hp-bar hp-uninjured");
                 continue;
             }
 
@@ -220,33 +256,62 @@ function ($, map_knowledge, cr, dungeon_renderer, options, util, player, main) {
                                      j * w, 0);
             }
 
+            // Damage and HP calculation for visual health bar
+            var map_cell = map_knowledge.get(monsters[0].loc.x, monsters[0].loc.y);
+            var fg = (map_cell && map_cell.t) ? map_cell.t.fg : {};
+            var mdam = "uninjured";
+            var hpPercent = 100;
+            if (fg.MDAM_ADEAD) { mdam = "almost_dead"; hpPercent = 12; }
+            else if (fg.MDAM_SEV) { mdam = "severely_damaged"; hpPercent = 28; }
+            else if (fg.MDAM_HEAVY) { mdam = "heavily_damaged"; hpPercent = 50; }
+            else if (fg.MDAM_MOD) { mdam = "moderately_damaged"; hpPercent = 70; }
+            else if (fg.MDAM_LIGHT) { mdam = "lightly_damaged"; hpPercent = 88; }
+
+            group.health_span
+                .css("width", hpPercent + "%")
+                .removeClass("hp-uninjured hp-lightly_damaged hp-moderately_damaged hp-heavily_damaged hp-severely_damaged hp-almost_dead")
+                .addClass("hp-" + mdam);
+
+            var threatLevel = monsters[0].mon.threat;
+            var isUnique = monsters[0].mon.hasOwnProperty("clientid");
+            var badgeText = "";
+            var badgeCls = "";
+            if (isUnique) {
+                badgeText = "💀 UNIQUE";
+                badgeCls = "badge-unique";
+            } else if (threatLevel === 3) {
+                badgeText = "⚠️ NASTY";
+                badgeCls = "badge-nasty";
+            } else if (threatLevel === 2) {
+                badgeText = "⚡ TOUGH";
+                badgeCls = "badge-tough";
+            } else if (monsters[0].mon.att === 4) {
+                badgeText = "🌿 ALLY";
+                badgeCls = "badge-friendly";
+            }
+
+            if (badgeText) {
+                group.badge_span
+                    .text(badgeText)
+                    .removeClass("badge-unique badge-nasty badge-tough badge-friendly")
+                    .addClass(badgeCls)
+                    .show();
+            } else {
+                group.badge_span.hide();
+            }
+
+            group.node.toggleClass("mon-unique", !!isUnique)
+                      .toggleClass("mon-nasty", threatLevel === 3)
+                      .toggleClass("mon-tough", threatLevel === 2)
+                      .toggleClass("mon-friendly", monsters[0].mon.att === 4);
+
             if (monsters.length == 1)
             {
                 group.name_span.text(monsters[0].mon.name);
-                if (options.get("tile_display_mode") == "glyphs")
-                {
-                    var map_cell = map_knowledge.get(monsters[0].loc.x, monsters[0].loc.y);
-                    var fg = map_cell.t.fg;
-                    var mdam = "uninjured";
-                    if (fg.MDAM_LIGHT)
-                      mdam = "lightly_damaged";
-                    else if (fg.MDAM_MOD)
-                      mdam = "moderately_damaged";
-                    else if (fg.MDAM_HEAVY)
-                      mdam = "heavily_damaged";
-                    else if (fg.MDAM_SEV)
-                      mdam = "severely_damaged";
-                    else if (fg.MDAM_ADEAD)
-                      mdam = "almost_dead";
-                    group.health_span.removeClass().addClass(mdam + " health").width(w).height(renderer.cell_height).show();
-                }
-                else
-                    group.health_span.hide();
             }
             else
             {
                 group.name_span.text(monsters.length + " " + monsters[0].mon.plural);
-                group.health_span.hide();
             }
 
             $.each(attitude_classes, function (i, cls) {

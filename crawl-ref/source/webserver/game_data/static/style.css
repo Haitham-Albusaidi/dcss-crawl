@@ -294,83 +294,212 @@ canvas {
 }
 
 
-/* monster list */
+/* ==========================================================================
+   Dungeon Radar & Elite Threat Cards (#monster_list)
+   ========================================================================== */
 #monster_list {
-    display: inline-block;
-    overflow-x: hidden;
-    font-family: var(--lbl-font);
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    width: 416px !important;
+    box-sizing: border-box !important;
+    padding: 4px 0 !important;
+    margin-bottom: 6px !important;
+    font-family: var(--er-font-sans);
 }
 
-#monster_list .group {
-    display: block;
+.mon-card {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 5px 8px !important;
+    background: radial-gradient(circle at 20% 50%, rgba(26, 29, 38, 0.94) 0%, rgba(12, 14, 18, 0.98) 100%) !important;
+    border: 1px solid rgba(197, 160, 89, 0.22) !important;
+    border-radius: 5px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.75), inset 0 0 8px rgba(0, 0, 0, 0.5) !important;
+    box-sizing: border-box !important;
+    cursor: pointer !important;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+    position: relative !important;
+    overflow: hidden !important;
 }
 
-#monster_list .picture {
-    display: inline;
-    vertical-align: middle;
+.mon-card:hover {
+    transform: translateX(-2px) scale(1.01) !important;
+    border-color: var(--er-gold-bright) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.9), 0 0 10px rgba(197, 160, 89, 0.35) !important;
+}
+
+/* Unique / Boss pulsating threat */
+.mon-card.mon-unique {
+    border-color: rgba(239, 68, 68, 0.75) !important;
+    background: radial-gradient(circle at 20% 50%, rgba(48, 16, 22, 0.95) 0%, rgba(20, 8, 10, 0.99) 100%) !important;
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3), inset 0 0 12px rgba(239, 68, 68, 0.2) !important;
+    animation: boss-pulse 2.2s infinite ease-in-out !important;
+}
+
+@keyframes boss-pulse {
+    0%, 100% { border-color: rgba(239, 68, 68, 0.6); box-shadow: 0 0 10px rgba(239, 68, 68, 0.25); }
+    50% { border-color: #f87171; box-shadow: 0 0 16px rgba(239, 68, 68, 0.55), inset 0 0 8px rgba(239, 68, 68, 0.3); }
+}
+
+.mon-card.mon-nasty {
+    border-color: rgba(239, 68, 68, 0.45) !important;
+    background: radial-gradient(circle at 20% 50%, rgba(36, 18, 22, 0.94) 0%, rgba(16, 9, 12, 0.98) 100%) !important;
+}
+
+.mon-card.mon-tough {
+    border-color: rgba(245, 158, 11, 0.4) !important;
+}
+
+.mon-card.mon-friendly {
+    border-color: rgba(34, 197, 94, 0.45) !important;
+    background: radial-gradient(circle at 20% 50%, rgba(16, 36, 22, 0.94) 0%, rgba(9, 18, 12, 0.98) 100%) !important;
+}
+
+.mon-avatar-box {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 4px !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(197, 160, 89, 0.15) !important;
+    overflow: hidden !important;
+}
+
+.mon-avatar-box canvas {
+    display: block !important;
+}
+
+.mon-info-box {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+}
+
+.mon-header-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    width: 100% !important;
 }
 
 #monster_list .name {
-    vertical-align: middle;
+    font-family: var(--er-font-title) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em !important;
+    text-transform: capitalize !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    color: #f3efe6 !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9) !important;
 }
 
-#monster_list .trivial {
-    color: var(--color-8); /* darkgray */
-}
-#monster_list .easy {
-    color: var(--color-7); /* lightgray */
-}
-#monster_list .tough {
-    color: var(--color-14); /* yellow */
-}
-#monster_list .nasty {
-    color: var(--color-12); /* lightred */
-}
-
-#monster_list .friendly {
-    color: var(--color-2); /* green */
+/* Monster threat badges */
+.threat-badge {
+    font-family: var(--er-font-title) !important;
+    font-size: 8px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
+    padding: 1px 5px !important;
+    border-radius: 3px !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+    line-height: 1.1 !important;
 }
 
+.threat-badge.badge-unique {
+    background: rgba(220, 38, 38, 0.3) !important;
+    border: 1px solid rgba(239, 68, 68, 0.7) !important;
+    color: #fca5a5 !important;
+    text-shadow: 0 0 6px rgba(239, 68, 68, 0.8) !important;
+}
+
+.threat-badge.badge-nasty {
+    background: rgba(239, 68, 68, 0.2) !important;
+    border: 1px solid rgba(239, 68, 68, 0.5) !important;
+    color: #f87171 !important;
+}
+
+.threat-badge.badge-tough {
+    background: rgba(245, 158, 11, 0.2) !important;
+    border: 1px solid rgba(245, 158, 11, 0.5) !important;
+    color: #fbbf24 !important;
+}
+
+.threat-badge.badge-friendly {
+    background: rgba(34, 197, 94, 0.2) !important;
+    border: 1px solid rgba(34, 197, 94, 0.5) !important;
+    color: #86efac !important;
+}
+
+/* Threat text colors */
+#monster_list .trivial { color: #94a3b8 !important; }
+#monster_list .easy { color: #e2e8f0 !important; }
+#monster_list .tough { color: #fbbf24 !important; font-weight: 700 !important; }
+#monster_list .nasty { color: #f87171 !important; font-weight: 700 !important; text-shadow: 0 0 8px rgba(239, 68, 68, 0.6) !important; }
+#monster_list .friendly { color: #4ade80 !important; }
 #monster_list .good_neutral,
-#monster_list .neutral {
-    color: var(--color-6); /* brown */
+#monster_list .neutral { color: #a3e635 !important; }
+#monster_list .invisible { color: #e879f9 !important; }
+
+/* Visual HP Track & Bar */
+.mon-hp-track {
+    width: 100% !important;
+    height: 4px !important;
+    background: rgba(0, 0, 0, 0.65) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 2px !important;
+    overflow: hidden !important;
 }
 
-#monster_list .invisible {
-    color: var(--color-5); /* magenta */
+.mon-hp-bar {
+    height: 100% !important;
+    transition: width 0.25s ease-out !important;
+    border-radius: 1px !important;
 }
 
-#monster_list .health {
-    display: inline-block;
-    vertical-align: middle;
+.mon-hp-bar.hp-uninjured {
+    background: linear-gradient(90deg, #16a34a, #22c55e) !important;
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.4) !important;
 }
 
-#monster_list .uninjured {
-    background-color: var(--color-2); /* green */
+.mon-hp-bar.hp-lightly_damaged {
+    background: linear-gradient(90deg, #65a30d, #84cc16) !important;
 }
 
-#monster_list .lightly_damaged {
-    background-color: var(--color-2); /* green */
+.mon-hp-bar.hp-moderately_damaged {
+    background: linear-gradient(90deg, #ca8a04, #eab308) !important;
 }
 
-#monster_list .moderately_damaged {
-    background-color: var(--color-6); /* brown */
+.mon-hp-bar.hp-heavily_damaged {
+    background: linear-gradient(90deg, #ea580c, #f97316) !important;
 }
 
-#monster_list .heavily_damaged {
-    background-color: var(--color-6); /* brown */
+.mon-hp-bar.hp-severely_damaged {
+    background: linear-gradient(90deg, #dc2626, #ef4444) !important;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.5) !important;
 }
 
-#monster_list .severely_damaged {
-    background-color: var(--color-5); /* magenta */
-}
-
-#monster_list .almost_dead {
-    background-color: var(--color-4); /* red */
+.mon-hp-bar.hp-almost_dead {
+    background: linear-gradient(90deg, #991b1b, #dc2626) !important;
+    box-shadow: 0 0 8px rgba(220, 38, 38, 0.8) !important;
 }
 
 #monster_list .ellipse {
-    float: right;
+    font-family: var(--er-font-title);
+    font-size: 11px;
+    color: var(--er-gold-dim);
+    text-align: center;
+    padding: 2px 0;
 }
 
 /* scroller */
