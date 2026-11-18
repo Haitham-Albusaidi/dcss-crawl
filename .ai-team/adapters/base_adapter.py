@@ -48,7 +48,7 @@ class BaseAdapter(abc.ABC):
         changed = []
         # Run git status --porcelain
         res = subprocess.run(
-            ["git", "status", "--porcelain", "--ignore-submodules"],
+            ["git", "status", "--porcelain", "-uall", "--ignore-submodules"],
             cwd=worktree_path,
             capture_output=True,
             text=True

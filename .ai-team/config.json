@@ -29,7 +29,15 @@
         "--output-format",
         "stream-json"
       ],
-      "transport": "agy-stream"
+      "transport": "agy-stream",
+      "implementation_adapter": "antigravity",
+      "required_flags": [
+        "--print",
+        "--output-format",
+        "--mode",
+        "--add-dir",
+        "--print-timeout"
+      ]
     }
   },
   "checks": [
@@ -72,8 +80,7 @@
       ]
     }
   ],
-  "pull_request": {
-    "enabled": false,
-    "base": "main"
-  }
+  "antigravity_paths": [
+    "crawl-ref/source/webserver/game_data"
+  ]
 }

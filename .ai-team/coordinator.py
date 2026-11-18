@@ -17,8 +17,18 @@ TEAM = Path(__file__).resolve().parent
 
 
 def record(data):
+    if "task_id" in data:
+        if data.get("status", "PENDING") != "PENDING":
+            raise Failure("Submit pending shared tasks only")
+        if not isinstance(data.get("title"), str) or not data["title"].strip():
+            raise Failure("Shared task requires a title")
+        if not isinstance(data.get("worktree_path"), str):
+            raise Failure("Shared task requires a worktree_path field")
+        data = {**data, "id": data["task_id"].lower(), "agent": data["assigned_agent"],
+                "files": data["target_files"], "acceptance": data["acceptance_criteria"],
+                "dependencies": [key.lower() for key in data.get("dependencies", [])]}
     task_id = data["id"]
-    if not isinstance(task_id, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,48}", task_id):
+    if not isinstance(task_id, str) or not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", task_id):
         raise Failure("Use a short lowercase task ID")
     for name in ("acceptance", "files"):
         if not isinstance(data.get(name), list) or not data[name] or not all(
@@ -34,7 +44,7 @@ def record(data):
     if (agent not in (*ROLES, "auto") or not isinstance(deps, list)
             or not all(isinstance(x, str) for x in deps) or not data["description"].strip()):
         raise Failure("Invalid assignment, dependencies or description")
-    return dict(id=task_id, description=data["description"], acceptance=data["acceptance"],
+    return dict(id=task_id, title=data.get("title", task_id), description=data["description"], acceptance=data["acceptance"],
                 files=data["files"], dependencies=deps, agent=agent, status="pending",
                 branch=None, worktree=None, summary="", tests=[], errors=[], attempts=[],
                 revision=0, parent=None, commit=None, modified=[])
@@ -148,7 +158,15 @@ class Coordinator:
                        "inspect the supplied diff against every acceptance criterion, make no edits, "
                        "and include approved (boolean), findings (array of strings), and criteria, a JSON object mapping every exact acceptance criterion to its review evidence."))
         wire = json.dumps(payload)
-        streaming = self.cfg["agents"][name].get("transport") == "agy-stream"
+        spec = self.cfg["agents"][name]
+        if spec.get("implementation_adapter") == "antigravity" and stage == "implement":
+            argv = [sys.executable, str(TEAM / "adapter_bridge.py"), self.adapters[name][0],
+                    str(self.cfg["agent_timeout"])]
+            report = json.loads(command(argv, tree, self.cfg["agent_timeout"] + 5, wire, log))
+            if report["status"] != "SUCCESS" or not report["validation"]["passed"]:
+                raise Failure("Antigravity implementation failed: " + str(report["errors"]))
+            return {"summary": report["summary"], "tests": report["test_results"]["details"]}
+        streaming = spec.get("transport") == "agy-stream"
         if streaming:
             wire = json.dumps({"event": "user", "message": {"content": wire}}) + "\n"
         response = command(self.adapters[name], tree, self.cfg["agent_timeout"], wire, log)
@@ -294,7 +312,9 @@ class Coordinator:
                     if any(overlap(t["files"], self.tasks[k]["files"]) for k, _ in active.values()):
                         continue
                     if t["agent"] == "auto":
-                        t["agent"] = min(ROLES, key=lambda n: sum(
+                        ui_paths = self.cfg.get("antigravity_paths", [])
+                        candidates = ("antigravity",) if overlap(t["files"], ui_paths) else ROLES
+                        t["agent"] = min(candidates, key=lambda n: sum(
                             other["agent"] == n for other in self.tasks.values()))
                     start = t.get("start", self.state["tip"])
                     branch, tree = create_tree(self.root, start, "task")
@@ -339,35 +359,19 @@ class Coordinator:
                 self.report(t)
         return all(t["status"] == "completed" for t in self.tasks.values())
 
-    def publish(self):
-        if not self.cfg["pull_request"]["enabled"]:
-            raise Failure("PR publication is disabled in config.json")
+    def handoff(self):
         current = self.state["integration"]
         if not current or any(t["status"] != "completed" for t in self.tasks.values()):
-            raise Failure("Complete the queue and integration tests before publishing")
-        tree = Path(current["worktree"])
-        branch = current["branch"]
-        if not re.fullmatch(r"ai-team/integration-[0-9a-f]{16}", branch):
-            raise Failure("Publication requires a coordinator-created integration branch")
-        require_clean(tree, branch, self.state["tip"])
-        command(["gh", "auth", "status"], tree)
-        git(tree, "push", "origin", branch)
-        base = self.cfg["pull_request"]["base"]
-        existing = command(["gh", "pr", "list", "--head", branch, "--base", base,
-                            "--json", "url"], tree)
-        if json.loads(existing):
-            print(json.loads(existing)[0]["url"])
-            return
-        body = self.home / "pr-body.md"
-        body.write_text("\n".join("- " + t["summary"] for t in self.tasks.values()
-                                  if not t.get("parent")), encoding="utf-8")
-        print(command(["gh", "pr", "create", "--base", base, "--head", branch,
-                       "--title", "Integrate reviewed AI team tasks", "--body-file", str(body)], tree))
+            raise Failure("Complete the queue before handing off")
+        require_clean(Path(current["worktree"]), current["branch"], self.state["tip"])
+        return {"branch": current["branch"], "worktree": current["worktree"],
+                "base": self.state["history"][0]["previous"], "commit": self.state["tip"],
+                "integration_history": self.state["history"], "publisher": "antigravity"}
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=["doctor", "submit", "status", "run", "stop", "retry", "pr"])
+    parser.add_argument("action", choices=["doctor", "submit", "status", "run", "stop", "retry", "handoff"])
     parser.add_argument("argument", nargs="?")
     args = parser.parse_args()
     c = Coordinator(TEAM.parent)
@@ -396,11 +400,9 @@ def main():
             (c.home / "stop").unlink(missing_ok=True)
             print("Controller status:", git(c.root, "status", "--short") or "clean", flush=True)
             success = c.execute()
-            if success and c.tasks and c.cfg["pull_request"]["enabled"]:
-                c.publish()
             return int(not success)
-        elif args.action == "pr":
-            c.publish()
+        elif args.action == "handoff":
+            print(json.dumps(c.handoff(), indent=2))
         else:
             print(json.dumps(c.state, indent=2))
     return 0

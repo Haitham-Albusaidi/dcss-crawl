@@ -135,7 +135,7 @@ def probe(spec, root):
         if not re.search(r"(?<![\w-])" + re.escape(sub) + r"(?![\w-])", help_text):
             raise Failure(f"{version}: {sub} absent from help")
         help_text = command([exe, *spec["subcommand"], "--help"], root, 15)
-    for flag in argv:
+    for flag in [*argv, *spec.get("required_flags", [])]:
         if flag.startswith("-") and flag != "-":
             if not re.search(r"(?<![\w-])" + re.escape(flag.split("=")[0]) + r"(?![\w-])", help_text):
                 raise Failure(f"{version}: unsupported flag {flag}")

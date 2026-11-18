@@ -60,7 +60,7 @@ class WorkflowTest(unittest.TestCase):
         self.assertTrue(all((integrated / f).exists() for f in ("one.txt", "two.txt", "three.txt")))
         self.assertEqual(original.read_text(), "user edit")
         self.assertEqual(head(self.repo), self.start)
-        self.assertRaises(Failure, self.c.publish)
+        self.assertEqual(self.c.handoff()["commit"], self.c.state["tip"])
 
     def test_revisions_and_limits(self):
         self.add("change", "revise")
@@ -115,25 +115,17 @@ class WorkflowTest(unittest.TestCase):
         self.assertRaises(Failure, self.add, "cycle", deps=["cycle"])
         self.assertRaises(Failure, self.add, "escape-path", path="../elsewhere")
 
-    def test_stop_resume_and_pr_commands(self):
+    def test_stop_resume_and_local_handoff(self):
         self.add("feature", "sandbox-edits")
         save(self.c.home / "stop", True)
         self.assertFalse(self.c.execute())
         self.assertEqual(self.c.tasks["feature"]["attempts"], [])
         (self.c.home / "stop").unlink()
         self.assertTrue(self.c.execute())
-        self.cfg["pull_request"]["enabled"] = True
-        branch = self.c.state["integration"]["branch"]
-        tree = Path(self.c.state["integration"]["worktree"])
-        with patch("coordinator.command", side_effect=["authenticated", "[]", "mock-pr"]) as gh:
-            with patch("coordinator.git") as transport:
-                self.c.publish()
-                transport.assert_called_once_with(tree, "push", "origin", branch)
-        calls = [c.args[0][:3] for c in gh.call_args_list]
-        self.assertEqual(calls, [["gh", "auth", "status"], ["gh", "pr", "list"],
-                                 ["gh", "pr", "create"]])
-        branch = self.c.state["integration"]["branch"]
-        self.assertEqual(head(tree), self.c.state["tip"])
+        handoff = self.c.handoff()
+        self.assertEqual(handoff["base"], self.start)
+        self.assertEqual(handoff["publisher"], "antigravity")
+        self.assertEqual(head(Path(handoff["worktree"])), handoff["commit"])
         self.assertEqual(head(self.repo), self.start)
 
     def test_integration_test_failure_retains_candidate(self):

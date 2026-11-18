@@ -76,6 +76,7 @@ class AntigravityAdapter(BaseAdapter):
         prompt_lines.append("")
         prompt_lines.append("## Execution Instruction")
         prompt_lines.append("Execute the required code changes, verify your work, and summarize all modified files and decisions.")
+        prompt_lines.append("CRITICAL: You MUST directly write and update all target files on disk in the assigned worktree using file writing/editing tools. Ensure all modifications are saved to the filesystem before exiting.")
 
         return "\n".join(prompt_lines)
 
@@ -126,7 +127,8 @@ class AntigravityAdapter(BaseAdapter):
             "--print", prompt,
             "--output-format", "json",
             "--add-dir", worktree_path,
-            "--mode", mode
+            "--mode", mode,
+            "--dangerously-skip-permissions"
         ]
         if timeout:
             cmd.extend(["--print-timeout", f"{timeout}s"])
