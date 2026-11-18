@@ -1086,6 +1086,29 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
                 comm.send_message("key", { keycode: 27 });
             });
         }
+        else if (desc.tag === "dungeon_overview" || (desc.text && desc.text.indexOf("Dungeon Overview") !== -1))
+        {
+            $popup.attr("data-tag", "dungeon_overview");
+            $popup.addClass("er-overview-popup");
+            $body.html(body_html);
+            var overviewHeader = $(
+                '<div class="er-overview-header-bar">' +
+                '  <div class="er-overview-header-left">' +
+                '    <span class="er-overview-icon">🏰</span>' +
+                '    <span class="er-overview-title">DUNGEON OVERVIEW & LOCATIONS</span>' +
+                '  </div>' +
+                '  <div class="er-overview-header-right">' +
+                '    <span class="er-overview-hint"><kbd>G</kbd> Travel &nbsp;|&nbsp; <kbd>_</kbd> Altars &nbsp;|&nbsp; <kbd>Esc</kbd> Close</span>' +
+                '    <button class="er-overview-close-btn" title="Close (Esc)">✕</button>' +
+                '  </div>' +
+                '</div>'
+            );
+            $popup.prepend(overviewHeader);
+            overviewHeader.find(".er-overview-close-btn").on("click", function (e) {
+                e.stopPropagation();
+                comm.send_message("key", { keycode: 27 });
+            });
+        }
         else
         {
             $body.html(body_html);

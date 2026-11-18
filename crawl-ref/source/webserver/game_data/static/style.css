@@ -2829,23 +2829,103 @@ body {
    6. Character Profile & Resistances Menu (%)
    ========================================================================== */
 
-.formatted-scroller[data-tag="resists"] {
+.formatted-scroller[data-tag="resists"],
+.formatted-scroller[data-tag="dungeon_overview"],
+.er-overview-popup {
     width: 860px !important;
     max-width: 95vw !important;
-    max-height: 82vh !important;
+    max-height: 84vh !important;
     min-width: 480px !important;
-    background: radial-gradient(circle at 50% 15%, rgba(22, 25, 33, 0.98) 0%, rgba(10, 11, 14, 0.99) 100%) !important;
+    background: radial-gradient(circle at 50% 15%, rgba(20, 24, 32, 0.98) 0%, rgba(10, 11, 15, 0.99) 100%) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
-    border: 1px solid var(--er-gold-border) !important;
+    border: 1px solid var(--er-gold-bright) !important;
     border-radius: 8px !important;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.95), 0 0 1px 1px rgba(197, 160, 89, 0.3) !important;
-    padding: 14px 18px !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.95), 0 0 20px rgba(197, 160, 89, 0.3) !important;
+    padding: 16px 20px !important;
     box-sizing: border-box !important;
     display: flex !important;
     flex-direction: column !important;
     overflow-y: auto !important;
     color: var(--er-text-primary) !important;
+}
+
+.er-overview-header-bar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding-bottom: 12px !important;
+    margin-bottom: 12px !important;
+    border-bottom: 1px solid rgba(197, 160, 89, 0.25) !important;
+}
+
+.er-overview-header-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.er-overview-icon {
+    font-size: 20px !important;
+}
+
+.er-overview-title {
+    font-family: var(--er-font-title) !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.08em !important;
+    color: var(--er-gold-bright) !important;
+    text-transform: uppercase !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;
+}
+
+.er-overview-header-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.er-overview-hint {
+    font-family: var(--er-font-sans) !important;
+    font-size: 11px !important;
+    color: var(--er-text-secondary) !important;
+}
+
+.er-overview-hint kbd {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(197, 160, 89, 0.4) !important;
+    border-radius: 3px !important;
+    padding: 1px 5px !important;
+    color: var(--er-gold-bright) !important;
+    font-family: var(--er-font-title) !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+}
+
+.er-overview-close-btn {
+    background: rgba(26, 28, 34, 0.9) !important;
+    border: 1px solid rgba(197, 160, 89, 0.3) !important;
+    border-radius: 4px !important;
+    color: var(--er-text-primary) !important;
+    cursor: pointer !important;
+    font-size: 13px !important;
+    padding: 3px 8px !important;
+    transition: all 0.15s ease !important;
+}
+
+.er-overview-close-btn:hover {
+    background: rgba(220, 38, 38, 0.3) !important;
+    border-color: #ef4444 !important;
+    color: #fca5a5 !important;
+}
+
+.er-overview-popup .body {
+    font-family: var(--stat-font), monospace !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    white-space: pre !important;
+    overflow-y: auto !important;
+    padding-right: 8px !important;
 }
 
 .formatted-scroller[data-tag="resists"] .body {
