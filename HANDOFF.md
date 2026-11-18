@@ -230,3 +230,30 @@ When local development branches are ready for publication:
 4. Feature branches are published to GitHub via verified, non-force push.
 5. Multi-agent integration branches are staged on clean integration worktrees targeting `main`.
 6. Final pull requests are opened as drafts, requiring explicit user approval before any merge.
+
+## WebTiles action dock and floating gameplay feedback
+
+Local branch `feature/webtiles-action-events` starts from integration commit
+`a2916e87aead7f375506a0e3bea5c6a3f6accb19`. The dock occupies a measured row
+between the dungeon and message pane. Its existing shortcuts and command handlers
+use the same WebTiles key messages. Compact windows can wrap the action slots.
+
+The WebTiles-only C++ hooks queue transient `gameplay_event` messages after
+successful casts, failed casts, HP changes from combat and explicit potion
+healing, and selected player status and level changes. Coordinates use the same
+origin as the dungeon map. The client displays only on-map events in an
+input-transparent layer and clears the queue on map or game changes. The
+traditional log continues to use its usual path.
+
+Run `node --test crawl-ref/source/webserver/floating_events_test.js` to exercise
+the Foxfire event and camera/resize projection with mocked renderer coordinates.
+Before publication, build WebTiles and verify a live Foxfire cast, combat and a
+healing potion. Check the dock, message pane and side HUD at desktop and compact
+widths while resizing, and capture screenshots from that build.
+
+The coordinator dispatched HUD spacing and floating-overlay tasks to Antigravity
+in separate worktrees. Its CLI reported authentication timeouts in the managed
+session. The final implementation is in the local development branch for
+Antigravity to review. Native checks were blocked by WSL access and the Python
+WebTiles suite by missing pytest. Integration and publication belong to
+Antigravity.
