@@ -1,6 +1,6 @@
 define(["jquery", "comm", "client", "./ui", "./enums", "./cell_renderer",
-        "./util", "./options", "./scroller", "./tiles_tab_panel"],
-function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
+        "./util", "./options", "./scroller", "./tiles_tab_panel", "./player"],
+function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) {
     "use strict";
 
     // Helpers
@@ -1328,6 +1328,35 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
         if (!ui.top_popup() || ui.top_popup().is(":hidden")) return;
         if (ui.top_popup()[0] !== menu.elem[0]) return;
 
+        if (menu.tag === "inventory")
+        {
+            // Ctrl + F: Search stashes
+            if (event.ctrlKey && (event.which === 70 || event.which === 102))
+            {
+                comm.send_message("key", { keycode: 27 }); // close inventory
+                comm.send_message("key", { keycode: 6 });  // Ctrl+F
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+            // Escape (27), Space (32), or 'i' (73) closes inventory modal
+            if (!event.ctrlKey && !event.altKey && (event.which === 27 || event.which === 32 || event.which === 73))
+            {
+                comm.send_message("key", { keycode: 27 });
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+            // Tab (9) cycles categories in inventory
+            if (event.which === 9)
+            {
+                comm.send_message("key", { keycode: 9 });
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+        }
+
         if (event.altKey || event.ctrlKey) {
             // ???
             if (update_server_scroll_timeout)
@@ -1436,6 +1465,69 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
         if (!ui.top_popup() || ui.top_popup()[0] !== menu.elem[0]) return;
         if (menu.tag == "macro_mapping") return; // Treat input as raw, no need
                                                  // to scroll anyway
+
+        if (menu.tag === "inventory")
+        {
+            var chr = String.fromCharCode(event.which);
+
+            // 'i' or 'I' toggles inventory closed
+            if (chr === "i" || chr === "I")
+            {
+                comm.send_message("key", { keycode: 27 });
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+
+            var slot = -1;
+            if (chr >= "a" && chr <= "z")
+                slot = chr.charCodeAt(0) - 97;
+            else if (chr >= "A" && chr <= "Z")
+                slot = chr.charCodeAt(0) - 65 + 26;
+
+            var hasItem = slot >= 0 && slot < 52 && player.inv && player.inv[slot] && player.inv[slot].name;
+
+            if (hasItem)
+            {
+                // Has an item in this slot: select/inspect in InvMenu
+                comm.send_message("key", { keycode: event.which });
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+
+            // If no item at this slot letter, check if key is an inventory command or tab shortcut
+            var cmdShortcuts = {
+                "o": 111, // Auto-Explore
+                "G": 71,  // Interlevel Travel
+                "5": 53,  // Rest / Heal
+                ".": 46,  // Wait 1 Turn
+                "d": 100, // Drop Item
+                "z": 122, // Cast Spell
+                "a": 97,  // Use Ability
+                "m": 109, // Skills
+                "M": 77,  // Memorise Spell
+                "X": 88   // Map / Navigation
+            };
+
+            if (cmdShortcuts[chr])
+            {
+                comm.send_message("key", { keycode: 27 }); // Close inventory menu first
+                comm.send_message("key", { keycode: cmdShortcuts[chr] });
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+
+            // All other printable keys (?, !, *, \, /, -, etc.) sent directly as "key" to InvMenu
+            if (event.which >= 32 && event.which <= 126)
+            {
+                comm.send_message("key", { keycode: event.which });
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+        }
 
         var chr = String.fromCharCode(event.which);
 
