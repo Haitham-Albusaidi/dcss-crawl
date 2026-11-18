@@ -271,6 +271,10 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
         this.$cmdCanvas.on("click", function (e) {
             if (self.hoverCmd >= 0 && self.hoverCmd < COMMANDS.length) {
                 var cmd = COMMANDS[self.hoverCmd];
+                var isModal = self.isPopup || $(".menu_inventory:visible").length > 0;
+                if (isModal) {
+                    comm.send_message("key", { keycode: 27 }); // Close inventory modal
+                }
                 if (cmd.keycode) {
                     comm.send_message("key", { keycode: cmd.keycode });
                 } else if (cmd.key) {
@@ -310,8 +314,20 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
                 var tab = TABS[self.hoverTab];
                 self.activeTab = tab.id;
                 self.drawTabs();
-                if (tab.key) {
-                    comm.send_message("key", { keycode: tab.key.charCodeAt(0) });
+                var isModal = self.isPopup || $(".menu_inventory:visible").length > 0;
+                if (tab.id === "item") {
+                    if (isModal) {
+                        comm.send_message("key", { keycode: 27 }); // Toggle close
+                    } else if (tab.key) {
+                        comm.send_message("key", { keycode: tab.key.charCodeAt(0) });
+                    }
+                } else {
+                    if (isModal) {
+                        comm.send_message("key", { keycode: 27 }); // Close inventory modal first
+                    }
+                    if (tab.key) {
+                        comm.send_message("key", { keycode: tab.key.charCodeAt(0) });
+                    }
                 }
             }
         });
@@ -332,6 +348,10 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
             var rect = this.getBoundingClientRect();
             var x = e.clientX - rect.left;
             if (x < CELL_SIZE) {
+                var isModal = self.isPopup || $(".menu_inventory:visible").length > 0;
+                if (isModal) {
+                    comm.send_message("key", { keycode: 27 }); // Close inventory modal
+                }
                 comm.send_message("key", { keycode: 9 }); // Tab
             }
         });
@@ -346,7 +366,7 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
 
         if (this.isPopup) {
             $(document).off("keydown.tiles_popup").on("keydown.tiles_popup", function (e) {
-                if (e.which === 27) { // Escape key
+                if (e.which === 27 || (!e.ctrlKey && !e.altKey && (e.which === 73 || e.which === 32))) { // Escape, 'i', Space
                     e.preventDefault();
                     e.stopPropagation();
                     $(document).off("keydown.tiles_popup");
