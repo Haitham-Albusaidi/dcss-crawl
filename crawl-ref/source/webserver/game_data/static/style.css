@@ -1397,7 +1397,7 @@ canvas {
 }
 
 /* Match active popups in the stack, including when dialog templates exist. */
-#game:has(#ui-stack > .ui-popup:not(.hidden)) #monster_hud {
+#game:has(#ui-stack > .ui-popup:not(.hidden)) :is(#monster_hud, #empty_grimoire) {
     display: none !important;
 }
 
@@ -4243,6 +4243,56 @@ body {
 /* ==========================================================================
    10. Arcane Grimoire & Talents Modals (.menu_spell, .menu_ability)
    ========================================================================== */
+#empty_grimoire {
+    position: fixed;
+    top: 32%;
+    inset-inline: 0;
+    margin-inline: auto;
+    width: min(360px, calc(100% - 24px));
+    box-sizing: border-box;
+    z-index: 10010;
+    padding: 16px 20px;
+    color: var(--er-text-secondary);
+    font-family: var(--er-font-sans);
+    background: #11141b;
+    border: 1px solid var(--er-gold-border);
+    border-radius: 8px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8);
+}
+
+#empty_grimoire h2 {
+    margin: 0;
+    color: var(--er-gold-bright);
+    font: 700 18px var(--er-font-title);
+}
+
+#empty_grimoire p {
+    margin: 6px 0 14px;
+    font-size: 13px;
+}
+
+.empty-grimoire-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.empty-grimoire-actions button {
+    padding: 5px 8px;
+    color: var(--er-gold-bright);
+    background: #1e2028;
+    border: 1px solid var(--er-gold-border);
+    border-radius: 4px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.empty-grimoire-actions kbd {
+    margin-inline-start: 4px;
+    color: var(--er-text-secondary);
+}
+
 
 .menu.menu_spell,
 .menu.menu_memorise,

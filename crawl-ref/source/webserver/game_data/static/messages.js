@@ -87,6 +87,19 @@ function ($, comm, client, textinput, util, options) {
         $("#messages .game_message").slice(-count).remove();
     }
 
+    function update_empty_grimoire(messages)
+    {
+        if (client.is_watching())
+            return;
+        var last = messages[messages.length - 1];
+        if (!last)
+            return;
+        // Crawl can join messages or append a repeat count to the latest line.
+        var empty = last.channel === 0 && /\bYou don't know any spells\.(?: x\d+)?$/
+            .test(last.text.replace(/<[^>]*>/g, ""));
+        $("#empty_grimoire").prop("hidden", !empty);
+    }
+
     function handle_messages(msg)
     {
         if (msg.rollback)
@@ -104,6 +117,7 @@ function ($, comm, client, textinput, util, options) {
         $("#more").toggle(more);
         if (msg.messages)
         {
+            update_empty_grimoire(msg.messages);
             for (var i = 0; i < msg.messages.length; ++i)
             {
                 add_message(msg.messages[i]);
@@ -123,8 +137,15 @@ function ($, comm, client, textinput, util, options) {
             cursor.appendTo($("#messages .game_message").last());
     }
 
-    function messages_key_handler()
+    function messages_key_handler(ev)
     {
+        var notice = $("#empty_grimoire");
+        if (ev.type === "game_keydown" && notice.is(":visible"))
+        {
+            notice.prop("hidden", true);
+            if (ev.which === 27)
+                return false;
+        }
         return !textinput.input_active();
     }
 
@@ -175,6 +196,17 @@ function ($, comm, client, textinput, util, options) {
     $(document).off("game_init.messages")
         .on("game_init.messages", function () {
             more = false;
+            var notice = $("#empty_grimoire");
+            notice.off(".empty_grimoire")
+                .on("keydown.empty_grimoire", "button", function (ev) {
+                    if (ev.which === 9 || ev.which === 13 || ev.which === 32)
+                        ev.stopPropagation();
+                })
+                .on("click.empty_grimoire", "button", function () {
+                    notice.prop("hidden", true);
+                    if ($(this).hasClass("empty-grimoire-memorise"))
+                        comm.send_message("key", {keycode: 77}); // M
+                });
             $(document).off("game_keydown.messages game_keypress.messages")
                 .on("game_keydown.messages", messages_key_handler)
                 .on("game_keypress.messages", messages_key_handler);

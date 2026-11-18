@@ -74,6 +74,9 @@ templates:
   # `default` above
   - id: trunk
     version: trunk
+    pre_options:
+      - -extra-opt-first
+      - spell_menu=true
 
 # Games are stored in order. The order of games you define in these files will
 # be preserved, and the files will be loaded in sorted order.
