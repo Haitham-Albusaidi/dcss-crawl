@@ -530,6 +530,17 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
         {
             init_inventory_tiles_menu(menu_div);
         }
+        else if (menu.tag === "pickup")
+        {
+            if (window._dcss_auto_pickup_all)
+            {
+                window._dcss_auto_pickup_all = false;
+                setTimeout(function () {
+                    comm.send_message("key", { keycode: 44 }); // , selects all
+                    comm.send_message("key", { keycode: 13 }); // Enter confirms
+                }, 20);
+            }
+        }
 
         // if we get focus back after a popup over this one, don't use mouse
         // position at the time to set hover:
@@ -1036,6 +1047,9 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
             }
             html += '  </div>';
             html += '  <div class="inv-header-actions">';
+            if (menu.tag === "pickup") {
+                html += '    <button type="button" class="inv-action-btn inv-pickup-all-btn" id="inv-pickup-all-btn" title="Pick Up All (,)">📥 Pick Up All <span class="inv-kbd">,</span></button>';
+            }
             if (hasTab) {
                 html += '    <button type="button" class="inv-action-btn" id="inv-switch-cat-btn" title="Switch Category (Tab)">⇥ Category <span class="inv-kbd">Tab</span></button>';
             }
@@ -1047,6 +1061,12 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
             html += '</div>';
 
             title.html(html);
+
+            title.find("#inv-pickup-all-btn").off("click").on("click", function (e) {
+                e.stopPropagation();
+                comm.send_message("key", { keycode: 44 }); // , selects all
+                comm.send_message("key", { keycode: 13 }); // Enter confirms
+            });
 
             title.find("#inv-switch-cat-btn").off("click").on("click", function (e) {
                 e.stopPropagation();
@@ -1465,6 +1485,19 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
         if (!ui.top_popup() || ui.top_popup()[0] !== menu.elem[0]) return;
         if (menu.tag == "macro_mapping") return; // Treat input as raw, no need
                                                  // to scroll anyway
+
+        if (menu.tag === "pickup")
+        {
+            var pChr = String.fromCharCode(event.which);
+            if (pChr === "," || pChr === "a")
+            {
+                comm.send_message("key", { keycode: 44 }); // , selects all
+                comm.send_message("key", { keycode: 13 }); // Enter confirms
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+        }
 
         if (menu.tag === "inventory")
         {
