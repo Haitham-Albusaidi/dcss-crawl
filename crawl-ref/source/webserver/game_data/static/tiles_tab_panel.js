@@ -70,58 +70,60 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
         tt.hide();
     }
 
-    function formatItemTooltip(item) {
-        if (!item || !item.name) return "";
-        var letter = player.index_to_letter(item.slot);
+    function getItemAction(item) {
+        if (!item || !item.name) return null;
+        var letter = item.letter || player.index_to_letter(item.slot);
         var isWorn = item.name && item.name.indexOf("(worn)") !== -1;
         var isWielded = item.name && (item.name.indexOf("(weapon)") !== -1 || item.slot === player.weapon_index);
-        
-        var actionVerb = "Use";
-        var hotkey = "";
+        var lower = item.name.toLowerCase();
+        var isJewel = lower.indexOf("ring") !== -1 || lower.indexOf("amulet") !== -1;
 
         if (isWielded) {
-            actionVerb = "Unwield";
-            hotkey = "w";
+            return { verb: "Unwield", hotkey: "w", subkey: "-", letter: letter, isUnwield: true };
         } else if (isWorn) {
-            actionVerb = "Take off";
-            hotkey = "T";
-        } else {
-            var lower = item.name.toLowerCase();
-            if (item.action_verb) {
-                actionVerb = item.action_verb;
-                var v = actionVerb.toLowerCase();
-                if (v === "wear") hotkey = "W";
-                else if (v === "wield") hotkey = "w";
-                else if (v === "quaff") hotkey = "q";
-                else if (v === "read") hotkey = "r";
-                else if (v === "evoke") hotkey = "V";
-                else if (v === "put on") hotkey = "P";
-            } else if (lower.indexOf("potion") !== -1) {
-                actionVerb = "Quaff";
-                hotkey = "q";
-            } else if (lower.indexOf("scroll") !== -1) {
-                actionVerb = "Read";
-                hotkey = "r";
-            } else if (lower.indexOf("wand") !== -1) {
-                actionVerb = "Evoke";
-                hotkey = "V";
-            } else if (lower.indexOf("ring") !== -1 || lower.indexOf("amulet") !== -1) {
-                actionVerb = "Put on";
-                hotkey = "P";
-            } else if (lower.indexOf("armour") !== -1 || lower.indexOf("shield") !== -1 || lower.indexOf("mail") !== -1 || lower.indexOf("robe") !== -1 || lower.indexOf("leather") !== -1 || lower.indexOf("helmet") !== -1 || lower.indexOf("cloak") !== -1 || lower.indexOf("boots") !== -1 || lower.indexOf("gloves") !== -1) {
-                actionVerb = "Wear";
-                hotkey = "W";
+            if (isJewel) {
+                return { verb: "Remove", hotkey: "R", letter: letter };
             } else {
-                actionVerb = "Wield";
-                hotkey = "w";
+                return { verb: "Take off", hotkey: "T", letter: letter };
+            }
+        } else {
+            if (item.action_verb) {
+                var v = item.action_verb.toLowerCase();
+                var hk = "w";
+                if (v === "wear") hk = "W";
+                else if (v === "wield") hk = "w";
+                else if (v === "quaff") hk = "q";
+                else if (v === "read") hk = "r";
+                else if (v === "evoke") hk = "V";
+                else if (v === "put on") hk = "P";
+                return { verb: item.action_verb, hotkey: hk, letter: letter };
+            } else if (lower.indexOf("potion") !== -1) {
+                return { verb: "Quaff", hotkey: "q", letter: letter };
+            } else if (lower.indexOf("scroll") !== -1) {
+                return { verb: "Read", hotkey: "r", letter: letter };
+            } else if (lower.indexOf("wand") !== -1) {
+                return { verb: "Evoke", hotkey: "V", letter: letter };
+            } else if (isJewel) {
+                return { verb: "Put on", hotkey: "P", letter: letter };
+            } else if (lower.indexOf("armour") !== -1 || lower.indexOf("shield") !== -1 || lower.indexOf("mail") !== -1 || lower.indexOf("robe") !== -1 || lower.indexOf("leather") !== -1 || lower.indexOf("helmet") !== -1 || lower.indexOf("cloak") !== -1 || lower.indexOf("boots") !== -1 || lower.indexOf("gloves") !== -1) {
+                return { verb: "Wear", hotkey: "W", letter: letter };
+            } else {
+                return { verb: "Wield", hotkey: "w", letter: letter };
             }
         }
+    }
 
+    function formatItemTooltip(item) {
+        if (!item || !item.name) return "";
+        var action = getItemAction(item);
+        if (!action) return "";
+        var letter = action.letter;
         var lines = [
             letter + " - " + item.name,
-            "[L-Click] " + actionVerb + (hotkey ? " (" + hotkey + ")" : ""),
-            "[R-Click] Describe",
-            "[Shift + L-Click] Drop (d)"
+            "[L-Click] " + action.verb + (action.hotkey ? " (" + action.hotkey + ")" : ""),
+            "[R-Click] Describe (v)",
+            "[Shift + L-Click] Drop (d)",
+            "[Key '" + letter + "'] Select / Inspect"
         ];
         return lines.join("\n");
     }
@@ -202,20 +204,36 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
             e.preventDefault();
             e.stopPropagation();
 
+            var action = getItemAction(item);
+            if (!action) return;
+            var letterCode = action.letter.charCodeAt(0);
+            var isModal = self.isPopup || $(".menu_inventory:visible").length > 0;
+
             if (e.shiftKey && e.which === 1) {
                 // Drop item: send 'd' then item letter
+                if (isModal) {
+                    comm.send_message("key", { keycode: 27 }); // Close menu first
+                }
                 comm.send_message("key", { keycode: 100 }); // 'd'
-                comm.send_message("key", { keycode: item.letter });
+                comm.send_message("key", { keycode: letterCode });
             } else if (e.which === 1) {
-                // Left click:
-                if (self.isPopup || $(".menu_inventory:visible").length > 0) {
-                    comm.send_message("key", { keycode: item.letter });
+                // Left click: perform action (Wear/Take off/Quaff/Read/Evoke/Wield/Unwield)
+                if (isModal) {
+                    comm.send_message("key", { keycode: 27 }); // Close menu first
+                }
+                comm.send_message("key", { keycode: action.hotkey.charCodeAt(0) });
+                if (action.isUnwield && action.subkey) {
+                    comm.send_message("key", { keycode: action.subkey.charCodeAt(0) });
                 } else {
-                    comm.send_message("inv_item_action", { slot: item.slot });
+                    comm.send_message("key", { keycode: letterCode });
                 }
             } else if (e.which === 3) {
                 // Right click: describe
-                comm.send_message("inv_item_describe", { slot: item.slot });
+                if (isModal) {
+                    comm.send_message("key", { keycode: letterCode });
+                } else {
+                    comm.send_message("inv_item_describe", { slot: item.slot });
+                }
             }
         });
 
