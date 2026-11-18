@@ -2220,6 +2220,8 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .inv-header-title {
@@ -2230,6 +2232,7 @@ body {
     letter-spacing: 0.08em;
     text-transform: uppercase;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    word-break: break-word;
 }
 
 .inv-slots-pill {
@@ -3452,4 +3455,194 @@ body {
     color: #ffffff;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.95);
     white-space: pre-line;
+}
+
+/* ==========================================================================
+   9. Confirmation Prompt Modal Dialog (.menu_prompt)
+   ========================================================================== */
+
+.menu.menu_prompt,
+.menu_prompt {
+    width: 520px !important;
+    max-width: 94vw !important;
+    min-width: 320px !important;
+    max-height: 85vh !important;
+    padding: 20px 24px !important;
+    box-sizing: border-box !important;
+    background: radial-gradient(circle at 50% 20%, rgba(24, 26, 34, 0.98) 0%, rgba(12, 13, 17, 0.99) 100%) !important;
+    border: 1px solid var(--er-gold-bright) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.96), 0 0 24px rgba(197, 160, 89, 0.35) !important;
+    overflow: visible !important;
+}
+
+.menu.menu_prompt .menu_title,
+.menu_prompt .menu_title {
+    width: 100% !important;
+    margin: 0 0 16px 0 !important;
+    padding: 0 0 14px 0 !important;
+    border-bottom: 1px solid rgba(197, 160, 89, 0.3) !important;
+    box-sizing: border-box !important;
+}
+
+.menu.menu_prompt .inv-header-bar,
+.menu_prompt .inv-header-bar {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+}
+
+.menu.menu_prompt .inv-header-left,
+.menu_prompt .inv-header-left {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.menu.menu_prompt .inv-header-title,
+.menu_prompt .inv-header-title {
+    font-size: 15px !important;
+    line-height: 1.4 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    text-align: left !important;
+    color: var(--er-gold-bright) !important;
+}
+
+.menu.menu_prompt .inv-header-actions,
+.menu_prompt .inv-header-actions {
+    flex: 0 0 auto !important;
+}
+
+.menu.menu_prompt .menu_contents,
+.menu_prompt .menu_contents {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    padding: 8px 0 !important;
+}
+
+.menu.menu_prompt .simplebar-wrapper,
+.menu_prompt .simplebar-wrapper,
+.menu.menu_prompt .simplebar-mask,
+.menu_prompt .simplebar-mask,
+.menu.menu_prompt .simplebar-offset,
+.menu_prompt .simplebar-offset,
+.menu.menu_prompt .simplebar-content-wrapper,
+.menu_prompt .simplebar-content-wrapper,
+.menu.menu_prompt .simplebar-content,
+.menu_prompt .simplebar-content {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+}
+
+.menu.menu_prompt .simplebar-track,
+.menu_prompt .simplebar-track,
+.menu.menu_prompt .menu_more,
+.menu_prompt .menu_more {
+    display: none !important;
+}
+
+.menu.menu_prompt .menu_contents ol,
+.menu_prompt .menu_contents ol {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: stretch !important;
+    gap: 20px !important;
+    padding: 6px 0 !important;
+    margin: 0 !important;
+    list-style: none !important;
+}
+
+.menu.menu_prompt .menu_contents li.selectable,
+.menu_prompt .menu_contents li.selectable {
+    flex: 0 1 150px !important;
+    width: 150px !important;
+    min-width: 120px !important;
+    list-style: none !important;
+}
+
+.menu.menu_prompt .inv-grid-card,
+.menu_prompt .inv-grid-card {
+    min-height: 100px !important;
+    padding: 12px 10px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    cursor: pointer !important;
+    border-radius: 6px !important;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+
+/* Yes Option (Emerald Theme) */
+.menu_prompt li[data-hotkey="y"] .inv-grid-card,
+.menu_prompt li:first-child .inv-grid-card {
+    border: 1px solid rgba(34, 197, 94, 0.55) !important;
+    background: radial-gradient(circle at 50% 30%, rgba(20, 48, 28, 0.95) 0%, rgba(10, 24, 14, 0.98) 100%) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), inset 0 0 12px rgba(34, 197, 94, 0.15) !important;
+}
+
+.menu_prompt li[data-hotkey="y"] .inv-item-name,
+.menu_prompt li:first-child .inv-item-name {
+    color: #86efac !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+}
+
+.menu_prompt li[data-hotkey="y"] .inv-hotkey-badge,
+.menu_prompt li:first-child .inv-hotkey-badge {
+    background: rgba(34, 197, 94, 0.25) !important;
+    border-color: rgba(34, 197, 94, 0.6) !important;
+    color: #86efac !important;
+}
+
+/* No Option (Crimson Theme) */
+.menu_prompt li[data-hotkey="n"] .inv-grid-card,
+.menu_prompt li:nth-child(2) .inv-grid-card {
+    border: 1px solid rgba(239, 68, 68, 0.55) !important;
+    background: radial-gradient(circle at 50% 30%, rgba(48, 18, 22, 0.95) 0%, rgba(24, 8, 10, 0.98) 100%) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), inset 0 0 12px rgba(239, 68, 68, 0.15) !important;
+}
+
+.menu_prompt li[data-hotkey="n"] .inv-item-name,
+.menu_prompt li:nth-child(2) .inv-item-name {
+    color: #fca5a5 !important;
+    font-weight: 700 !important;
+    font-size: 13px !important;
+}
+
+.menu_prompt li[data-hotkey="n"] .inv-hotkey-badge,
+.menu_prompt li:nth-child(2) .inv-hotkey-badge {
+    background: rgba(239, 68, 68, 0.25) !important;
+    border-color: rgba(239, 68, 68, 0.6) !important;
+    color: #fca5a5 !important;
+}
+
+/* Hover & Selected / Active State */
+.menu_prompt li.hovered .inv-grid-card,
+.menu_prompt .inv-grid-card:hover {
+    outline: 2px solid var(--er-gold-bright) !important;
+    outline-offset: 2px !important;
+    transform: translateY(-2px) scale(1.03) !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.8), 0 0 16px rgba(197, 160, 89, 0.4) !important;
+}
+
+.menu_prompt li[data-hotkey="y"].hovered .inv-grid-card,
+.menu_prompt li[data-hotkey="y"] .inv-grid-card:hover {
+    outline-color: #4ade80 !important;
+    box-shadow: 0 10px 24px rgba(34, 197, 94, 0.35), 0 0 16px rgba(34, 197, 94, 0.45) !important;
+}
+
+.menu_prompt li[data-hotkey="n"].hovered .inv-grid-card,
+.menu_prompt li[data-hotkey="n"] .inv-grid-card:hover {
+    outline-color: #f87171 !important;
+    box-shadow: 0 10px 24px rgba(239, 68, 68, 0.35), 0 0 16px rgba(239, 68, 68, 0.45) !important;
 }
