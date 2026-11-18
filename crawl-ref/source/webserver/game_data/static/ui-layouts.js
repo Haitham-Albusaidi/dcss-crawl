@@ -440,43 +440,301 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
         }
     }
 
+    function _fmt_mon_stats_grid(raw)
+    {
+        var regex = /([A-Za-z\s]+):\s*([^\s][^:]*?)(?=(?:\s{2,}[A-Za-z\s]+:|$|\n))/g;
+        var match;
+        var cellsHtml = "";
+        var iconMap = {
+            "max hp": "❤️",
+            "threat": "⚠️",
+            "will": "🔮",
+            "ac": "🛡️",
+            "ev": "💨",
+            "class": "🧬",
+            "size": "📏",
+            "int": "🧠",
+            "speed": "⚡",
+            "hd": "⭐"
+        };
+
+        while ((match = regex.exec(raw)) !== null) {
+            var k = match[1].trim();
+            var v = match[2].trim();
+            var kl = k.toLowerCase();
+            var icon = iconMap[kl] || "✦";
+            var valClass = "";
+
+            if (kl === "max hp") valClass = "stat-hp";
+            else if (kl === "ac") valClass = "stat-ac";
+            else if (kl === "ev") valClass = "stat-ev";
+            else if (kl === "will") valClass = "stat-will";
+            else if (kl === "threat") {
+                var vl = v.toLowerCase();
+                if (vl.indexOf("trivial") !== -1) valClass = "threat-trivial";
+                else if (vl.indexOf("minor") !== -1) valClass = "threat-minor";
+                else if (vl.indexOf("moderate") !== -1) valClass = "threat-moderate";
+                else if (vl.indexOf("danger") !== -1) valClass = "threat-dangerous";
+                else valClass = "threat-fatal";
+            }
+
+            cellsHtml += '<div class="mon-stat-cell">';
+            cellsHtml += '  <span class="mon-stat-lbl">' + icon + ' ' + util.formatted_string_to_html(k) + '</span>';
+            cellsHtml += '  <span class="mon-stat-val ' + valClass + '">' + util.formatted_string_to_html(v) + '</span>';
+            cellsHtml += '</div>';
+        }
+
+        if (!cellsHtml) {
+            return '<pre>' + util.formatted_string_to_html(raw) + '</pre>';
+        }
+        return '<div class="mon-stat-grid">' + cellsHtml + '</div>';
+    }
+
+    function _fmt_mon_combat_odds(raw)
+    {
+        var lines = raw.split("\n");
+        var html = '<div class="mon-combat-odds-box">';
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (!line) continue;
+            var isPlayer = line.indexOf("You have") !== -1;
+            var pctMatch = line.match(/about\s+(\d+%|\d+\.\d+%)/i);
+            var pct = pctMatch ? pctMatch[1] : "";
+            var rowClass = isPlayer ? "player-odds" : "enemy-odds";
+            var icon = isPlayer ? "⚔️" : "🛡️";
+
+            html += '<div class="mon-odds-row ' + rowClass + '">';
+            html += '  <span class="mon-odds-icon">' + icon + '</span>';
+            if (pct) {
+                var colorClass = isPlayer ? "green" : "amber";
+                html += '  <span class="mon-odds-val ' + colorClass + '">' + pct + '</span>';
+            }
+            var descText = line.replace(/^(?:You have|It has)\s+about\s+\d+%?\s*/i, "");
+            html += '  <span class="mon-odds-desc">' + (isPlayer ? "to hit " : "") + util.formatted_string_to_html(descText) + '</span>';
+            html += '</div>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    function _fmt_mon_attacks(raw)
+    {
+        var lines = raw.split("\n");
+        var html = '<div class="mon-attacks-card">';
+        html += '  <div class="mon-attacks-header">⚔️ Attack Arsenal</div>';
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (!line || line.indexOf("Max Damage") !== -1) continue;
+
+            var m = line.match(/^([^:]+):\s*(.*?)(?:\s+(\d+))?$/);
+            if (m) {
+                var atkType = m[1].trim();
+                var desc = m[2].trim();
+                var dmg = m[3] ? m[3].trim() : "";
+
+                html += '<div class="mon-attack-row">';
+                html += '  <div class="mon-attack-info">';
+                html += '    <span class="mon-attack-type">' + util.formatted_string_to_html(atkType) + ':</span>';
+                if (desc) {
+                    html += '    <span class="mon-attack-weapon">' + util.formatted_string_to_html(desc) + '</span>';
+                }
+                html += '  </div>';
+                if (dmg) {
+                    html += '  <span class="mon-dmg-chip">' + dmg + ' MAX DMG</span>';
+                }
+                html += '</div>';
+            } else {
+                html += '<div class="mon-attack-row"><span class="mon-attack-weapon">' + util.formatted_string_to_html(line) + '</span></div>';
+            }
+        }
+        html += '</div>';
+        return html;
+    }
+
+    function _fmt_mon_traits(raw)
+    {
+        var lines = raw.split("\n");
+        var html = '<div class="mon-traits-box">';
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (!line) continue;
+            var icon = "✦";
+            var l = line.toLowerCase();
+            if (l.indexOf("door") !== -1) icon = "🚪";
+            else if (l.indexOf("notice") !== -1 || l.indexOf("stealth") !== -1) icon = "👁️";
+            else if (l.indexOf("flie") !== -1 || l.indexOf("fly") !== -1) icon = "🪶";
+            else if (l.indexOf("swim") !== -1 || l.indexOf("water") !== -1) icon = "🌊";
+            else if (l.indexOf("poison") !== -1) icon = "🧪";
+            else if (l.indexOf("fire") !== -1) icon = "🔥";
+            else if (l.indexOf("cold") !== -1 || l.indexOf("ice") !== -1) icon = "❄️";
+            else if (l.indexOf("invisible") !== -1) icon = "🔮";
+            else if (l.indexOf("regenerat") !== -1) icon = "💖";
+            else if (l.indexOf("breath") !== -1) icon = "💨";
+            else if (l.indexOf("spell") !== -1) icon = "🪄";
+
+            html += '<div class="mon-trait-chip"><span class="trait-icon">' + icon + '</span><span>' + util.formatted_string_to_html(line) + '</span></div>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    function _fmt_mon_resists(raw)
+    {
+        var lines = raw.split("\n");
+        var html = '<div class="mon-resists-box">';
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (!line) continue;
+            html += '<div class="mon-resist-line">🛡️ ' + util.formatted_string_to_html(line) + '</div>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    function _fmt_mon_status_body(status)
+    {
+        if (!status) return "";
+        var lines = status.split("\n");
+        var html = '<div class="mon-status-container">';
+        html += '  <div class="mon-status-header">⚡ Current Status & Conditions</div>';
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (!line) continue;
+            html += '<div class="mon-status-line">🔹 ' + util.formatted_string_to_html(line) + '</div>';
+        }
+        html += '</div>';
+        return html;
+    }
+
+    function _fmt_mon_quote_body(quote)
+    {
+        if (!quote) return "";
+        var quoteHtml = util.formatted_string_to_html(quote).split("\n").join("<br>");
+        return '<div class="mon-quote-box"><div class="mon-quote-mark">“</div><div class="mon-quote-text">' + quoteHtml + '</div></div>';
+    }
+
+    function fmt_modern_monster_body(rawBody)
+    {
+        if (!rawBody) return "";
+
+        var hasPlaceholder = rawBody.indexOf("SPELLSET_PLACEHOLDER") !== -1;
+        var parts = rawBody.split("SPELLSET_PLACEHOLDER");
+
+        var formattedParts = parts.map(function(part) {
+            var paragraphs = part.split(/\n\n+/);
+            var htmlArr = [];
+
+            for (var p = 0; p < paragraphs.length; p++) {
+                var rawPara = paragraphs[p].trim();
+                if (!rawPara) continue;
+
+                // 1. STAT GRID: Contains Max HP, Threat, AC, EV, etc.
+                if ((rawPara.indexOf("Max HP:") !== -1 || rawPara.indexOf("Threat:") !== -1) &&
+                    (rawPara.indexOf("AC:") !== -1 || rawPara.indexOf("EV:") !== -1)) {
+                    htmlArr.push(_fmt_mon_stats_grid(rawPara));
+                    continue;
+                }
+
+                // 2. COMBAT ODDS: Contains "to hit"
+                if (rawPara.indexOf("to hit") !== -1 && (rawPara.indexOf("You have about") !== -1 || rawPara.indexOf("It has about") !== -1)) {
+                    htmlArr.push(_fmt_mon_combat_odds(rawPara));
+                    continue;
+                }
+
+                // 3. ATTACK ARSENAL: Contains "Attack" and "Max Damage"
+                if (rawPara.indexOf("Attack") !== -1 && rawPara.indexOf("Max Damage") !== -1) {
+                    htmlArr.push(_fmt_mon_attacks(rawPara));
+                    continue;
+                }
+
+                // 4. RESISTANCES: Starts with Resistances or Resists
+                if (/^(?:Resistances?|Immunities?):/i.test(rawPara)) {
+                    htmlArr.push(_fmt_mon_resists(rawPara));
+                    continue;
+                }
+
+                // 5. TRAITS & BEHAVIOR: e.g. "It has a ...", "It can ...", "It is ...", "It cannot ..."
+                if (/^It (?:can|has|is|cannot|does|will|regenerates|leaves|flies)/i.test(rawPara)) {
+                    htmlArr.push(_fmt_mon_traits(rawPara));
+                    continue;
+                }
+
+                // 6. DEFAULT / LORE PARAGRAPH
+                var loreHtml = util.formatted_string_to_html(rawPara).split("\n").join("<br>");
+                htmlArr.push('<div class="mon-lore-block">' + loreHtml + '</div>');
+            }
+
+            return htmlArr.join("");
+        });
+
+        if (hasPlaceholder) {
+            return formattedParts[0] + '<div id="spellset_placeholder"></div>' + (formattedParts[1] || "");
+        }
+        return formattedParts.join("");
+    }
+
+    function _build_footer_tabs(active_index, have_status, have_quote)
+    {
+        var tabs = [
+            { id: 0, label: "Description", icon: "📜" }
+        ];
+        if (have_status) tabs.push({ id: 1, label: "Status & Effects", icon: "⚡" });
+        if (have_quote) tabs.push({ id: 2, label: "Lore & Quote", icon: "💬" });
+
+        var html = '<div class="er-codex-tab-bar">';
+        html += '  <button type="button" class="er-codex-switch-key-btn" title="Press ! to switch tabs"><span class="kbd">!</span> Switch View</button>';
+        html += '  <div class="er-codex-tabs-list">';
+        for (var i = 0; i < tabs.length; i++) {
+            var t = tabs[i];
+            var isActive = (t.id === active_index);
+            html += '<button type="button" class="er-codex-tab-btn' + (isActive ? ' active' : '') + '" data-pane-idx="' + t.id + '">' + t.icon + ' ' + t.label + '</button>';
+        }
+        html += '  </div>';
+        html += '</div>';
+        return html;
+    }
+
     function describe_monster(desc)
     {
         var $popup = $(".templates > .describe-monster").clone();
-        $popup.find(".header > span").text(desc.title);
+
+        var $header = $popup.find(".header");
+        var $canvas = $header.find("canvas");
+        $header.html("");
+
+        var $headerLeft = $('<div class="er-codex-header-left"></div>');
+        var $avatarBox = $('<div class="er-codex-avatar-frame"></div>').append($canvas);
+        var $titleGroup = $('<div class="er-codex-title-group"></div>');
+        $titleGroup.append($('<div class="er-codex-title"></div>').text(desc.title));
+        $titleGroup.append($('<div class="er-codex-subtitle">TACTICAL CODEX & BEAST LORE</div>'));
+        $headerLeft.append($avatarBox).append($titleGroup);
+
+        var $closeBtn = $('<button type="button" class="er-codex-close-btn" title="Close Codex (Esc)">✕ <span class="kbd">Esc</span></button>');
+        $closeBtn.on("click", function (e) {
+            e.stopPropagation();
+            comm.send_message("key", { keycode: 27 });
+        });
+
+        $header.append($headerLeft).append($closeBtn);
+
         var $body = $popup.find(".body.paneset");
         var $footer = $popup.find(".footer > .paneset");
         var $panes = $body.find(".pane");
         var $footer_panes = $footer.find(".pane");
-        $panes.eq(0).html(_fmt_spellset_html(desc.body));
+
+        $panes.eq(0).html(fmt_modern_monster_body(desc.body));
         _fmt_spells_list($panes.eq(0), desc.spellset, false);
+
         var have_quote = desc.quote !== "";
         var have_status = desc.status !== "";
 
-        var footer0 = "<b class=\"fg15\">Description</b>";
-        if (have_status)
-            footer0 += " | Status";
-        if (have_quote)
-            footer0 += " | Quote";
-
-        var footer1 = "Description";
-        if (have_status)
-            footer1 += " | <b class=\"fg15\">Status</b>";
-        if (have_quote)
-            footer1 += " | Quote";
-
-        var footer2 = "Description";
-        if (have_status)
-            footer2 += " | Status";
-        if (have_quote)
-            footer2 += " | <b class=\"fg15\">Quote</b>";
-
-        $footer_panes.eq(0).html(footer0);
-        $footer_panes.eq(1).html(footer1);
-        $footer_panes.eq(2).html(footer2);
+        $footer_panes.eq(0).html(_build_footer_tabs(0, have_status, have_quote));
+        $footer_panes.eq(1).html(_build_footer_tabs(1, have_status, have_quote));
+        $footer_panes.eq(2).html(_build_footer_tabs(2, have_status, have_quote));
 
         if (have_quote)
-            $panes.eq(2).html(_fmt_spellset_html(desc.quote));
+            $panes.eq(2).html(_fmt_mon_quote_body(desc.quote));
         else
         {
             $panes.eq(2).remove();
@@ -484,7 +742,7 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
         }
 
         if (have_status)
-            $panes.eq(1).html(fmt_body_txt(desc.status));
+            $panes.eq(1).html(_fmt_mon_status_body(desc.status));
         else
         {
             $panes.eq(1).remove();
@@ -494,7 +752,6 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
         if (!have_status && !have_quote)
             $footer.parent().remove();
 
-        var $canvas = $popup.find(".header > canvas");
         var renderer = new cr.DungeonCellRenderer();
         util.init_canvas($canvas[0],
             renderer.cell_width * describe_scale,
@@ -554,6 +811,7 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
             var s = scroller($panes.filter(".current")[0]);
             scroller_handle_key(s, event);
         });
+
         $popup.on("keydown", function (event) {
             if (event.key === "!")
             {
@@ -562,6 +820,22 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
                     paneset_cycle($footer);
             }
         });
+
+        $popup.on("click", ".er-codex-tab-btn", function(e) {
+            e.stopPropagation();
+            var targetIdx = parseInt($(this).attr("data-pane-idx"), 10);
+            paneset_cycle($body, targetIdx);
+            if (have_quote || have_status)
+                paneset_cycle($footer, targetIdx);
+        });
+
+        $popup.on("click", ".er-codex-switch-key-btn", function(e) {
+            e.stopPropagation();
+            paneset_cycle($body);
+            if (have_quote || have_status)
+                paneset_cycle($footer);
+        });
+
         paneset_cycle($body);
         if (have_quote || have_status)
             paneset_cycle($footer);
