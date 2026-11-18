@@ -83,6 +83,11 @@ class AntigravityAdapter(BaseAdapter):
     def execute(self, task: Dict[str, Any]) -> Dict[str, Any]:
         """Executes the task via agy CLI and returns a machine-readable TaskReport."""
         start_time = time.time()
+        worktree_raw = str(task.get("worktree_path", ""))
+        # Ensure we do not modify Codex's worktree
+        if "ai-team-dev" in worktree_raw.lower():
+            raise PermissionError("Security violation: Antigravity cannot be assigned Codex's worktree (ai-team-dev).")
+
         self.validate_task_input(task)
 
         task_id = task["task_id"]
@@ -90,10 +95,6 @@ class AntigravityAdapter(BaseAdapter):
         timeout = task.get("timeout_seconds", 600)
         mode = task.get("mode", "accept-edits")
         model = task.get("model", None)
-
-        # Ensure we do not modify Codex's worktree
-        if "ai-team-dev" in worktree_path.lower():
-            raise PermissionError("Security violation: Antigravity cannot be assigned Codex's worktree (ai-team-dev).")
 
         context_files = task.get("context_files", ["HANDOFF.md", "AGENTS.md"])
         context_text = self.read_context_files(worktree_path, context_files)

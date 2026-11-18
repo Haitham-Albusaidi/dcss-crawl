@@ -27,6 +27,8 @@ class TestAntigravityAdapter(unittest.TestCase):
         else:
             self.workspace_root = parent
         self.antigravity_worktree = os.path.join(self.workspace_root, "antigravity-dev")
+        if not os.path.exists(self.antigravity_worktree):
+            self.antigravity_worktree = parent
         self.codex_worktree = os.path.join(self.workspace_root, "ai-team-dev")
 
     def test_missing_required_fields_raises_error(self):

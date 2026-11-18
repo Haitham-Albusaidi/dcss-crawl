@@ -25,6 +25,8 @@ class TestReviewWorkflow(unittest.TestCase):
         else:
             self.workspace_root = parent
         self.antigravity_worktree = os.path.join(self.workspace_root, "antigravity-dev")
+        if not os.path.exists(self.antigravity_worktree):
+            self.antigravity_worktree = parent
         self.reviewer = CrossAgentReviewer(root_dir=self.workspace_root)
 
     def test_evaluate_criteria_success(self):
