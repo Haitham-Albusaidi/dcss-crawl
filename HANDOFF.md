@@ -101,8 +101,70 @@ We modernized the WebTiles interface of **Dungeon Crawl Stone Soup (DCSS 0.35-a0
    - Modernize remaining legacy text dialogs such as God Description (`describe_god`) and Spell Success (`describe_item_spell_success`).
    - Add animations/transitions for pane switching within the Monster Codex.
 
-## AI team coordinator (2026-11-18)
+---
+
+## AI Team Coordinator & Backend Engine (OpenAI Codex - 2026-11-18)
 
 Branch `feature/ai-team-coordinator` adds the Python coordinator under `.ai-team/`. Its README documents the shared agent protocol, task submission, CLI capability checks, validation, recovery and optional PR publication. Use a dedicated controller checkout. Each attempt and review gets a separate Git worktree. Integration promotes only clean, reviewed candidates that pass validation.
 
 Seven mock-agent workflow tests exercised disposable Git repositories, parallel work, dependencies, retries, timeout handling, restart recovery, file ownership, opposing reviews, merge conflicts, failed integration tests, and stop/resume. Publication commands were tested with simulated transports. The live Codex and Antigravity executables were unavailable on PATH in this environment.
+
+---
+
+## 5. Multi-Agent Development System (Google Antigravity + OpenAI Codex)
+
+**Integration Date:** 2026-11-18  
+**Feature Branch:** `feature/ai-team-antigravity` (Worktree: `antigravity-dev/`)  
+**Codex Branch:** `feature/ai-team-coordinator` (Worktree: `ai-team-dev/`)  
+
+### System Architecture & Responsibilities
+- **OpenAI Codex**: Main coordinator, task scheduler, git branch manager, pull request creator, and C++ engine mechanics developer.
+- **Google Antigravity**: Execution adapter, UI/UX/WebTiles developer, cross-agent QA reviewer, and game validator.
+
+### Built Components in `.ai-team/`:
+1. **Execution Adapters (`.ai-team/adapters/`)**:
+   - `base_adapter.py`: Abstract adapter with task schema validation, worktree boundary enforcement, and git status/diff tracking.
+   - `antigravity_adapter.py`: Headless execution adapter invoking `agy.exe -p ... --output-format json` scoped strictly within assigned worktrees. Rejects attempts to execute in Codex's worktree (`ai-team-dev`).
+   - `mock_adapter.py`: Simulated agent adapter for fast local testing and offline CI execution.
+2. **Interface Specifications (`.ai-team/specs/`)**:
+   - `ADAPTER_SPEC.md`: Full specification contract, exit codes, lifecycle phases, and payload examples.
+   - `adapter_schema.json`: JSON schema defining `TaskInput`, `TaskReport`, and `FileChange`.
+   - `task_schema.json`: JSON schema defining tasks stored in `.ai-team/tasks/`.
+3. **Agent Instructions & System Prompts (`.ai-team/prompts/` & `AGENTS.md`)**:
+   - `AGENTS.md`: Shared multi-agent rules preserving all original rules word-for-word, establishing strict worktree boundaries, and defining review and handoff protocols.
+   - `antigravity_system_prompt.md`: System prompt for Antigravity's UI/UX role.
+   - `codex_system_prompt.md`: System prompt for Codex's coordinator & engine role.
+   - `review_by_antigravity.md` & `review_by_codex.md`: Cross-agent review templates.
+4. **Coordination & Workflows (`.ai-team/workflows/`)**:
+   - `task_graph.py`: Request decomposition into multi-stage DAGs with configurable keyword matching rules and ready-task resolution.
+   - `review_workflow.py`: Cross-agent QA reviewer that inspects git diffs, verifies acceptance criteria, flags regressions, and emits structured Markdown/JSON reports.
+   - `coordinator_client.py`: Dispatcher and runner executing tasks across worktrees.
+5. **Game-Specific Validation Suite (`.ai-team/validation/`)**:
+   - `webtiles_validator.py`: DCSS WebTiles health checker testing HTTP server availability, critical assets, CSS selectors (`#top_target_card`, `.describe-monster`, `#ui-stack`), z-index dominance (`>= 100000`), and keybinding handlers.
+   - `build_validator.py`: Local syntax balancer for JavaScript, CSS, HTML, and Python.
+   - `visual_qa_checklist.md`: Visual QA rubric for manual and automated visual verification.
+6. **Developer CLI Tooling (`ai-team.py` / `ai_team.bat` / `bin/ai_team_cli.py`)**:
+   - Commands: `task-create`, `task-list`, `task-run`, `workflow`, `start`, `review`, `validate`, `status`, `handoff`.
+7. **Automated Test Suite (`.ai-team/tests/`)**:
+   - 22 tests covering adapters, security boundaries, task graph DAGs, reviews, WebTiles validation, and syntax checkers with 100% pass rate.
+
+---
+
+## 6. Sole GitHub Publishing & Integration Mandate
+
+**Effective Date:** 2026-11-18  
+**Sole GitHub Manager:** Google Antigravity  
+**Local Development Only:** OpenAI Codex & other feature agents  
+
+### Ownership Model
+- **Google Antigravity**: Authorized as the **ONLY** agent with permission to execute `git push`, publish branches to GitHub, manage integration worktrees, and stage pull requests.
+- **OpenAI Codex**: Operates in **local-only mode** within `ai-team-dev/` on branch `feature/ai-team-coordinator`. Commits locally without performing any remote write operations.
+
+### Multi-Agent Integration Protocol
+When local development branches are ready for publication:
+1. Antigravity verifies local branch existence, commit ancestry, and worktree cleanliness.
+2. Diffs and changed files are inspected for regressions or unintended modifications.
+3. Tests across both agents (`test_coordinator.py` and `.ai-team/tests/`) are executed and verified.
+4. Feature branches are published to GitHub via verified, non-force push.
+5. Multi-agent integration branches are staged on clean integration worktrees targeting `main`.
+6. Final pull requests are opened as drafts, requiring explicit user approval before any merge.
