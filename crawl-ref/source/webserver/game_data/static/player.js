@@ -541,6 +541,7 @@ function ($, comm, client, enums, map_knowledge, messages, options, util) {
             player.inv[i] = player.inv[i] || {};
             $.extend(player.inv[i], data.inv[i]);
             player.inv[i].slot = Number(i); // XX why is i a string?
+            player.inv[i].letter = index_to_letter(player.inv[i].slot);
         }
 
         if (data.inv)

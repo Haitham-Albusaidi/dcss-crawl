@@ -1,6 +1,6 @@
 define(["jquery", "comm", "client", "./ui", "./enums", "./cell_renderer",
-        "./util", "./options", "./scroller", "./tiles_tab_panel"],
-function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
+        "./util", "./options", "./scroller", "./tiles_tab_panel", "./player"],
+function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) {
     "use strict";
 
     // Helpers
@@ -84,7 +84,8 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
             use_item: "🧪",
             stash: "🔍",
             resists: "🛡️",
-            deck: "🃏"
+            deck: "🃏",
+            prompt: "⚠️"
         };
 
         if (menu && menu.type !== "crt")
@@ -139,7 +140,10 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
 
                 var $card = $('<div class="inv-grid-card"></div>');
                 if (hotkey)
+                {
                     $card.append('<span class="inv-hotkey-badge">' + hotkey.toUpperCase() + '</span>');
+                    elem.attr("data-hotkey", hotkey.toLowerCase());
+                }
 
                 var $iconBox = $('<div class="inv-tile-box"></div>');
                 var $c = elem.find("canvas");
@@ -150,6 +154,13 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
                 else
                 {
                     var fallbackIcon = defaultIcons[menu.tag] || "✦";
+                    if (menu.tag === "prompt")
+                    {
+                        var lk = hotkey.toLowerCase();
+                        if (lk === "y") fallbackIcon = "✔️";
+                        else if (lk === "n") fallbackIcon = "❌";
+                        else fallbackIcon = "⚡";
+                    }
                     $iconBox.append('<span class="inv-tile-placeholder">' + fallbackIcon + '</span>');
                 }
                 $card.append($iconBox);
@@ -530,6 +541,17 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
         {
             init_inventory_tiles_menu(menu_div);
         }
+        else if (menu.tag === "pickup")
+        {
+            if (window._dcss_auto_pickup_all)
+            {
+                window._dcss_auto_pickup_all = false;
+                setTimeout(function () {
+                    comm.send_message("key", { keycode: 44 }); // , selects all
+                    comm.send_message("key", { keycode: 13 }); // Enter confirms
+                }, 20);
+            }
+        }
 
         // if we get focus back after a popup over this one, don't use mouse
         // position at the time to set hover:
@@ -539,7 +561,13 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
                 suppress_mouse_hover();
             });
 
-        if (menu.flags & enums.menu_flag.START_AT_END)
+        if (menu.tag === "prompt")
+        {
+            if (menu.scroller && menu.scroller.scrollElement) {
+                $(menu.scroller.scrollElement).scrollTop(0);
+            }
+        }
+        else if (menu.flags & enums.menu_flag.START_AT_END)
             scroll_bottom_to_item(menu.items.length - 1, true);
         else if (menu.jump_to)
             scroll_to_item(menu.jump_to, true);
@@ -854,6 +882,8 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
 
     function scroll_to_item(item_or_index, was_server_initiated)
     {
+        if (!menu || menu.tag === "prompt")
+            return;
         var index = (item_or_index.elem ?
                      item_or_index.index : item_or_index);
         if (menu.items.length == 0)
@@ -881,6 +911,8 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
 
     function scroll_bottom_to_item(item_or_index, was_server_initiated)
     {
+        if (!menu || menu.tag === "prompt")
+            return;
         var index = (item_or_index.elem ?
                      item_or_index.index : item_or_index);
         if (menu.items.length == 0 || menu.last_visible == index)
@@ -998,7 +1030,8 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
                 help: "📖",
                 deck: "🃏",
                 travel: "🗺️",
-                description: "📜"
+                description: "📜",
+                prompt: "⚠️"
             };
             var icon = iconMap[menu.tag] || "✦";
 
@@ -1016,6 +1049,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
             else if (menu.tag === "stash") mainHeading = "SEARCH & STASHES";
             else if (menu.tag === "resists") mainHeading = "CHARACTER PROFILE";
             else if (menu.tag === "help") mainHeading = "MANUAL & GUIDE";
+            else if (menu.tag === "prompt") mainHeading = rawTitle.replace(/\s*\([^)]+\)$/, "").trim();
             else
             {
                 mainHeading = rawTitle.replace(/\([^)]+\)/g, "")
@@ -1036,6 +1070,9 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
             }
             html += '  </div>';
             html += '  <div class="inv-header-actions">';
+            if (menu.tag === "pickup") {
+                html += '    <button type="button" class="inv-action-btn inv-pickup-all-btn" id="inv-pickup-all-btn" title="Pick Up All (,)">📥 Pick Up All <span class="inv-kbd">,</span></button>';
+            }
             if (hasTab) {
                 html += '    <button type="button" class="inv-action-btn" id="inv-switch-cat-btn" title="Switch Category (Tab)">⇥ Category <span class="inv-kbd">Tab</span></button>';
             }
@@ -1047,6 +1084,12 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
             html += '</div>';
 
             title.html(html);
+
+            title.find("#inv-pickup-all-btn").off("click").on("click", function (e) {
+                e.stopPropagation();
+                comm.send_message("key", { keycode: 44 }); // , selects all
+                comm.send_message("key", { keycode: 13 }); // Enter confirms
+            });
 
             title.find("#inv-switch-cat-btn").off("click").on("click", function (e) {
                 e.stopPropagation();
@@ -1328,6 +1371,35 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
         if (!ui.top_popup() || ui.top_popup().is(":hidden")) return;
         if (ui.top_popup()[0] !== menu.elem[0]) return;
 
+        if (menu.tag === "inventory")
+        {
+            // Ctrl + F: Search stashes
+            if (event.ctrlKey && (event.which === 70 || event.which === 102))
+            {
+                comm.send_message("key", { keycode: 27 }); // close inventory
+                comm.send_message("key", { keycode: 6 });  // Ctrl+F
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+            // Escape (27), Space (32), or 'i' (73) closes inventory modal
+            if (!event.ctrlKey && !event.altKey && (event.which === 27 || event.which === 32 || event.which === 73))
+            {
+                comm.send_message("key", { keycode: 27 });
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+            // Tab (9) cycles categories in inventory
+            if (event.which === 9)
+            {
+                comm.send_message("key", { keycode: 9 });
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+        }
+
         if (event.altKey || event.ctrlKey) {
             // ???
             if (update_server_scroll_timeout)
@@ -1339,6 +1411,13 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
         // TODO: this should interface somehow with key_conversion.js
         switch (event.which)
         {
+        case 13: // Enter key confirms default choice in prompt
+            if (menu.tag === "prompt") {
+                comm.send_message("key", { keycode: 13 });
+                event.preventDefault();
+                return false;
+            }
+            break;
         case 27: // Escape key closes menu
             comm.send_message("key", { keycode: 27 });
             event.preventDefault();
@@ -1397,6 +1476,12 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
         case 37: // left
             if (raw_arrow_keys())
                 break; // Treat input as raw, no need to scroll anyway
+            if (menu.tag === "prompt")
+            {
+                cycle_hover(true);
+                event.preventDefault();
+                return false;
+            }
             if (event.shiftKey)
             {
                 line_up();
@@ -1407,6 +1492,12 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
         case 39: // right
             if (raw_arrow_keys())
                 break; // Treat input as raw, no need to scroll anyway
+            if (menu.tag === "prompt")
+            {
+                cycle_hover(false);
+                event.preventDefault();
+                return false;
+            }
             if (event.shiftKey)
             {
                 line_down();
@@ -1436,6 +1527,94 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
         if (!ui.top_popup() || ui.top_popup()[0] !== menu.elem[0]) return;
         if (menu.tag == "macro_mapping") return; // Treat input as raw, no need
                                                  // to scroll anyway
+
+        if (menu.tag === "prompt")
+        {
+            var pKey = String.fromCharCode(event.which).toLowerCase();
+            if (pKey === "y" || pKey === "n" || pKey === "a")
+            {
+                comm.send_message("key", { keycode: event.which });
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+        }
+
+        if (menu.tag === "pickup")
+        {
+            var pChr = String.fromCharCode(event.which);
+            if (pChr === "," || pChr === "a")
+            {
+                comm.send_message("key", { keycode: 44 }); // , selects all
+                comm.send_message("key", { keycode: 13 }); // Enter confirms
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+        }
+
+        if (menu.tag === "inventory")
+        {
+            var chr = String.fromCharCode(event.which);
+
+            // 'i' or 'I' toggles inventory closed
+            if (chr === "i" || chr === "I")
+            {
+                comm.send_message("key", { keycode: 27 });
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+
+            var slot = -1;
+            if (chr >= "a" && chr <= "z")
+                slot = chr.charCodeAt(0) - 97;
+            else if (chr >= "A" && chr <= "Z")
+                slot = chr.charCodeAt(0) - 65 + 26;
+
+            var hasItem = slot >= 0 && slot < 52 && player.inv && player.inv[slot] && player.inv[slot].name;
+
+            if (hasItem)
+            {
+                // Has an item in this slot: select/inspect in InvMenu
+                comm.send_message("key", { keycode: event.which });
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+
+            // If no item at this slot letter, check if key is an inventory command or tab shortcut
+            var cmdShortcuts = {
+                "o": 111, // Auto-Explore
+                "G": 71,  // Interlevel Travel
+                "5": 53,  // Rest / Heal
+                ".": 46,  // Wait 1 Turn
+                "d": 100, // Drop Item
+                "z": 122, // Cast Spell
+                "a": 97,  // Use Ability
+                "m": 109, // Skills
+                "M": 77,  // Memorise Spell
+                "X": 88   // Map / Navigation
+            };
+
+            if (cmdShortcuts[chr])
+            {
+                comm.send_message("key", { keycode: 27 }); // Close inventory menu first
+                comm.send_message("key", { keycode: cmdShortcuts[chr] });
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+
+            // All other printable keys (?, !, *, \, /, -, etc.) sent directly as "key" to InvMenu
+            if (event.which >= 32 && event.which <= 126)
+            {
+                comm.send_message("key", { keycode: event.which });
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+        }
 
         var chr = String.fromCharCode(event.which);
 
@@ -1481,6 +1660,12 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp) {
 
         var item = $(this).data("item");
         if (!item) return;
+
+        if (menu.tag === "prompt" && item.hotkeys && item.hotkeys.length && event.which === 1)
+        {
+            comm.send_message("key", { keycode: item.hotkeys[0] });
+            return;
+        }
         if (menu.flags & enums.menu_flag.ARROWS_SELECT)
         {
             set_hovered($(this).index()); // should be unnecesssary?

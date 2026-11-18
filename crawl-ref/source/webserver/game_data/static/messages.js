@@ -94,6 +94,15 @@ function ($, comm, client, textinput, util, options) {
             for (var i = 0; i < msg.messages.length; ++i)
             {
                 add_message(msg.messages[i]);
+                if (window._dcss_auto_pickup_all && msg.messages[i] && msg.messages[i].text)
+                {
+                    var txt = msg.messages[i].text;
+                    if (txt.indexOf("Pick up ") !== -1 && txt.indexOf("(a)ll") !== -1)
+                    {
+                        window._dcss_auto_pickup_all = false;
+                        comm.send_message("key", { keycode: 97 }); // 'a' picks up all
+                    }
+                }
             }
         }
         var cursor = $("#text_cursor");
