@@ -120,19 +120,63 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                 }
 
                 // 3. For multi-column lines (abilities & spells)
+                var detectedSchool = "";
                 if (cols.length > 1)
                 {
                     for (var c = 1; c < cols.length; c++)
                     {
                         var colText = cols[c].trim();
                         if (!colText) continue;
-                        if (colText.match(/%/)) {
-                            subPills.push({ text: colText, cls: "pill-fail" });
-                        } else if (colText.match(/\b(mp|uses|turn|none|instant)\b/i)) {
-                            subPills.push({ text: colText, cls: "pill-cost" });
-                        } else if (colText.match(/^\d+$/)) {
+
+                        var failMatch = colText.match(/^(\d+)%/);
+                        if (failMatch)
+                        {
+                            var fval = parseInt(failMatch[1], 10);
+                            var fcls = "pill-fail-safe";
+                            if (fval > 25) fcls = "pill-fail-danger";
+                            else if (fval > 5) fcls = "pill-fail-warn";
+                            subPills.push({ text: "💥 " + colText, cls: "pill-fail " + fcls });
+                        }
+                        else if (colText.match(/\b(mp)\b/i))
+                        {
+                            subPills.push({ text: "💧 " + colText.toUpperCase(), cls: "pill-cost pill-cost-mp" });
+                        }
+                        else if (colText.match(/piety/i))
+                        {
+                            subPills.push({ text: "⭐ " + colText, cls: "pill-cost pill-cost-piety" });
+                        }
+                        else if (colText.match(/breath/i))
+                        {
+                            subPills.push({ text: "💨 " + colText, cls: "pill-cost pill-cost-breath" });
+                        }
+                        else if (colText.match(/\b(instant)\b/i))
+                        {
+                            subPills.push({ text: "⚡ INSTANT", cls: "pill-type pill-type-instant" });
+                        }
+                        else if (colText.match(/^\d+$/))
+                        {
                             subPills.push({ text: "Lvl " + colText, cls: "pill-level" });
-                        } else {
+                        }
+                        else if (menu.tag === "spell" || menu.tag === "memorise")
+                        {
+                            // Spell schools detection
+                            var schoolIcon = "🔮 ";
+                            var schoolCls = "pill-school";
+                            var lcol = colText.toLowerCase();
+                            if (lcol.indexOf("fire") !== -1) { schoolIcon = "🔥 "; schoolCls += " pill-school-fire"; detectedSchool = "fire"; }
+                            else if (lcol.indexOf("ice") !== -1) { schoolIcon = "❄️ "; schoolCls += " pill-school-ice"; detectedSchool = "ice"; }
+                            else if (lcol.indexOf("air") !== -1) { schoolIcon = "⚡ "; schoolCls += " pill-school-air"; detectedSchool = "air"; }
+                            else if (lcol.indexOf("earth") !== -1) { schoolIcon = "🪨 "; schoolCls += " pill-school-earth"; detectedSchool = "earth"; }
+                            else if (lcol.indexOf("necro") !== -1) { schoolIcon = "💀 "; schoolCls += " pill-school-necro"; detectedSchool = "necro"; }
+                            else if (lcol.indexOf("transloc") !== -1) { schoolIcon = "🌀 "; schoolCls += " pill-school-transloc"; detectedSchool = "transloc"; }
+                            else if (lcol.indexOf("summon") !== -1) { schoolIcon = "🐺 "; schoolCls += " pill-school-summon"; detectedSchool = "summon"; }
+                            else if (lcol.indexOf("alch") !== -1 || lcol.indexOf("poison") !== -1) { schoolIcon = "🧪 "; schoolCls += " pill-school-alch"; detectedSchool = "alch"; }
+                            else if (lcol.indexOf("hex") !== -1) { schoolIcon = "👁️ "; schoolCls += " pill-school-hex"; detectedSchool = "hex"; }
+                            else if (lcol.indexOf("forge") !== -1) { schoolIcon = "⚔️ "; schoolCls += " pill-school-forge"; detectedSchool = "forge"; }
+                            subPills.push({ text: schoolIcon + colText, cls: schoolCls });
+                        }
+                        else
+                        {
                             subPills.push({ text: colText, cls: "pill-type" });
                         }
                     }
@@ -160,6 +204,22 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                         if (lk === "y") fallbackIcon = "✔️";
                         else if (lk === "n") fallbackIcon = "❌";
                         else fallbackIcon = "⚡";
+                    }
+                    else if (menu.tag === "spell" || menu.tag === "memorise")
+                    {
+                        if (detectedSchool === "fire") fallbackIcon = "🔥";
+                        else if (detectedSchool === "ice") fallbackIcon = "❄️";
+                        else if (detectedSchool === "air") fallbackIcon = "⚡";
+                        else if (detectedSchool === "earth") fallbackIcon = "🪨";
+                        else if (detectedSchool === "necro") fallbackIcon = "💀";
+                        else if (detectedSchool === "transloc") fallbackIcon = "🌀";
+                        else if (detectedSchool === "summon") fallbackIcon = "🐺";
+                        else if (detectedSchool === "alch") fallbackIcon = "🧪";
+                        else fallbackIcon = "📜";
+                    }
+                    else if (menu.tag === "ability")
+                    {
+                        fallbackIcon = "✨";
                     }
                     $iconBox.append('<span class="inv-tile-placeholder">' + fallbackIcon + '</span>');
                 }
