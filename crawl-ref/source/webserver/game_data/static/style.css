@@ -502,6 +502,197 @@ canvas {
     padding: 2px 0;
 }
 
+/* ==========================================================================
+   Top Screen Middle Monster Threat Banner (#top_target_card)
+   ========================================================================== */
+
+#top_target_card {
+    position: fixed !important;
+    top: 14px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 10000 !important;
+    width: 440px !important;
+    max-width: 92vw !important;
+    padding: 8px 14px !important;
+    background: radial-gradient(circle at 50% 20%, rgba(22, 25, 34, 0.96) 0%, rgba(10, 12, 16, 0.99) 100%) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid var(--er-gold-bright) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.95), 0 0 20px rgba(197, 160, 89, 0.3) !important;
+    box-sizing: border-box !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+    animation: target-slide-down 0.25s ease-out !important;
+}
+
+@keyframes target-slide-down {
+    0% { opacity: 0; transform: translate(-50%, -10px); }
+    100% { opacity: 1; transform: translate(-50%, 0); }
+}
+
+#top_target_card:hover {
+    transform: translateX(-50%) scale(1.02) !important;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.98), 0 0 28px rgba(197, 160, 89, 0.45) !important;
+}
+
+/* Unique Boss Card */
+#top_target_card.mon-unique {
+    border-color: rgba(239, 68, 68, 0.85) !important;
+    background: radial-gradient(circle at 50% 20%, rgba(48, 16, 24, 0.98) 0%, rgba(20, 8, 12, 0.99) 100%) !important;
+    box-shadow: 0 16px 44px rgba(239, 68, 68, 0.35), 0 0 24px rgba(239, 68, 68, 0.4) !important;
+    animation: target-slide-down 0.25s ease-out, boss-pulse 2.2s infinite ease-in-out !important;
+}
+
+#top_target_card.mon-nasty {
+    border-color: rgba(239, 68, 68, 0.6) !important;
+}
+
+#top_target_card.mon-friendly {
+    border-color: rgba(34, 197, 94, 0.6) !important;
+    background: radial-gradient(circle at 50% 20%, rgba(16, 36, 24, 0.96) 0%, rgba(8, 18, 12, 0.99) 100%) !important;
+}
+
+.er-target-avatar-box {
+    flex: 0 0 auto !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 6px !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    border: 1px solid rgba(197, 160, 89, 0.3) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+}
+
+.er-target-avatar-box canvas {
+    display: block !important;
+}
+
+.er-target-main {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+}
+
+.er-target-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+}
+
+.er-target-name {
+    font-family: var(--er-font-title) !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em !important;
+    color: var(--er-gold-bright) !important;
+    text-transform: capitalize !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9) !important;
+}
+
+.er-target-tags {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.er-target-dist {
+    font-family: var(--er-font-title) !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em !important;
+    padding: 1px 6px !important;
+    border-radius: 3px !important;
+    white-space: nowrap !important;
+    text-transform: uppercase !important;
+}
+
+.er-target-dist.dist-melee {
+    background: rgba(220, 38, 38, 0.25) !important;
+    border: 1px solid rgba(239, 68, 68, 0.6) !important;
+    color: #fca5a5 !important;
+}
+
+.er-target-dist.dist-ranged {
+    background: rgba(56, 189, 248, 0.15) !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
+    color: #7dd3fc !important;
+}
+
+.er-target-badge {
+    font-family: var(--er-font-title) !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em !important;
+    padding: 1px 6px !important;
+    border-radius: 3px !important;
+    white-space: nowrap !important;
+    text-transform: uppercase !important;
+}
+
+/* HP Track */
+.er-target-hp-track {
+    width: 100% !important;
+    height: 7px !important;
+    background: rgba(0, 0, 0, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 3px !important;
+    overflow: hidden !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+}
+
+.er-target-hp-fill {
+    height: 100% !important;
+    border-radius: 2px !important;
+    transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+
+.er-target-footer {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    font-family: var(--er-font-sans) !important;
+    font-size: 10px !important;
+    color: var(--er-text-secondary) !important;
+}
+
+.er-target-hp-text {
+    font-weight: 500 !important;
+    color: #e2e8f0 !important;
+}
+
+.er-target-avg-hp {
+    color: var(--er-gold-dim) !important;
+    font-family: var(--er-font-title) !important;
+    font-size: 9px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.04em !important;
+}
+
+.er-target-nearby-count {
+    color: #38bdf8 !important;
+    font-family: var(--er-font-title) !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    background: rgba(56, 189, 248, 0.12) !important;
+    border: 1px solid rgba(56, 189, 248, 0.3) !important;
+    border-radius: 3px !important;
+    padding: 0 5px !important;
+}
+
 /* scroller */
 .scroller-shade {
     position: absolute;

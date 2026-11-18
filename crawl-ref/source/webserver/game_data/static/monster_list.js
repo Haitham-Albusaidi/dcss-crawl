@@ -126,9 +126,236 @@ function ($, comm, map_knowledge, cr, dungeon_renderer, options, util, player, m
         "invisible"
     ];
 
+    var topRenderer = null;
+
+    function getTopTargetCard()
+    {
+        var $card = $("#top_target_card");
+        if ($card.length === 0)
+        {
+            $card = $(
+                '<div id="top_target_card" class="er-top-mon-card" style="display: none;">' +
+                '  <div class="er-target-avatar-box"><canvas class="er-target-canvas"></canvas></div>' +
+                '  <div class="er-target-main">' +
+                '    <div class="er-target-header">' +
+                '      <span class="er-target-name">Monster Name</span>' +
+                '      <div class="er-target-tags">' +
+                '        <span class="er-target-dist">⚔️ Melee</span>' +
+                '        <span class="er-target-badge">💀 UNIQUE</span>' +
+                '      </div>' +
+                '    </div>' +
+                '    <div class="er-target-hp-track">' +
+                '      <div class="er-target-hp-fill"></div>' +
+                '    </div>' +
+                '    <div class="er-target-footer">' +
+                '      <span class="er-target-hp-text">100% • Uninjured</span>' +
+                '      <span class="er-target-avg-hp"></span>' +
+                '      <span class="er-target-nearby-count" style="display:none;"></span>' +
+                '    </div>' +
+                '  </div>' +
+                '</div>'
+            );
+            $("body").append($card);
+        }
+        return $card;
+    }
+
+    function update_top_target_card(grouped_monsters, show_inv)
+    {
+        var $card = getTopTargetCard();
+        if (show_inv)
+        {
+            $card.removeClass("mon-unique mon-nasty mon-tough mon-friendly").addClass("mon-nasty");
+            $card.find(".er-target-name").text(show_inv);
+            $card.find(".er-target-badge").text("👁️ UNSEEN").removeClass("badge-unique badge-tough badge-friendly").addClass("badge-nasty").show();
+            $card.find(".er-target-dist").text("⚠️ Proximity").removeClass("dist-melee").addClass("dist-ranged");
+            $card.find(".er-target-hp-fill").css("width", "100%").removeClass().addClass("er-target-hp-fill hp-uninjured");
+            $card.find(".er-target-hp-text").text("Location Unknown");
+            $card.find(".er-target-avg-hp").text("");
+            $card.find(".er-target-nearby-count").hide();
+            $card.show();
+            return;
+        }
+
+        if (!grouped_monsters || grouped_monsters.length === 0)
+        {
+            $card.hide();
+            return;
+        }
+
+        // Rank monsters to pick the primary threat for the top card:
+        // Priority: Uniques > Highest threat level (3 -> 2 -> 1) > Proximity to player
+        var px = (player && player.pos && player.pos.x !== undefined) ? player.pos.x : 0;
+        var py = (player && player.pos && player.pos.y !== undefined) ? player.pos.y : 0;
+
+        var bestGroup = null;
+        var bestScore = -999999;
+        var totalOtherMonsters = 0;
+
+        for (var g = 0; g < grouped_monsters.length; g++)
+        {
+            var grp = grouped_monsters[g];
+            if (!grp || grp.length === 0) continue;
+            var m = grp[0].mon;
+            var loc = grp[0].loc;
+            var isUnique = m.hasOwnProperty("clientid");
+            var dx = Math.abs(loc.x - px);
+            var dy = Math.abs(loc.y - py);
+            var dist = Math.max(dx, dy);
+
+            // Hostile priority: hostile (0) > neutral (1) > friendly (4)
+            var attPriority = (m.att === 0 ? 1000 : (m.att === 1 ? 200 : 0));
+            var threatPriority = (m.threat || 0) * 100;
+            var uniquePriority = isUnique ? 500 : 0;
+            var distBonus = Math.max(0, 30 - dist); // closer = higher priority
+
+            var score = attPriority + threatPriority + uniquePriority + distBonus;
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestGroup = grp;
+            }
+            totalOtherMonsters += grp.length;
+        }
+
+        if (!bestGroup || bestGroup.length === 0)
+        {
+            $card.hide();
+            return;
+        }
+
+        var primary = bestGroup[0];
+        var mon = primary.mon;
+        var mloc = primary.loc;
+        var dx = Math.abs(mloc.x - px);
+        var dy = Math.abs(mloc.y - py);
+        var dist = Math.max(dx, dy);
+
+        // Render pixel-art sprite avatar
+        var canvas = $card.find(".er-target-canvas")[0];
+        if (!topRenderer)
+        {
+            topRenderer = new cr.DungeonCellRenderer();
+        }
+        util.init_canvas(canvas, 32, 32);
+        topRenderer.set_cell_size(32, 32);
+        topRenderer.init(canvas);
+        topRenderer.render_cell(mloc.x, mloc.y, 0, 0);
+
+        // Name
+        var mName = (bestGroup.length > 1) ? (bestGroup.length + " " + mon.plural) : mon.name;
+        $card.find(".er-target-name").text(mName);
+
+        // Distance Indicator
+        var $dist = $card.find(".er-target-dist");
+        if (dist <= 1)
+        {
+            $dist.text("⚔️ Melee Range").removeClass("dist-ranged").addClass("dist-melee");
+        }
+        else
+        {
+            $dist.text("🏹 " + dist + " tiles away").removeClass("dist-melee").addClass("dist-ranged");
+        }
+
+        // Threat badge
+        var isUnique = mon.hasOwnProperty("clientid");
+        var threatLevel = mon.threat || 0;
+        var $badge = $card.find(".er-target-badge");
+        if (isUnique)
+        {
+            $badge.text("💀 UNIQUE BOSS").removeClass("badge-nasty badge-tough badge-friendly").addClass("badge-unique").show();
+        }
+        else if (threatLevel === 3)
+        {
+            $badge.text("⚠️ NASTY").removeClass("badge-unique badge-tough badge-friendly").addClass("badge-nasty").show();
+        }
+        else if (threatLevel === 2)
+        {
+            $badge.text("⚡ TOUGH").removeClass("badge-unique badge-nasty badge-friendly").addClass("badge-tough").show();
+        }
+        else if (mon.att === 4)
+        {
+            $badge.text("🌿 ALLY").removeClass("badge-unique badge-nasty badge-tough").addClass("badge-friendly").show();
+        }
+        else
+        {
+            $badge.hide();
+        }
+
+        // Health Status & Meter
+        var map_cell = map_knowledge.get(mloc.x, mloc.y);
+        var fg = (map_cell && map_cell.t) ? map_cell.t.fg : {};
+        var mdam = "uninjured";
+        var hpPercent = 100;
+        var hpLabel = "100% • Uninjured";
+        if (fg.MDAM_ADEAD) { mdam = "almost_dead"; hpPercent = 10; hpLabel = "Critical (~10%)"; }
+        else if (fg.MDAM_SEV) { mdam = "severely_damaged"; hpPercent = 25; hpLabel = "Severely Wounded (~25%)"; }
+        else if (fg.MDAM_HEAVY) { mdam = "heavily_damaged"; hpPercent = 50; hpLabel = "Heavily Wounded (~50%)"; }
+        else if (fg.MDAM_MOD) { mdam = "moderately_damaged"; hpPercent = 70; hpLabel = "Moderately Wounded (~70%)"; }
+        else if (fg.MDAM_LIGHT) { mdam = "lightly_damaged"; hpPercent = 85; hpLabel = "Lightly Wounded (~85%)"; }
+
+        $card.find(".er-target-hp-fill")
+            .css("width", hpPercent + "%")
+            .removeClass("hp-uninjured hp-lightly_damaged hp-moderately_damaged hp-heavily_damaged hp-severely_damaged hp-almost_dead")
+            .addClass("hp-" + mdam);
+
+        $card.find(".er-target-hp-text").text(hpLabel);
+
+        // Average HP if known
+        var $avgHp = $card.find(".er-target-avg-hp");
+        if (mon.typedata && mon.typedata.avghp)
+        {
+            $avgHp.text("~" + mon.typedata.avghp + " Avg HP").show();
+        }
+        else
+        {
+            $avgHp.hide();
+        }
+
+        // Other nearby monsters count
+        var remainingCount = totalOtherMonsters - bestGroup.length;
+        var $nearby = $card.find(".er-target-nearby-count");
+        if (remainingCount > 0)
+        {
+            $nearby.text("+" + remainingCount + " more nearby").show();
+        }
+        else
+        {
+            $nearby.hide();
+        }
+
+        // Card theming classes
+        $card.toggleClass("mon-unique", !!isUnique)
+             .toggleClass("mon-nasty", threatLevel === 3)
+             .toggleClass("mon-tough", threatLevel === 2)
+             .toggleClass("mon-friendly", mon.att === 4);
+
+        // Click targeting & inspection
+        $card.off("click contextmenu");
+        $card.on("click", function(ev) {
+            comm.send_message("click_cell", {
+                x: mloc.x,
+                y: mloc.y,
+                button: 1
+            });
+        });
+        $card.on("contextmenu", function(ev) {
+            ev.preventDefault();
+            comm.send_message("click_cell", {
+                x: mloc.x,
+                y: mloc.y,
+                button: 3
+            });
+            return false;
+        });
+
+        $card.show();
+    }
+
     function update(show_inv)
     {
         var grouped_monsters = group_monsters();
+        update_top_target_card(grouped_monsters, show_inv);
 
         var rows = Math.min(grouped_monsters.length, max_rows);
         if (show_inv)
@@ -350,6 +577,8 @@ function ($, comm, map_knowledge, cr, dungeon_renderer, options, util, player, m
         $list.empty();
         monster_groups = [];
         monsters = {};
+        if ($("#top_target_card").length > 0)
+            $("#top_target_card").hide();
     }
 
     options.add_listener(function ()
