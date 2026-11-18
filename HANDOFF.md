@@ -2,8 +2,8 @@
 
 **Date & Time:** 2026-11-18  
 **Repository:** `https://github.com/Haitham-Albusaidi/dcss-crawl`  
-**Active Branch:** `Ui-Changes` (Pushed up to commit `cf8745ee6b`)  
-**Base Target:** `main` (Pull Request #3 open)
+**Active Branch:** `webtiles/hud-and-spell-ui` (Pushed up to commit `39a4c36197`)  
+**Base Target:** `main` (Pull Request #4 open: https://github.com/Haitham-Albusaidi/dcss-crawl/pull/4)
 
 ---
 
