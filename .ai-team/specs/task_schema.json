@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TaskDefinition",
+  "type": "object",
+  "required": ["task_id", "title", "description", "assigned_agent", "worktree_path"],
+  "properties": {
+    "task_id": { "type": "string" },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "assigned_agent": {
+      "type": "string",
+      "enum": ["antigravity", "codex", "mock"]
+    },
+    "worktree_path": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["PENDING", "IN_PROGRESS", "COMPLETED", "FAILED", "BLOCKED"],
+      "default": "PENDING"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "target_files": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "context_files": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["HANDOFF.md", "AGENTS.md"]
+    },
+    "timeout_seconds": {
+      "type": "integer",
+      "default": 600
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["auto", "accept-edits", "plan"],
+      "default": "accept-edits"
+    }
+  }
+}

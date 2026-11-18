@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AITeamAdapterSchemas",
+  "definitions": {
+    "TaskInput": {
+      "type": "object",
+      "required": ["task_id", "title", "description", "assigned_agent", "worktree_path"],
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "pattern": "^[A-Z0-9_-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10
+        },
+        "assigned_agent": {
+          "type": "string",
+          "enum": ["antigravity", "codex", "mock"]
+        },
+        "worktree_path": {
+          "type": "string"
+        },
+        "target_files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "context_files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["HANDOFF.md", "AGENTS.md"]
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 3600,
+          "default": 600
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["auto", "accept-edits", "plan"],
+          "default": "accept-edits"
+        },
+        "model": {
+          "type": "string"
+        },
+        "extra_args": {
+          "type": "object",
+          "default": {}
+        }
+      }
+    },
+    "FileChange": {
+      "type": "object",
+      "required": ["path", "status"],
+      "properties": {
+        "path": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["modified", "added", "deleted", "untracked"]
+        },
+        "additions": { "type": "integer", "minimum": 0 },
+        "deletions": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "TaskReport": {
+      "type": "object",
+      "required": ["task_id", "agent", "status", "summary", "changed_files", "duration_seconds"],
+      "properties": {
+        "task_id": { "type": "string" },
+        "agent": {
+          "type": "string",
+          "enum": ["antigravity", "codex", "mock"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["SUCCESS", "FAILURE", "TIMEOUT", "BLOCKED"]
+        },
+        "summary": { "type": "string" },
+        "changed_files": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/FileChange" }
+        },
+        "git_commit": {
+          "type": ["string", "null"]
+        },
+        "test_results": {
+          "type": "object",
+          "properties": {
+            "passed": { "type": "integer", "minimum": 0 },
+            "failed": { "type": "integer", "minimum": 0 },
+            "errors": { "type": "integer", "minimum": 0 },
+            "skipped": { "type": "integer", "minimum": 0 },
+            "details": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "validation": {
+          "type": "object",
+          "properties": {
+            "passed": { "type": "boolean" },
+            "checks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "passed": { "type": "boolean" },
+                  "message": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "errors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "duration_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "usage": {
+          "type": "object",
+          "properties": {
+            "input_tokens": { "type": "integer" },
+            "output_tokens": { "type": "integer" },
+            "total_tokens": { "type": "integer" }
+          }
+        }
+      }
+    }
+  }
+}
