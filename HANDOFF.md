@@ -100,3 +100,9 @@ We modernized the WebTiles interface of **Dungeon Crawl Stone Soup (DCSS 0.35-a0
 3. **Future Opportunities**:
    - Modernize remaining legacy text dialogs such as God Description (`describe_god`) and Spell Success (`describe_item_spell_success`).
    - Add animations/transitions for pane switching within the Monster Codex.
+
+## AI team coordinator (2026-11-18)
+
+Branch `feature/ai-team-coordinator` adds the Python coordinator under `.ai-team/`. Its README documents the shared agent protocol, task submission, CLI capability checks, validation, recovery and optional PR publication. Use a dedicated controller checkout. Each attempt and review gets a separate Git worktree. Integration promotes only clean, reviewed candidates that pass validation.
+
+Seven mock-agent workflow tests exercised disposable Git repositories, parallel work, dependencies, retries, timeout handling, restart recovery, file ownership, opposing reviews, merge conflicts, failed integration tests, and stop/resume. Publication commands were tested with simulated transports. The live Codex and Antigravity executables were unavailable on PATH in this environment.
