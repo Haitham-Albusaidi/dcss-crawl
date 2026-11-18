@@ -9,9 +9,10 @@
 
 | Responsibility | Owner | Mechanism |
 | :--- | :--- | :--- |
-| Main Coordinator & Scheduler | **OpenAI Codex** | Reads `.ai-team/tasks/`, plans batches, handles Git branch integration |
+| Main Coordinator & Local Scheduler | **OpenAI Codex** | Reads `.ai-team/tasks/`, schedules local batches (local-only mode) |
 | Git Worktree Management | **OpenAI Codex** | Allocates isolated worktrees (`ai-team-dev/`, `antigravity-dev/`) |
-| Pull Request Management | **OpenAI Codex** | Combines features, runs final integration, prepares GitHub PR |
+| GitHub Publishing & PR Management | **Google Antigravity** | **Sole authorized agent** to execute `git push`, publish branches, and create PRs |
+| Multi-Agent Integration & Staging | **Google Antigravity** | Integrates Codex & Antigravity branches, verifies tests, stages PR |
 | Antigravity Execution Adapter | **Google Antigravity** | Runs `agy.exe` non-interactively with worktree isolation & telemetry |
 | Agent Instructions & Rules | **Google Antigravity** | Maintained in `AGENTS.md` and `.ai-team/prompts/` |
 | Handoff Protocol & Records | **Google Antigravity** | Structured JSON task specs, execution reports, and review verdicts |

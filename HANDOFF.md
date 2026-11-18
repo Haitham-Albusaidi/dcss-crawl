@@ -139,3 +139,24 @@ We modernized the WebTiles interface of **Dungeon Crawl Stone Soup (DCSS 0.35-a0
    - Commands: `task-create`, `task-list`, `task-run`, `workflow`, `start`, `review`, `validate`, `status`, `handoff`.
 7. **Automated Test Suite (`.ai-team/tests/`)**:
    - 22 tests covering adapters, security boundaries, task graph DAGs, reviews, WebTiles validation, and syntax checkers with 100% pass rate.
+
+---
+
+## 6. Sole GitHub Publishing & Integration Mandate
+
+**Effective Date:** 2026-11-18  
+**Sole GitHub Manager:** Google Antigravity  
+**Local Development Only:** OpenAI Codex & other feature agents  
+
+### Ownership Model
+- **Google Antigravity**: Authorized as the **ONLY** agent with permission to execute `git push`, publish branches to GitHub, manage integration worktrees, and stage pull requests.
+- **OpenAI Codex**: Operates in **local-only mode** within `ai-team-dev/` on branch `feature/ai-team-coordinator`. Commits locally without performing any remote write operations.
+
+### Multi-Agent Integration Protocol
+When local development branches are ready for publication:
+1. Antigravity verifies local branch existence, commit ancestry, and worktree cleanliness.
+2. Diffs and changed files are inspected for regressions or unintended modifications.
+3. Tests across both agents (`test_coordinator.py` and `.ai-team/tests/`) are executed and verified.
+4. Feature branches are published to GitHub via verified, non-force push.
+5. Multi-agent integration branches are staged on clean integration worktrees targeting `main`.
+6. Final pull requests are opened as drafts, requiring explicit user approval before any merge.

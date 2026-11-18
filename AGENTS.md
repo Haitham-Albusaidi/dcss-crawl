@@ -66,20 +66,22 @@
                      └────────────────────────────────────────┘
 ```
 
-### OpenAI Codex (Orchestrator & Engine Lead)
+### OpenAI Codex (Engine & Local Coordinator Lead)
 - **Primary Ownership**:
-  - Coordinator engine and task scheduling (`.ai-team/workflows/`).
-  - Git branch integration and pull request creation.
+  - Local coordinator engine and task scheduling (`.ai-team/workflows/`, `.ai-team/coordinator.py`).
+  - Local Git worktree development and local commits.
   - C++ game mechanics, crawl core rules, spells backend, and server-side state.
-- **Boundaries**: Must invoke the Antigravity adapter for UI/UX/WebTiles tasks and respect Antigravity's QA reviews.
+- **Boundaries**: Operates strictly in **local-only mode**. Prohibited from executing `git push` or performing remote GitHub write operations. Must invoke the Antigravity adapter for UI/UX/WebTiles tasks and hand off completed work for publishing.
 
-### Google Antigravity (Frontend, UX & QA Lead)
+### Google Antigravity (Sole GitHub Publishing Manager, Integration Engineer & UI/QA Lead)
 - **Primary Ownership**:
+  - **Sole GitHub Publishing Authority**: The **ONLY** AI agent authorized to execute remote GitHub operations (`git push`, branch publication, pull request creation).
+  - Multi-agent branch integration, conflict resolution, and release staging.
   - Antigravity execution adapter (`.ai-team/adapters/antigravity_adapter.py`).
   - WebTiles client interfaces (`ui-layouts.js`, `style.css`, `menu.js`, `monster_list.js`, `player.js`).
   - Dark fantasy / Elden Ring visual design system and layouts.
   - Cross-agent review protocol and DCSS WebTiles gameplay validation.
-- **Boundaries**: Must work inside `antigravity-dev` and emit structured `TaskReport` JSON records.
+- **Boundaries**: Works inside `antigravity-dev` and integration worktrees, emits structured `TaskReport` JSON records, and enforces verification before remote publication.
 
 ---
 
@@ -90,3 +92,22 @@
 3. **Execution Report**: Executing agent writes machine-readable report to `.ai-team/reports/<task_id>_report.json`.
 4. **Cross-Agent Review**: Reviewing agent writes review findings to `.ai-team/reviews/<task_id>_review.json` with a clear status (`APPROVE`, `REQUEST_CHANGES`, or `NEEDS_DISCUSSION`).
 5. **Revisions**: If changes are requested, a revision task is created referencing the review notes.
+
+---
+
+## 4. GitHub Publishing & Remote Write Policy (Mandatory)
+
+1. **Sole Publishing Authority**: Google Antigravity is the ONLY agent authorized to push code or manage PRs on GitHub.
+2. **Local-Only Development**: Codex and other development agents must commit locally and hand off branch details (`branch`, `worktree_path`, `commit hashes`) to Antigravity.
+3. **Pre-Publishing Verification**:
+   - Verify branch and commit ancestry.
+   - Ensure clean worktree (no unstaged files).
+   - Inspect diffs for regressions or unintended file changes.
+   - Run relevant automated tests before pushing.
+4. **Publishing Rules**:
+   - Never force-push (`--force` is strictly forbidden).
+   - Never delete remote branches without explicit user permission.
+   - Never push directly to `main`.
+   - Never merge any pull request without explicit user approval.
+   - Verify that the remote ref points to the expected commit hash immediately after pushing.
+
