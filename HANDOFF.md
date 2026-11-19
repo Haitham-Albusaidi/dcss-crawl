@@ -432,6 +432,12 @@ and game rules remain in place.
   - Exploration and ground item discovery (`floating_feedback_exploration_discovery.png`).
   - Verified non-blocking pointer events and original message log recording.
 - Cross-agent review approved by Antigravity in `.ai-team/reviews/webtiles-world-floating-events_review.json` (`477723546e`).
+- Pull Request: [#10](https://github.com/Haitham-Albusaidi/dcss-crawl/pull/10) merged into `main` by Antigravity (Merge Commit: `33998c233e4b2a7687de908c7eea68555a1f5a4e`).
+- Post-Merge Verification:
+  - Local `crawl/` worktree synchronized to `origin/main` (`33998c233e`).
+  - Compiled and synchronized updated WebTiles binary `crawl/crawl-ref/source/crawl` (20,601,488 bytes).
+  - User authentication database synchronized (`Player`).
+  - Development worktrees preserved: `floating-events-dev`, `keybind-system-dev`, `item-inspection-ui-dev`, `item-inspection-dev`, `character-creation-ui-dev`, `character-creation-dev`, `auth-runner-dev`.
 
 ### Code changes relative to the base
 
