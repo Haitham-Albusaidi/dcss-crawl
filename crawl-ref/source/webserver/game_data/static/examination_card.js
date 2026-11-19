@@ -10,6 +10,7 @@ function ($, comm, map_knowledge, cr, util) {
     let current = null;
     let viewContains = () => false;
     let card;
+    let cardResize;
     let renderer;
 
     function sameCell(a, b)
@@ -37,6 +38,16 @@ function ($, comm, map_knowledge, cr, util) {
             '</div></section>').prependTo("#monster_hud");
     }
 
+    function positionDetails()
+    {
+        if (current && current.detailed)
+        {
+            const bottom = card[0].getBoundingClientRect().bottom;
+            $("#game")[0].style.setProperty("--er-examine-popup-top",
+                                            Math.ceil(bottom + 6) + "px");
+        }
+    }
+
     function hide()
     {
         current = null;
@@ -62,7 +73,14 @@ function ($, comm, map_knowledge, cr, util) {
     {
         current = data;
         if (!card)
+        {
             card = makeCard();
+            if (typeof ResizeObserver === "function")
+            {
+                cardResize = new ResizeObserver(positionDetails);
+                cardResize.observe(card[0]);
+            }
+        }
         card.find(".er-examine-name").text(data.name);
         card.find(".er-examine-category").text(data.category);
         card.find(".er-examine-badge").text(data.badge || "")
@@ -98,6 +116,7 @@ function ($, comm, map_knowledge, cr, util) {
         $("#monster_hud").addClass("has-examination")
             .toggleClass("has-detailed-examination", !!data.detailed);
         card.addClass("is-active").attr("aria-hidden", "false");
+        positionDetails();
     }
 
     function handleExamination(data)
@@ -159,12 +178,22 @@ function ($, comm, map_knowledge, cr, util) {
     $(document).on("game_cleanup.examination_card", () => {
         targeting = false;
         clear();
+        if (cardResize)
+        {
+            cardResize.disconnect();
+            cardResize = null;
+        }
         card = null;
     });
     comm.register_handlers({examine_card: handleExamination});
 
     return {
         clear,
+        leaveDungeon: () => {
+            // Opening the detailed popup also removes the mouse from the canvas.
+            if (!current || !current.detailed)
+                clear();
+        },
         moveHover,
         moveTarget: loc => {
             if (!visible(loc))

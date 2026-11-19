@@ -106,7 +106,7 @@ function ($, comm, cr, map_knowledge, options, dngn, util, view_data, enums,
                     this.tooltip_timeout = null;
                 }
 
-                examination_card.clear();
+                examination_card.leaveDungeon();
                 this.last_sent_cursor = null;
                 view_data.remove_cursor(enums.CURSOR_MOUSE);
             }

@@ -5753,6 +5753,21 @@ button:focus-visible:has(> .keybind-badge) {
     display: none;
 }
 
+#game:has(#monster_hud.has-detailed-examination) #ui-stack > .ui-popup:not(.hidden) {
+    top: var(--er-examine-popup-top, 0px);
+}
+
+#game:has(#monster_hud.has-detailed-examination) #ui-stack > .ui-popup:not(.hidden) > .ui-popup-outer {
+    box-sizing: border-box;
+    margin-block: 8px !important;
+    max-height: calc(100dvh - var(--er-examine-popup-top, 0px) - 16px);
+}
+
+#game:has(#monster_hud.has-detailed-examination) #ui-stack > .ui-popup:not(.hidden) .ui-popup-inner {
+    max-height: calc(100dvh - var(--er-examine-popup-top, 0px) - 58px) !important;
+    overflow: auto;
+}
+
 .er-examine-card {
     position: absolute;
     inset-inline: 0;

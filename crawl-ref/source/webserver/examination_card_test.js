@@ -27,7 +27,10 @@ function setup()
     {
         constructor()
         {
-            this[0] = {};
+            this[0] = {
+                getBoundingClientRect: () => ({bottom: 120}),
+                style: {setProperty: (key, value) => { this.attributes[key] = value; }}
+            };
             this.classes = new Set();
             this.attributes = {};
             this.children = [];
@@ -223,6 +226,9 @@ test("target exit and cleanup restore the existing monster slot", () => {
     ui.manager.modeChanged(true);
     ui.receive({request: 0, active: true, detailed: true, loc, ...samples[0]});
     assert.equal(ui.$("#monster_hud").classes.has("has-detailed-examination"), true);
+    assert.equal(ui.$("#game").attributes["--er-examine-popup-top"], "126px");
+    ui.manager.leaveDungeon();
+    assert.equal(ui.active(), true);
     ui.receive({request: 0, active: false});
     assert.equal(ui.active(), false);
     ui.receive({request: 0, active: true, loc, ...samples[0]});
