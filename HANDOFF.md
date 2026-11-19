@@ -376,6 +376,19 @@ of `describe.o`. Keyboard and click contracts were checked with simulated
 frames. Browser gameplay, player-specific command remaps, and the full
 native link still need verification.
 
-The Antigravity adapter returned without review text after a read-only
-request. Cross-agent approval is pending. The branch is ready for a local
-review against the base. Publishing remains assigned to Antigravity.
+- Cross-Agent Review: Approved by Antigravity in `.ai-team/reviews/webtiles-keybind-system_review.json` (`5b6696496e`).
+- Pull Request: [#9](https://github.com/Haitham-Albusaidi/dcss-crawl/pull/9) merged into `main` by Antigravity (Merge Commit: `9767644b4bc8eda7883fc2f05d7e6f78ac9afaf8`).
+- GitHub Actions CI: 12/12 matrix jobs passed (Ubuntu & Windows, Python 3.10/3.11/3.12).
+- Post-Merge Verification:
+  - Local `crawl/` worktree synchronized to `origin/main` (`9767644b4b`).
+  - Compiled and synchronized updated WebTiles binary `crawl/crawl-ref/source/crawl` (20,582,688 bytes).
+  - WebTiles server daemon verified on `http://localhost:8088`.
+  - Live WebTiles browser testing confirmed:
+    - **Species & Background Selection**: Antique-gold `<kbd class="keybind-badge">` badges on all choices and actions (`keybinds_screen1_species.png`, `keybinds_screen2_background.png`).
+    - **Weapon Selection**: Proper `<kbd class="keybind-badge">Backspace</kbd>` return button (`keybinds_screen3_weapon.png`).
+    - **HUD Toolbar & Action Dock**: High-contrast tiles, aligned key badges, and tooltip descriptions (`keybinds_hud_action_dock.png`).
+    - **Inventory & Tooltips**: Structured `[L-Click]`, `[R-Click] Describe`, `[Shift + L-Click] Drop` actions and dynamic slot letter badges (`keybinds_inventory_tooltip.png`).
+    - **Universal Item Inspection**: Server-driven action dock with clean keybind badges and zero double-firing (`keybinds_item_inspection.png`).
+    - **Help & Command Overlays**: Standardized `<kbd>` formatting across command reference lists (`keybinds_help_menu.png`, `keybinds_command_reference.png`).
+- Active worktrees preserved: `keybind-system-dev`, `item-inspection-ui-dev`, `character-creation-ui-dev`.
+
