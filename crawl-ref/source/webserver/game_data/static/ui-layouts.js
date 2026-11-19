@@ -1927,12 +1927,6 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
         $titleBox.append($("<div class='cc-subtitle'>").html(subtitle));
         $topRow.append($titleBox);
 
-        // Close / Esc button
-        var $closeBtn = $("<button class='cc-close-btn' title='Cancel [Esc]'>✕</button>");
-        $closeBtn.on("click", function () {
-            comm.send_message("key", { keycode: 27 }); // Esc
-        });
-        $topRow.append($closeBtn);
         $header.append($topRow);
 
         // Stepper Progress Bar

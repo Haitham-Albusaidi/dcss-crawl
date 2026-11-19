@@ -4895,23 +4895,6 @@ button.status_light {
     line-height: 1.4;
 }
 
-.cc-close-btn {
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #94a3b8;
-    border-radius: 4px;
-    padding: 4px 10px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.15s ease;
-}
-
-.cc-close-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: #ef4444;
-    color: #fca5a5;
-}
-
 /* Stepper Progress Bar */
 .cc-stepper {
     display: flex;

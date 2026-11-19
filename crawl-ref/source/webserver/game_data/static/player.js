@@ -1,6 +1,6 @@
 define(["jquery", "comm", "client", "./enums", "./map_knowledge", "./messages",
-        "./options", "./util"],
-function ($, comm, client, enums, map_knowledge, messages, options, util) {
+        "./options", "./util", "./keybinds"],
+function ($, comm, client, enums, map_knowledge, messages, options, util, keybinds) {
     "use strict";
 
     var player = {}, last_time;
@@ -525,8 +525,9 @@ function ($, comm, client, enums, map_knowledge, messages, options, util) {
             $("#stats_status_lights").append(status, " ");
         }
 
-        $("#stats_weapon_letter").text(
-            index_to_letter(player.weapon_index) + ")");
+        var $weaponLetter = $("#stats_weapon_letter").empty();
+        if (player.weapon_index >= 0)
+            $weaponLetter.append(keybinds.badge(index_to_letter(player.weapon_index)));
         $("#stats_weapon").html(wielded_weapon());
 
         if (player.offhand_weapon) // Coglin dual wielding
@@ -534,8 +535,9 @@ function ($, comm, client, enums, map_knowledge, messages, options, util) {
         else
             $("#stats_offhand_weapon_line").hide();
 
-        $("#stats_offhand_weapon_letter").text(
-            index_to_letter(player.offhand_index) + ")");
+        var $offhandLetter = $("#stats_offhand_weapon_letter").empty();
+        if (player.offhand_index >= 0)
+            $offhandLetter.append(keybinds.badge(index_to_letter(player.offhand_index)));
         $("#stats_offhand_weapon").html(wielded_weapon(true));
 
         $("#stats_quiver").html(quiver());
