@@ -519,3 +519,18 @@ indicator based on the existing marker.
 | `webserver/game_data/static/dungeon_renderer.js` | 14 | 7 | `DungeonViewRenderer` |
 | `webserver/game_data/static/examination_card.js` | 209 | 0 | WebSocket handler, view state, sprite rendering |
 | `webserver/game_data/static/style.css` | 172 | 0 | `.er-examine-card`, HUD and popup placement |
+
+---
+
+## 7. Post-Merge State — PR #11 Merged into `main`
+
+- **Merge Commit:** `470af33d95d03c0f7fca5a510a22e46b79b2f37a`
+- **Active Branch:** `main` (synchronized with `origin/main`)
+- **Status:** Integrated, verified, and published.
+- **Verification Details:**
+  - PR #11 successfully merged via normal non-force merge.
+  - All 12 GitHub Actions CI jobs passed.
+  - Local `main` fast-forwarded to `470af33d95`.
+  - Rebuilt and synchronized C++ WebTiles binary (20,650,304 bytes).
+  - All 22 Node examination tests, 9 floating event tests, and 22 .ai-team Python tests passed.
+  - Development worktree `examination-card-dev` and historical feature worktrees preserved.
