@@ -2406,6 +2406,10 @@ void TilesFramework::update_minimap(const coord_def& gc)
 void TilesFramework::clear_minimap()
 {
     m_gameplay_events.clear();
+    const level_id level = level_id::current();
+    // Transient floors can reuse a branch and depth (e.g. Pandemonium).
+    if (level.is_valid() && !is_connected_branch(level))
+        m_seen_discoveries.erase(level);
     m_origin = coord_def(-1, -1);
     // Changing the origin invalidates coordinates on the client side
     m_current_gc = coord_def(-1, -1);

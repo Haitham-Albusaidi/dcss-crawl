@@ -188,3 +188,24 @@ test("clips map edges and ignores events outside the normal dungeon view", () =>
     f.receive({kind: "dodge", text: "DODGE!"});
     assert.equal(f.nodes().length, 0);
 });
+
+test("a killing blow preserves the weapon label and actual damage over a generic hit", () => {
+    const f = fixture();
+    f.receive({kind: "attack", text: "SLASH!"});
+    f.receive({kind: "attack", text: "HIT!"});
+    f.receive({kind: "damage", amount: 2});
+    f.receive({kind: "slain", text: "SLAIN!"});
+    assert.deepEqual(f.nodes().map(node => node.children[0].textContent),
+        ["SLASH!", "\u22122", "SLAIN!"]);
+});
+
+test("enforces the total effect cap across distant tiles", () => {
+    const f = fixture();
+    for (let x = -4; x < 16; x += 3)
+        for (let y = -3; y < 12; y += 2)
+            f.receive({kind: "attack", text: "HIT!", x, y});
+    assert.equal(f.nodes().length, 12);
+    f.receive({kind: "slain", text: "SLAIN!", x: 15, y: 11});
+    assert.equal(f.nodes().length, 12);
+    assert.equal(f.nodes().at(-1).children[0].textContent, "SLAIN!");
+});

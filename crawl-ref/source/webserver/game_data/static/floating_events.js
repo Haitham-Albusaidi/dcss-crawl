@@ -117,13 +117,17 @@ function ($, comm, renderer, enums, map) {
             lane++;
         if (active.length >= limit || lane >= lanes)
         {
-            // A kill takes the place of a nearby non-kill effect when all
-            // lanes are occupied, or the oldest non-kill at the global cap.
-            const victim = data.kind === "slain"
-                && (lane >= lanes ? neighbours : active)
-                    .find(event => event.kind !== "slain"
-                        && (lane < lanes || neighbours.every(other =>
-                            other === event || other.lane !== event.lane)));
+            if (data.kind !== "slain")
+                return;
+            // Preserve the damage and weapon label when a kill fills a lane.
+            const candidates = (lane >= lanes ? neighbours : active)
+                .filter(event => event.kind !== "slain"
+                    && (lane < lanes || neighbours.every(other =>
+                        other === event || other.lane !== event.lane)));
+            const victim = candidates.find(event => event.kind === "discovery"
+                || (event.kind === "attack" && event.text === "HIT!"))
+                || candidates.find(event => event.kind !== "damage" && event.kind !== "attack")
+                || candidates[0];
             if (!victim)
                 return;
             if (lane >= lanes)
