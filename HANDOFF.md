@@ -295,6 +295,21 @@ for the data contract, frontend assignment, and live payload checks.
      - `screen3_weapon_selection.png`
    - C++ backend contract reviewed and approved in `.ai-team/reviews/webtiles-character-creation_review.json`.
 
+### PR #7 Merge & Post-Merge Verification
+- **Merge Commit**: 3c78cc22196a437b306d3eda4d425e2ea338768c
+- **Target Branch**: main (fast-forwarded and up to date with origin/main)
+- **Status**: Merged and verified.
+- **Local Game Verification**:
+  - Built/linked crawl binary copied to crawl/crawl-ref/source/crawl.
+  - Executed 
+un_server.sh and confirmed startup on http://localhost:8088.
+  - Verified play_dcss.bat launcher flow (#play-dcss-web-trunk) with browser subagent:
+    - Screen 1: Species Selection (Simple/Intermediate/Advanced cards & live codex preview)
+    - Screen 2: Background Selection (Category headers, recommendation badges, preview codex)
+    - Screen 3: Weapon Selection (Weapon cards with skill chips, signed aptitudes +2 apt, and weapon codex)
+  - Verified clean server shutdown via stop_server.sh.
+  - All existing development worktrees preserved intact.
+
 ## WebTiles item inspection contract
 
 Codex exposed optional structured data for weapon, armour, and throwable
