@@ -426,8 +426,12 @@ and game rules remain in place.
 - Socket gameplay verified off-player attack, damage, and death coordinates, first discoveries, and the normal message stream.
 - A socket gameplay cast verified the exact Foxfire title at the caster's tile.
 
-Rendered browser gameplay remains unverified. Antigravity review is pending.
-Its plan-mode run denied its Bash command and the supplied-diff retry timed out.
+- Rendered browser gameplay verified by Antigravity using WebTiles browser subagent:
+  - Character creation with Minotaur Fighter wielding War Axe (`floating_feedback_game_start.png`).
+  - Melee combat with bat/adder capturing simultaneous world-anchored `SLASH!` (war axe), `-3` (damage), and `SLAIN!` gold-accent banner (`floating_feedback_combat_slain.png`).
+  - Exploration and ground item discovery (`floating_feedback_exploration_discovery.png`).
+  - Verified non-blocking pointer events and original message log recording.
+- Cross-agent review approved by Antigravity in `.ai-team/reviews/webtiles-world-floating-events_review.json` (`477723546e`).
 
 ### Code changes relative to the base
 
