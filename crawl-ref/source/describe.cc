@@ -1384,7 +1384,7 @@ static void _append_skill_target_desc(string &description, skill_type skill,
     }
 }
 
-static string _desc_attack_delay(const item_def &item)
+static int _current_item_attack_delay(const item_def &item)
 {
     // Hide speed/heavy brand from unidentified weapons.
     item_def dummy = item;
@@ -1395,9 +1395,13 @@ static string _desc_attack_delay(const item_def &item)
             artefact_set_property(dummy, ARTP_BRAND, SPWPN_NORMAL);
     }
 
-    const float cur_delay = round(you.attack_delay_with(&dummy).expected());
+    return round(you.attack_delay_with(&dummy).expected());
+}
 
-    return make_stringf("\n    Current attack delay: %.1f.", cur_delay / 10);
+static string _desc_attack_delay(const item_def &item)
+{
+    return make_stringf("\n    Current attack delay: %.1f.",
+                       _current_item_attack_delay(item) / 10.0);
 }
 
 static string _describe_missile_dmg_brand(const item_def &item)
@@ -2389,6 +2393,11 @@ special_missile_type missile_ego_from_name(string name,
     return msl;
 }
 
+static int _base_throw_delay(const item_def &item)
+{
+    return 10 + property(item, PWPN_DAMAGE) / 2;
+}
+
 static string _describe_ammo(const item_def &item)
 {
     string description;
@@ -2411,7 +2420,7 @@ static string _describe_ammo(const item_def &item)
     const bool player_throwable = is_throwable(&you, item);
     if (player_throwable)
     {
-        const int throw_delay = (10 + dam / 2);
+        const int throw_delay = _base_throw_delay(item);
         const int target_skill = _item_training_target(item);
 
         description += make_stringf(
@@ -2984,8 +2993,9 @@ static void _uselessness_desc(ostringstream &description, const item_def &item)
  * @param mode    Controls various switches for the length of the description.
  * @return a string with the name, db desc, and some other data.
  */
-string get_item_description(const item_def &item,
-                            item_description_mode mode)
+static string _get_item_description(const item_def &item,
+                                    item_description_mode mode,
+                                    size_t* mechanics_start = nullptr)
 {
     ostringstream description;
     const bool verbose = mode == IDM_DEFAULT || mode == IDM_MONSTER;
@@ -3091,6 +3101,9 @@ string get_item_description(const item_def &item,
             description << " ";
         }
     }
+
+    if (mechanics_start)
+        *mechanics_start = static_cast<size_t>(description.tellp());
 
     bool need_extra_line = true;
     string desc;
@@ -3384,6 +3397,11 @@ string get_item_description(const item_def &item,
     }
 
     return description.str();
+}
+
+string get_item_description(const item_def &item, item_description_mode mode)
+{
+    return _get_item_description(item, mode);
 }
 
 string get_cloud_desc(cloud_type cloud, bool include_title)
@@ -4127,7 +4145,7 @@ static vector<command_type> _allowed_actions(const item_def& item)
     return actions;
 }
 
-static string _actions_desc(const vector<command_type>& actions)
+static vector<string> _item_action_labels(const vector<command_type>& actions)
 {
     // XX code duplication
     static const map<command_type, string> act_str =
@@ -4149,17 +4167,16 @@ static string _actions_desc(const vector<command_type>& actions)
         { CMD_SET_SKILL_TARGET, "(s)kill target" },
         { CMD_MAP_GOTO_TARGET, "(g)o to location" },
     };
+    vector<string> labels;
     bool push_quiver = false;
-    return comma_separated_fn(begin(actions), end(actions),
-                                [&push_quiver] (command_type cmd)
-                                {
-                                    if (cmd == CMD_QUAFF) // assumes quaff appears first
-                                        push_quiver = true;
-                                    else if (push_quiver && cmd == CMD_QUIVER_ITEM)
-                                        return string("qui(v)er");
-                                    return act_str.at(cmd);
-                                },
-                                ", or ") + ".";
+    for (const auto cmd : actions)
+    {
+        labels.push_back(push_quiver && cmd == CMD_QUIVER_ITEM ? "qui(v)er"
+                                                               : act_str.at(cmd));
+        if (cmd == CMD_QUAFF) // assumes quaff appears first
+            push_quiver = true;
+    }
+    return labels;
 }
 
 // Take a key and a list of commands and return the command from the list
@@ -4328,6 +4345,111 @@ void target_item(item_def &item)
     reset_training();
 }
 
+#ifdef USE_TILE_WEB
+static const char* _inspection_kind(const item_def &item)
+{
+    if (item.base_type == OBJ_WEAPONS)
+        return "weapon";
+    if (item.base_type == OBJ_ARMOUR)
+        return "armour";
+    if (item.base_type == OBJ_MISSILES && is_throwable(&you, item))
+        return "throwable";
+    return nullptr;
+}
+
+static void _write_inspection_stats(const item_def &item)
+{
+    tiles.json_open_object("stats");
+    if (item.base_type == OBJ_ARMOUR)
+    {
+        if (item.sub_type != ARM_ORB)
+        {
+            const bool shield = is_shield(item);
+            const int evasion = property(item, PARM_EVASION);
+            tiles.json_write_int(shield ? "base_shield" : "base_armour",
+                                 property(item, PARM_AC));
+            if (shield || get_armour_slot(item) == SLOT_BODY_ARMOUR)
+                tiles.json_write_int("encumbrance", -evasion / 10);
+            else if (evasion)
+                tiles.json_write_int("evasion", evasion / 30);
+        }
+        if (is_enchantable_armour(item))
+            tiles.json_write_int("max_enchantment", armour_max_enchant(item));
+    }
+    else
+    {
+        const bool thrown = item.base_type == OBJ_MISSILES;
+        const bool woe = is_unrandom_artefact(item, UNRAND_WOE);
+        const int damage = property(item, PWPN_DAMAGE);
+        if (!woe)
+        {
+            tiles.json_write_int("base_damage", damage);
+            if (!thrown)
+                tiles.json_write_int("accuracy", property(item, PWPN_HIT));
+        }
+        tiles.json_write_int("base_delay_aut", thrown ? _base_throw_delay(item)
+                                                       : property(item, PWPN_SPEED));
+        tiles.json_write_int("minimum_delay_aut", thrown ? FASTEST_PLAYER_THROWING_SPEED
+                                       : weapon_min_delay(item, item.is_identified()));
+        tiles.json_write_int("minimum_delay_skill", _item_training_target(item) / 10);
+        const skill_type skill = _item_training_skill(item);
+        if (skill != SK_NONE)
+            tiles.json_write_string("skill", skill_name(skill));
+        if (crawl_state.need_save && !is_useless_item(item))
+        {
+            tiles.json_write_int("current_delay_aut", _current_item_attack_delay(item));
+            if (!woe && (!thrown || damage))
+            {
+                int rating = 0;
+                damage_rating(&item, &rating);
+                tiles.json_write_int("damage_rating", rating);
+            }
+        }
+
+        if (thrown)
+        {
+            const int denominator = ammo_always_destroyed(item) ? 1
+                                    : ammo_never_destroyed(item) ? 0
+                                    : ammo_destroy_chance(item);
+            tiles.json_write_int("destroy_denominator", denominator);
+        }
+        else if (!you.has_mutation(MUT_NO_GRASPING)
+                 && !(crawl_state.need_save
+                      && is_weapon_too_large(item, you.body_size(PSIZE_TORSO))
+                      && !you.has_mutation(MUT_QUADRUMANOUS)))
+        {
+            tiles.json_write_int("hands", you.hands_reqd(item) == HANDS_ONE ? 1 : 2);
+        }
+    }
+    tiles.json_close_object();
+}
+
+static void _write_inspection_actions(const vector<string>& labels)
+{
+    tiles.json_open_array("actions");
+    for (auto label : labels)
+    {
+        // These labels come from the engine's static action table.
+        const size_t key_pos = label.find('(');
+        ASSERT(key_pos != string::npos);
+        const int key = label[key_pos + 1];
+        label.erase(key_pos + 2, 1);
+        label.erase(key_pos, 1);
+        tiles.json_open_object();
+        tiles.json_write_int("key", key);
+        tiles.json_write_string("label", uppercase_first(label));
+        tiles.json_close_object();
+    }
+    tiles.json_close_array();
+}
+
+static void _write_inspection_section(const char* name, const string& text)
+{
+    const formatted_string formatted = formatted_string::parse_string(text);
+    tiles.json_write_string(name, formatted.trim().to_colour_string(LIGHTGRAY));
+}
+#endif
+
 /**
  *  Display a pop-up describe any item in the game.
  *
@@ -4361,7 +4483,15 @@ command_type describe_item_popup(const item_def &item,
             loc.describe(true, true).c_str());
     }
 
+#ifdef USE_TILE_WEB
+    size_t mechanics_start = 0;
+    const string item_text = _get_item_description(item, IDM_DEFAULT, &mechanics_start);
+    mechanics_start += desc.size();
+    desc += item_text;
+    const size_t mechanics_end = desc.size();
+#else
     desc += get_item_description(item);
+#endif
 
     string quote;
     if (is_unrandom_artefact(item) && item.is_identified())
@@ -4369,14 +4499,17 @@ command_type describe_item_popup(const item_def &item,
     else
         quote = getQuoteString(item.name(DESC_DBNAME, true, false, false));
 
-    if (!(crawl_state.game_is_hints_tutorial()
-          || quote.empty()))
-    {
+    if (crawl_state.game_is_hints_tutorial())
+        quote.clear();
+    if (!quote.empty())
         desc += "\n_________________\n\n<darkgrey>" + quote + "</darkgrey>";
-    }
 
+    string hints;
     if (crawl_state.game_is_hints())
-        desc += "\n\n" + hints_describe_item(item);
+    {
+        hints = hints_describe_item(item);
+        desc += "\n\n" + hints;
+    }
 
     if (fixup_desc)
         fixup_desc(desc);
@@ -4429,12 +4562,14 @@ command_type describe_item_popup(const item_def &item,
     scroller->set_child(text);
     vbox->add_child(scroller);
 
+    const auto action_labels = _item_action_labels(actions);
     formatted_string footer_text("", CYAN);
     if (!actions.empty())
     {
         if (!spells.empty())
             footer_text.cprintf("Select a spell, or ");
-        footer_text += formatted_string(_actions_desc(actions));
+        footer_text += formatted_string(comma_separated_line(
+            action_labels.begin(), action_labels.end(), ", or ") + ".");
         auto footer = make_shared<Text>();
         footer->set_text(footer_text);
         footer->set_margin_for_crt(1, 0, 0, 0);
@@ -4504,6 +4639,37 @@ command_type describe_item_popup(const item_def &item,
     write_spellset(spells, &item, nullptr);
 
     tiles.json_write_string("actions", footer_text.tostring());
+    if (const char* kind = _inspection_kind(item))
+    {
+        tiles.json_open_object("inspection");
+        tiles.json_write_string("kind", kind);
+        if (item.base_type != OBJ_MISSILES)
+        {
+            if (item.is_identified())
+                tiles.json_write_int("enchantment", item.plus);
+            if (in_inventory(item))
+            {
+                tiles.json_write_bool("equipped", item_is_equipped(item));
+                if (item_is_melded(item))
+                    tiles.json_write_bool("melded", true);
+            }
+        }
+        _write_inspection_stats(item);
+        _write_inspection_actions(action_labels);
+        if (!fixup_desc)
+        {
+            tiles.json_open_object("sections");
+            _write_inspection_section("description", desc.substr(0, mechanics_start));
+            _write_inspection_section("advanced",
+                           desc.substr(mechanics_start, mechanics_end - mechanics_start));
+            if (!quote.empty())
+                _write_inspection_section("lore", quote);
+            if (!hints.empty())
+                _write_inspection_section("notes", hints);
+            tiles.json_close_object();
+        }
+        tiles.json_close_object();
+    }
     tiles.json_open_array("tiles");
     for (const auto &tile : item_tiles)
     {

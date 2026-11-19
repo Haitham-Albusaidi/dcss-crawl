@@ -295,3 +295,12 @@ for the data contract, frontend assignment, and live payload checks.
      - `screen3_weapon_selection.png`
    - C++ backend contract reviewed and approved in `.ai-team/reviews/webtiles-character-creation_review.json`.
 
+## WebTiles item inspection contract
+
+Codex exposed optional structured data for weapon, armour, and throwable
+inspection. The original popup payload stays available for fallback.
+Antigravity owns the UI task on `feature/webtiles-item-inspection-ui`.
+The adapter returned `AUTH_REQUIRED` before editing. The engine contract,
+frontend assignment, and live capture tests are documented in
+[`item-inspection.md`](crawl-ref/source/webserver/item-inspection.md).
+
