@@ -1072,11 +1072,15 @@ spret cast_a_spell(bool check_range, spell_type spell, dist *_target,
     if (hp_cost)
         pay_hp(hp_cost);
 
+#ifdef USE_TILE_WEB
+    const coord_def caster_pos = you.pos();
+    const level_id caster_level = level_id::current();
+#endif
     const spret cast_result = your_spells(spell, 0, !you.divine_exegesis,
                                           nullptr, _target, force_failure);
 #ifdef USE_TILE_WEB
-    if (cast_result == spret::success)
-        tiles.queue_gameplay_event(you, "spell", string(spell_title(spell)) + "!");
+    if (cast_result == spret::success && caster_level == level_id::current())
+        tiles.queue_gameplay_event(caster_pos, "spell", spell_title(spell), 0, "player");
     else if (cast_result == spret::fail)
         tiles.queue_gameplay_event(you, "warning", "Spell Failed!");
 #endif

@@ -5,6 +5,12 @@
 
 #include "AppHdr.h"
 
+#ifdef USE_TILE_WEB
+#include "item-name.h"
+#include "religion.h"
+#include "tileweb.h"
+#endif
+
 #include "mpr.h"
 #include "show.h"
 
@@ -108,6 +114,30 @@ bool show_type::is_cleanable_monster() const
     return cls == SH_MONSTER && !mons_class_is_stationary(mons);
 }
 
+#ifdef USE_TILE_WEB
+static string _feature_discovery(dungeon_feature_type feat)
+{
+    if (feat == DNGN_ALTAR_ECUMENICAL)
+        return "Faded Altar";
+    if (feat_is_altar(feat))
+        return "Altar of " + god_name(feat_altar_god(feat));
+    if (feat == DNGN_ESCAPE_HATCH_UP || feat == DNGN_ESCAPE_HATCH_DOWN)
+        return "Escape Hatch";
+    if (feat == DNGN_ENTER_SHOP || feat == DNGN_ABANDONED_SHOP)
+        return "Shop";
+    if (feat != DNGN_UNDISCOVERED_TRAP && feat_is_trap(feat))
+        return "Trap!";
+    if (feat_is_branch_entrance(feat))
+        return "Branch Entrance";
+    if (feat_is_portal(feat))
+        return "Portal";
+    if (feat_is_staircase(feat))
+        return feat_stair_direction(feat) == CMD_GO_UPSTAIRS
+               ? "Stairs Up" : "Stairs Down";
+    return "";
+}
+#endif
+
 static void _update_feat_at(const coord_def &gp)
 {
     dungeon_feature_type feat = env.grid(gp);
@@ -208,6 +238,15 @@ static void _update_feat_at(const coord_def &gp)
         seen_notable_thing(feat, gp);
 
     dgn_seen_vault_at(gp);
+
+#ifdef USE_TILE_WEB
+    if (tiles.has_receivers() && !crawl_state.game_is_arena() && you.see_cell(gp))
+    {
+        const string text = _feature_discovery(env.map_knowledge(gp).feat());
+        if (!text.empty())
+            tiles.queue_discovery(gp, "feature", text);
+    }
+#endif
 }
 
 static show_item_type _item_to_show_code(const item_def &item)
@@ -262,6 +301,19 @@ void update_item_at(const coord_def &gp, bool wizard)
 
         if (wizard)
             StashTrack.add_stash(gp);
+#ifdef USE_TILE_WEB
+        else if (tiles.has_receivers() && !crawl_state.game_is_arena())
+        {
+            const item_def& item = env.item[item_grid];
+            const bool hide_type = item.base_type == OBJ_RUNES
+                                   ? !you.runes[item.sub_type]
+                                   : item_type_has_ids(item.base_type)
+                                     && !item.is_identified() && !item_type_known(item);
+            tiles.queue_discovery(gp, "item",
+                                  hide_type ? "Item Found!"
+                                            : item.name(DESC_PLAIN, false, false, false));
+        }
+#endif
     }
 
     populate_map_cell_with_item(gp, env.map_knowledge(gp));

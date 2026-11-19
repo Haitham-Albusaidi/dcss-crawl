@@ -5,6 +5,10 @@
 
 #include "AppHdr.h"
 
+#ifdef USE_TILE_WEB
+#include "tileweb.h"
+#endif
+
 #include "melee-attack.h"
 
 #include <algorithm>
@@ -361,6 +365,11 @@ static int _minotaur_headbutt_chance()
 
 void melee_attack::handle_phase_dodged()
 {
+#ifdef USE_TILE_WEB
+    if (!simu && needs_message)
+        tiles.queue_gameplay_event(*defender, defender->is_player() ? "dodge" : "miss",
+                                   defender->is_player() ? "DODGE!" : "MISS!");
+#endif
     did_hit = false;
 
     if (needs_message)
@@ -842,6 +851,35 @@ static void _trigger_coolibah_bardiche(actor* attacker, actor* defender, int dam
  */
 bool melee_attack::handle_phase_hit()
 {
+#ifdef USE_TILE_WEB
+    if (!simu && needs_message)
+    {
+        const char* label = "HIT!";
+        if (weapon && attacker_visible)
+        {
+            // Mixed-damage weapons keep their primary category without an RNG roll.
+            switch (get_vorpal_type(*weapon))
+            {
+            case DVORP_SLICING:
+            case DVORP_CHOPPING:
+            case DVORP_SLASHING:
+                label = "SLASH!";
+                break;
+            case DVORP_CRUSHING:
+                label = "SMASH!";
+                break;
+            case DVORP_PIERCING:
+                label = "PIERCE!";
+                break;
+            default:
+                if (is_range_weapon(*weapon))
+                    label = "SHOT!";
+                break;
+            }
+        }
+        tiles.queue_gameplay_event(*defender, "attack", label);
+    }
+#endif
     did_hit = true;
     perceived_attack = true;
     bool hit_woke_orc = false;
@@ -2629,6 +2667,10 @@ bool melee_attack::player_aux_test_hit()
         return true;
     }
 
+#ifdef USE_TILE_WEB
+    if (!simu)
+        tiles.queue_gameplay_event(*defender, "miss", "MISS!");
+#endif
     mprf("Your %s misses %s.", aux_attack.c_str(),
          defender->name(DESC_THE).c_str());
 
@@ -2694,7 +2736,13 @@ bool melee_attack::player_do_aux_attack(unarmed_attack_type atk)
             return true;
 
         if (attack_shield_blocked())
+        {
+#ifdef USE_TILE_WEB
+            if (!simu)
+                tiles.queue_gameplay_event(*defender, "block", "BLOCK!");
+#endif
             return false;
+        }
         if (player_aux_apply(atk))
             return true;
     }
@@ -2704,6 +2752,10 @@ bool melee_attack::player_do_aux_attack(unarmed_attack_type atk)
 
 bool melee_attack::player_aux_apply(unarmed_attack_type atk)
 {
+#ifdef USE_TILE_WEB
+    if (!simu)
+        tiles.queue_gameplay_event(*defender, "attack", "HIT!");
+#endif
     did_hit = true;
 
     // XXX: Merge action counts into a single entry. (They're otherwise identical.)

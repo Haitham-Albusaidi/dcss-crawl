@@ -4372,10 +4372,16 @@ void inc_hp(int hp_gain, bool silent)
     if (hp_gain < 1 || you.hp >= you.hp_max)
         return;
 
+#ifdef USE_TILE_WEB
+    const int old_hp = you.hp;
+#endif
     you.hp += hp_gain;
 
     if (you.hp > you.hp_max)
         you.hp = you.hp_max;
+#ifdef USE_TILE_WEB
+    tiles.queue_gameplay_event(you, "healing", "", you.hp - old_hp);
+#endif
 
     if (!silent)
     {

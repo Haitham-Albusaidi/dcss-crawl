@@ -1,11 +1,15 @@
-define(["jquery", "comm", "./dungeon_renderer", "./enums"],
-function ($, comm, renderer, enums) {
+define(["jquery", "comm", "./dungeon_renderer", "./enums", "./map_knowledge"],
+function ($, comm, renderer, enums, map) {
     "use strict";
 
     const lifetime = 1250;
     const limit = 12;
     const lanes = 3;
-    const labels = new Set(["spell", "status", "warning", "action"]);
+    const laneOffset = 20;
+    const duplicateInterval = 200;
+    const labels = new Set(["attack", "miss", "block", "dodge", "slain",
+        "discovery", "spell", "status", "warning", "action"]);
+    const seen_discoveries = new Set();
     const active = [];
     let layer, frame;
 
@@ -17,6 +21,7 @@ function ($, comm, renderer, enums) {
         for (const event of active)
             event.node.remove();
         active.length = 0;
+        seen_discoveries.clear();
     }
 
     function update(now)
@@ -36,6 +41,7 @@ function ($, comm, renderer, enums) {
         layer.style.top = rect.top + "px";
         layer.style.width = rect.width + "px";
         layer.style.height = rect.height + "px";
+        layer.style.setProperty("--floating-label-width", Math.max(0, rect.width - 8) + "px");
 
         for (let i = active.length - 1; i >= 0; i--)
         {
@@ -48,16 +54,18 @@ function ($, comm, renderer, enums) {
             }
 
             event.node.hidden = !renderer.in_view(event.x, event.y)
-                || !rect.width || !rect.height;
+                || !rect.width || !rect.height
+                || (event.kind === "discovery" && !map.visible(map.get(event.x, event.y)));
             if (!event.node.hidden)
             {
                 const cell = renderer.canvas_coords(event.x, event.y);
-                const inset = Math.min(event.inset, rect.width / 2);
+                const inset = Math.min(event.label.offsetWidth / 2 + 4, rect.width / 2);
                 const x = Math.max(inset,
                     Math.min(rect.width - inset, (cell.x + cell.width / 2) * scaleX));
                 const top = cell.y * scaleY;
-                const y = top >= 88 ? top - event.lane * 20
-                    : top + cell.height * scaleY + 44 + event.lane * 20;
+                const y = top >= 88 ? top - event.lane * laneOffset
+                    : Math.min(rect.height - 2,
+                        top + cell.height * scaleY + 44 + event.lane * laneOffset);
                 const position = "translate(" + x + "px," + y + "px)";
                 if (event.node.style.transform !== position)
                     event.node.style.transform = position;
@@ -88,17 +96,45 @@ function ($, comm, renderer, enums) {
         else
             return;
 
+        if (data.kind === "discovery" && !map.visible(map.get(data.x, data.y)))
+            return;
+
+        const discovery = data.kind === "discovery"
+            ? JSON.stringify([data.x, data.y, data.target, text])
+            : null;
+        if (discovery && seen_discoveries.has(discovery))
+            return;
+
         const now = window.performance.now();
         const neighbours = active.filter(event =>
             Math.abs(data.x - event.x) <= 2 && Math.abs(data.y - event.y) <= 1);
         if (neighbours.some(event => event.x === data.x && event.y === data.y
-            && event.kind === data.kind && event.text === text && now - event.started < 150))
+            && event.kind === data.kind && event.text === text
+            && now - event.started < duplicateInterval))
             return;
         let lane = 0;
         while (neighbours.some(event => event.lane === lane))
             lane++;
         if (active.length >= limit || lane >= lanes)
-            return;
+        {
+            if (data.kind !== "slain")
+                return;
+            // Preserve the damage and weapon label when a kill fills a lane.
+            const candidates = (lane >= lanes ? neighbours : active)
+                .filter(event => event.kind !== "slain"
+                    && (lane < lanes || neighbours.every(other =>
+                        other === event || other.lane !== event.lane)));
+            const victim = candidates.find(event => event.kind === "discovery"
+                || (event.kind === "attack" && event.text === "HIT!"))
+                || candidates.find(event => event.kind !== "damage" && event.kind !== "attack")
+                || candidates[0];
+            if (!victim)
+                return;
+            if (lane >= lanes)
+                lane = victim.lane;
+            victim.node.remove();
+            active.splice(active.indexOf(victim), 1);
+        }
 
         if (!layer || !layer.isConnected)
         {
@@ -114,11 +150,19 @@ function ($, comm, renderer, enums) {
         label.className = "floating-event-label " + data.kind;
         if (data.target === "player")
             label.classList.add("player");
+        if (data.kind === "discovery" && data.target === "item")
+            label.classList.add("item");
+        if (data.kind === "damage" && data.heavy === true)
+            label.classList.add("heavy");
+        if (data.kind === "status" && text === "Hasted!")
+            label.classList.add("beneficial");
         label.textContent = text;
         node.appendChild(label);
         layer.appendChild(node);
-        active.push({node, x: data.x, y: data.y, lane, text, kind: data.kind,
-                     inset: label.offsetWidth / 2 + 4, started: now});
+        if (discovery)
+            seen_discoveries.add(discovery);
+        active.push({node, label, x: data.x, y: data.y, lane, text, kind: data.kind,
+                     started: now});
         if (frame === undefined)
             frame = window.requestAnimationFrame(update);
     }

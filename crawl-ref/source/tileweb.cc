@@ -17,6 +17,7 @@
 #endif
 
 #include "artefact.h"
+#include "attack.h"
 #include "branch.h"
 #include "command.h"
 #include "coord.h"
@@ -2339,16 +2340,35 @@ void TilesFramework::redraw()
 void TilesFramework::queue_gameplay_event(const actor& target, const char* kind,
                                          const string& text, int amount)
 {
-    // Bound bursts such as area damage, and never reveal unseen monsters.
-    if (!has_receivers() || !you.on_current_level || !in_bounds(target.pos())
-        || m_gameplay_events.size() >= 32
-        || (!target.is_player() && !you.can_see(target)))
+    if (target.is_player() || you.can_see(target))
+        queue_gameplay_event(target.pos(), kind, text, amount,
+                             target.is_player() ? "player" : "monster");
+}
+
+bool TilesFramework::queue_gameplay_event(const coord_def& pos, const char* kind,
+                                         const string& text, int amount,
+                                         const char* target)
+{
+    if (!has_receivers() || !you.on_current_level || !in_bounds(pos)
+        || !you.see_cell(pos) || m_gameplay_events.size() >= 32)
     {
-        return;
+        return false;
     }
 
-    m_gameplay_events.push_back({target.pos(), kind, text, amount,
-                                 target.is_player()});
+    m_gameplay_events.push_back({pos, kind, text, amount, target});
+    return true;
+}
+
+void TilesFramework::queue_discovery(const coord_def& pos, const char* target,
+                                     const string& text)
+{
+    if (!has_receivers() || !you.on_current_level || !you.see_cell(pos))
+        return;
+
+    auto& seen = m_seen_discoveries[level_id::current()];
+    const auto key = make_tuple(pos, string(target), text);
+    if (!seen.count(key) && queue_gameplay_event(pos, "discovery", text, 0, target))
+        seen.insert(key);
 }
 
 void TilesFramework::_send_gameplay_events()
@@ -2360,13 +2380,15 @@ void TilesFramework::_send_gameplay_events()
         json_open_object();
         json_write_string("msg", "gameplay_event");
         json_write_string("kind", event.kind);
-        json_write_string("target", event.player ? "player" : "monster");
+        json_write_string("target", event.target);
         json_write_int("x", pos.x);
         json_write_int("y", pos.y);
         if (!event.text.empty())
             json_write_string("text", event.text);
         if (event.amount > 0)
             json_write_int("amount", event.amount);
+        if (event.kind == "damage" && event.amount >= HIT_STRONG)
+            json_write_bool("heavy", true);
         json_close_object();
         finish_message();
     }
@@ -2384,6 +2406,10 @@ void TilesFramework::update_minimap(const coord_def& gc)
 void TilesFramework::clear_minimap()
 {
     m_gameplay_events.clear();
+    const level_id level = level_id::current();
+    // Transient floors can reuse a branch and depth (e.g. Pandemonium).
+    if (level.is_valid() && !is_connected_branch(level))
+        m_seen_discoveries.erase(level);
     m_origin = coord_def(-1, -1);
     // Changing the origin invalidates coordinates on the client side
     m_current_gc = coord_def(-1, -1);

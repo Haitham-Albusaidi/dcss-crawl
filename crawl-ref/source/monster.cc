@@ -3380,6 +3380,9 @@ bool monster::heal(int amount)
     else if (hit_points == max_hit_points)
         return false;
 
+#ifdef USE_TILE_WEB
+    const int old_hp = hit_points;
+#endif
     hit_points += amount;
 
     bool success = true;
@@ -3395,6 +3398,10 @@ bool monster::heal(int amount)
         props.erase(REAPING_DAMAGE_KEY);
     }
 
+#ifdef USE_TILE_WEB
+    if (hit_points > old_hp)
+        tiles.queue_gameplay_event(*this, "healing", "", hit_points - old_hp);
+#endif
     return success;
 }
 

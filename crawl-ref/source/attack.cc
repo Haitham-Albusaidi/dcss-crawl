@@ -7,6 +7,10 @@
 
 #include "AppHdr.h"
 
+#ifdef USE_TILE_WEB
+#include "tileweb.h"
+#endif
+
 #include "attack.h"
 
 #include <algorithm>
@@ -84,6 +88,10 @@ bool attack::handle_phase_attempted()
 
 void attack::handle_phase_blocked()
 {
+#ifdef USE_TILE_WEB
+    if (!simu && needs_message)
+        tiles.queue_gameplay_event(*defender, "block", "BLOCK!");
+#endif
     damage_done = 0;
 
     if (attacker->is_player())

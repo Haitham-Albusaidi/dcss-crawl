@@ -8,6 +8,10 @@
 
 #include "AppHdr.h"
 
+#ifdef USE_TILE_WEB
+#include "tileweb.h"
+#endif
+
 #include "mon-death.h"
 
 #include "act-iter.h"
@@ -2537,6 +2541,9 @@ item_def* monster_die(monster& mons, killer_type killer,
     if (player_in_branch(BRANCH_ABYSS))
         mons.flags &= ~MF_BANISHED;
 
+#ifdef USE_TILE_WEB
+    const coord_def death_pos = mons.pos();
+#endif
     const bool spectralised = testbits(mons.flags, MF_SPECTRALISED);
 
     if (!mount_death && _monster_avoided_death(&mons, killer, killer_index))
@@ -2601,6 +2608,10 @@ item_def* monster_die(monster& mons, killer_type killer,
                             && !mons_is_tentacle_segment(mons.type);
     const bool real_death    = !(timeout && mons.is_abjurable())
                                && !mons_reset && !was_banished;
+#ifdef USE_TILE_WEB
+    if (was_visible && real_death && !timeout && !silent && !mount_death)
+        tiles.queue_gameplay_event(death_pos, "slain", "SLAIN!", 0, "monster");
+#endif
     // Award experience for suicide if the suicide was caused by the
     // player.
     if (MON_KILL(killer) && monster_killed == killer_index)

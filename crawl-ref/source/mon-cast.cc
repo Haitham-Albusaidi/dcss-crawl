@@ -5,6 +5,10 @@
 
 #include "AppHdr.h"
 
+#ifdef USE_TILE_WEB
+#include "tileweb.h"
+#endif
+
 #include "mon-cast.h"
 
 #include <algorithm>
@@ -7794,6 +7798,9 @@ void mons_cast(monster* mons, bolt pbolt, spell_type spell_cast,
         {
             mons_cast_noise(mons, pbolt, SPELL_LEGENDARY_DESTRUCTION,
                             slot_flags);
+#ifdef USE_TILE_WEB
+            tiles.queue_gameplay_event(*mons, "spell", spell_title(spell_cast));
+#endif
         }
 
         setup_mons_cast(mons, pbolt, SPELL_LEGENDARY_DESTRUCTION);
@@ -7838,6 +7845,11 @@ void mons_cast(monster* mons, bolt pbolt, spell_type spell_cast,
     // Wizard-mode cast monster spells may target the boundary (shift-dir).
     ASSERT(map_bounds(pbolt.target) || !(flags & spflag::targeting_mask));
 
+#ifdef USE_TILE_WEB
+    // Spell-specific messaging also counts as a cast. Suppress secondary
+    // casts whose callers already handled the announcement.
+    const bool announce_cast = do_noise;
+#endif
     if (spell_cast == SPELL_PORTAL_PROJECTILE
         || spell_cast == SPELL_MESMERISE
         || logic && (logic->flags & MSPELL_NO_AUTO_NOISE))
@@ -7847,6 +7859,10 @@ void mons_cast(monster* mons, bolt pbolt, spell_type spell_cast,
 
     if (do_noise)
         mons_cast_noise(mons, pbolt, spell_cast, slot_flags);
+#ifdef USE_TILE_WEB
+    if (announce_cast)
+        tiles.queue_gameplay_event(*mons, "spell", spell_title(spell_cast));
+#endif
 
     if (logic && logic->cast)
     {
