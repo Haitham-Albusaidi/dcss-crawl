@@ -5,6 +5,10 @@
 
 #include "AppHdr.h"
 
+#ifdef USE_TILE_WEB
+#include "tileweb.h"
+#endif
+
 #include "traps.h"
 
 #include <algorithm>
@@ -297,6 +301,14 @@ void trigger_trap(actor& triggerer)
     // Tentacles aren't real monsters, and shouldn't invoke traps.
     if (m && mons_is_tentacle_or_tentacle_segment(m->type))
         return;
+
+#ifdef USE_TILE_WEB
+    if (you_trigger && type != DNGN_PASSAGE_OF_GOLUBRIA
+        && type != DNGN_UNDISCOVERED_TRAP)
+    {
+        tiles.queue_discovery(pos, "feature", "Trap!");
+    }
+#endif
 
     switch (type)
     {

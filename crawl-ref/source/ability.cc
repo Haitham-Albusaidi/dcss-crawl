@@ -5,6 +5,10 @@
 
 #include "AppHdr.h"
 
+#ifdef USE_TILE_WEB
+#include "tileweb.h"
+#endif
+
 #include "ability.h"
 
 #include <cctype>
@@ -3107,8 +3111,16 @@ bool activate_talent(const talent& tal, dist *target)
     if (hp_cost)
         pay_hp(hp_cost);
 
+#ifdef USE_TILE_WEB
+    const coord_def caster_pos = you.pos();
+    const level_id caster_level = level_id::current();
+#endif
     const spret ability_result = _do_ability(abil, fail, target, beam,
                                              piety_cost, mp_cost, hp_cost);
+#ifdef USE_TILE_WEB
+    if (ability_result == spret::success && caster_level == level_id::current())
+        tiles.queue_gameplay_event(caster_pos, "spell", ability_name(tal.which), 0, "player");
+#endif
     ASSERT(!(ability_result == spret::success && fail));
     return handle_post_ability_effects(tal.which, ability_result, piety_cost,
                                        mp_cost, hp_cost, tal.is_invocation);

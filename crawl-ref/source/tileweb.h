@@ -9,11 +9,14 @@
 
 #include <bitset>
 #include <map>
+#include <set>
+#include <tuple>
 #include <vector>
 
 #include <sys/un.h>
 
 #include "cursor-type.h"
+#include "level-id.h"
 #include "map-cell.h"
 #include "map-knowledge.h"
 #include "status.h"
@@ -168,6 +171,10 @@ public:
     void finish_message();
     void send_message(PRINTF(1, ));
     void flush_messages();
+    bool queue_gameplay_event(const coord_def& pos, const char* kind,
+                              const string& text, int amount = 0,
+                              const char* target = "tile");
+    void queue_discovery(const coord_def& pos, const char* target, const string& text);
     void queue_gameplay_event(const actor& target, const char* kind,
                               const string& text = "", int amount = 0);
 
@@ -357,9 +364,10 @@ protected:
         string kind;
         string text;
         int amount;
-        bool player;
+        string target;
     };
     vector<gameplay_event> m_gameplay_events;
+    map<level_id, set<tuple<coord_def, string, string>>> m_seen_discoveries;
 };
 
 // Main interface for tiles functions

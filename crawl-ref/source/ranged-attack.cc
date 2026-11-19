@@ -5,6 +5,10 @@
 
 #include "AppHdr.h"
 
+#ifdef USE_TILE_WEB
+#include "tileweb.h"
+#endif
+
 #include "ranged-attack.h"
 
 #include "areas.h"
@@ -203,7 +207,17 @@ void ranged_attack::handle_phase_dodged()
 {
     did_hit = false;
 
-    if (ev_margin > -defender->missile_repulsion())
+    const bool repelled = ev_margin > -defender->missile_repulsion();
+#ifdef USE_TILE_WEB
+    if (!simu && needs_message)
+    {
+        const bool dodged = defender->is_player() && !repelled;
+        tiles.queue_gameplay_event(*defender, dodged ? "dodge" : "miss",
+                                   dodged ? "DODGE!" : "MISS!");
+    }
+#endif
+
+    if (repelled)
     {
         if (needs_message && defender_visible)
             mprf("The %s is repelled.", proj_name.c_str());
@@ -252,6 +266,10 @@ static bool _jelly_eat_missile(const string& proj_name, int damage_done)
 
 bool ranged_attack::handle_phase_hit()
 {
+#ifdef USE_TILE_WEB
+    if (!simu && needs_message)
+        tiles.queue_gameplay_event(*defender, "attack", "SHOT!");
+#endif
     perceived_attack = true;
 
     if (mulch_bonus()
