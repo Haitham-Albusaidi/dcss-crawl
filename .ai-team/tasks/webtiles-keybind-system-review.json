@@ -1,0 +1,15 @@
+{
+  "task_id": "webtiles-keybind-system-review",
+  "title": "Review the WebTiles shortcut rebuild",
+  "description": "Read-only review of local branch feature/webtiles-keybind-system, current code tip 09ea6216427fa6f30d4155ced406de4abbda1714, against base c5914a65ee. Return concise findings or explicitly state if approved. Do not edit files, publish, push, open a PR, or merge.",
+  "assigned_agent": "antigravity",
+  "worktree_path": "C:\\Users\\Tempc\\Desktop\\dcss\\keybind-system-dev",
+  "mode": "plan",
+  "timeout_seconds": 90,
+  "acceptance_criteria": [
+    "Review command labels, browser modifier and popup routing, and disabled action handling.",
+    "Check backward compatibility of the describe-item wire payload and terminal behavior.",
+    "Report any defects, with file and line where available."
+  ],
+  "context_files": []
+}
