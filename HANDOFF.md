@@ -304,3 +304,34 @@ The adapter returned `AUTH_REQUIRED` before editing. The engine contract,
 frontend assignment, and live capture tests are documented in
 [`item-inspection.md`](crawl-ref/source/webserver/item-inspection.md).
 
+
+
+## 8. WebTiles Universal Modern Item Inspection UI Redesign
+
+**Date & Time:** 2026-11-19  
+**Branch:** `feature/webtiles-item-inspection-ui`  
+**Worktree:** `C:\Users\Tempc\Desktop\dcss\item-inspection-ui-dev`  
+**Commits:**
+- `ad913ed7e00527f6a728dd7245e61b6fed3a7ca0`: `Expose structured WebTiles equipment inspection details` (Codex C++ backend contract)
+- `5d8888fda7fe6e67dbf50438b9393a61f237f374`: `feat(webtiles): implement universal modern dark-fantasy item inspection UI` (Antigravity frontend implementation)
+
+### Implementation Overview
+1. **Universal Scope**:
+   - Implemented unified modern item inspection dialog in `crawl-ref/source/webserver/game_data/static/ui-layouts.js` (`describe_item`, `describe_item_spell_success`) and `style.css`.
+   - Elegantly handles **all items in DCSS**: weapons, armour/shields, missiles/throwables, jewellery, potions, scrolls, wands, spellbooks, food, gold, evocables, and miscellaneous items.
+   - When structured `desc.inspection` exists (weapons, armour, throwables): renders typed stat cards (Base Damage, Accuracy, Delay, Skill, Base AC, Encumbrance, Max Enchantment, Break Chance), status chips (🟢 Equipped / ⚪ In Pack, Enchantment, Hands), description, collapsible advanced mechanics with detailed formula notes, lore quote card, and server-provided action buttons.
+   - When `desc.inspection` is absent (potions, scrolls, wands, books, rings/amulets, evocables, gold): parses category/status badges from title, body, and action hints; extracts lore quotes delimited by `_{10,}`; formats spellset grids; renders identical antique-gold framed sprites and dark charcoal surfaces without empty stat cards.
+2. **Controls & Compatibility**:
+   - Preserved full keyboard hotkey support (`w`/`W` wear/wield, `t` take off, `d` drop, `=` adjust, `i` inscribe, `s` skill target, `Esc` close).
+   - Preserved spell failure comparison toggle (`!`) via `describe_item_spell_success`.
+   - Maintained native WebTiles keycode transport (`comm.send_message("key", { keycode })`) without event listener collisions.
+3. **Verification**:
+   - 24/24 `.ai-team` unit tests passed in 0.382s.
+   - WebTiles Python tests (`auth_test.py`, `util_test.py`) passed.
+   - Live browser verification in WSL WebTiles (`http://localhost:8088`) confirmed:
+     - **War Axe** (`inspection_war_axe.png`): Weapon badges, 4 stat cards, description, collapsible mechanics, lore, and action dock.
+     - **Scale Mail & Robe** (`inspection_robe.png`): Armour badges, Base Armour, Encumbrance, Max Enchantment, stat delta formulas, lore, and wear/drop actions.
+     - **Large Rock** (`inspection_large_rock.png`): Throwable item badges, Base Damage 20, Delay 2.0 turns, Throwing skill, break chance, and minotaur racial notes.
+     - **Potion of Curing** (`inspection_potion_curing.png`): Universal consumable layout, health restoration details, contextual ailment status, lore quote, and responsive `[Esc] Close`.
+   - C++ backend contract reviewed and approved in `.ai-team/reviews/webtiles-item-inspection_review.json`.
+   - Execution report written to `.ai-team/reports/webtiles-item-inspection_report.json`.
