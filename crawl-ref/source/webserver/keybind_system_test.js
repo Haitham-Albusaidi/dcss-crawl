@@ -86,7 +86,7 @@ for (const step of ["species", "background", "weapon"]) {
     };
     const controls = keybinds.creationControls(frame);
     assert.deepEqual(Array.from(controls, entry => entry.hotkey),
-        Array.from(new Set([...subkeys, 8, 27])));
+        [...subkeys, 27]);
     for (const entry of [...frame["main-items"].buttons, ...controls]) {
         const key = keybinds.keyValue(entry.hotkey);
         assert.equal(keybinds.commandCode({ key }), entry.hotkey);

@@ -53,8 +53,6 @@ define(["jquery"], function ($) {
             return !button.disabled;
         });
         var weapon = message.creation.step === "weapon";
-        if (!weapon && !controls.some(function (button) { return button.hotkey === 8; }))
-            controls.push({ hotkey: 8, label: "Back" });
         controls.push({ hotkey: 27, label: weapon ? "Back" : "Cancel" });
         return controls;
     }
