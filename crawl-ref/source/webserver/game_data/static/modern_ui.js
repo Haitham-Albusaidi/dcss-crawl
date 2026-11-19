@@ -104,7 +104,7 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
         $dock = $('<div id="elden-action-dock" class="elden-dock" role="group" aria-label="Action dock" aria-keyshortcuts="Alt+Shift+D"></div>');
         var $inner = $('<div class="elden-dock-inner"></div>');
 
-        // 1. Primary Action Row (Always sleek floating at center-bottom)
+        // Primary action row in the space reserved below the dungeon.
         var $primaryRow = $('<div class="elden-slots-row"></div>');
         $.each(PRIMARY_SLOTS, function (i, item) {
             $primaryRow.append(create_slot(item));
@@ -173,8 +173,7 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
         $inner.append($drawer).append($dpadPopover).append($primaryRow);
         $dock.append($inner);
 
-        // Append directly to body so it floats independently over canvas
-        $("body").append($dock);
+        $("#action_dock_row").append($dock);
 
         // Tooltip
         if ($("#elden-tooltip").length === 0) {
@@ -363,20 +362,16 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
     }
 
     function init() {
+        show_drawer = false;
+        show_dpad = false;
         create_dom();
     }
 
-    $(document).ready(function () {
-        init();
+    $(document).on("game_cleanup.modern_ui", function () {
+        $(document).off("keydown.elden_drawer");
+        if ($tooltip)
+            $tooltip.removeClass("visible");
     });
-
-    $(document).bind("game_init", function () {
-        init();
-    });
-
-    if (document.readyState === "complete" || document.readyState === "interactive") {
-        setTimeout(init, 50);
-    }
 
     return {
         init: init,

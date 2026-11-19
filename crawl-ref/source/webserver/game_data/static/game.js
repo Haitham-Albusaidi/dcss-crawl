@@ -1,9 +1,9 @@
 define(["jquery", "exports", "comm", "client", "key_conversion", "./dungeon_renderer",
-        "./display", "./minimap", "./enums", "./messages", "./options",
+        "./display", "./minimap", "./enums", "./messages", "./options", "./modern_ui",
         "./mouse_control", "./text", "./menu", "./action_panel",  "./player",
         "./ui","./ui-layouts"],
 function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
-        minimap, enums, messages, options, mouse_control) {
+        minimap, enums, messages, options, modern_ui, mouse_control) {
     "use strict";
 
     var layout_parameters = null, ui_state, input_mode;
@@ -74,6 +74,7 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
     }
 
     $(document).on("game_preinit game_cleanup", init);
+    $(document).on("game_init", modern_ui.init);
 
     function layout_params_differ(old_params, new_params)
     {
@@ -110,7 +111,14 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
         var stat_width_px = Math.max(300, Math.min(max_stat_px, measured_char_width + 32));
 
         if (window_width < 640)
-            stat_width_px = Math.min(window_width, 320);
+            stat_width_px = Math.min(stat_width_px, Math.floor(window_width * 0.42));
+
+        $("#stats").css("width", stat_width_px + "px");
+        var left_edge = $("#left_column")[0].getBoundingClientRect().left;
+        var side_edge = $("#right_column")[0].getBoundingClientRect().left;
+        var remaining_width = Math.max(17, Math.floor(side_edge - left_edge - 8));
+        $("#left_column").width(remaining_width);
+        $("#action_dock_row").show();
 
         // Determine height of messages area
 
@@ -126,8 +134,10 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
         $("#messages").replaceWith(old_messages);
         $("#messages_container").scrollTop(old_scroll_top);
 
-        var remaining_width = Math.max(320, window_width - stat_width_px - 8);
-        var remaining_height = Math.max(240, window_height - msg_height_px);
+        var dock_height = $("#action_dock_row").outerHeight();
+        var pane_padding = $("#message_pane").outerHeight() - $("#message_pane").height();
+        var remaining_height = Math.max(17, window_height - msg_height_px
+            - dock_height - pane_padding);
 
         layout_parameters.remaining_width = remaining_width;
         layout_parameters.remaining_height = remaining_height;
@@ -135,25 +145,14 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
         // Position controls
         client.set_layer("normal");
         $("#messages_container").css({
-            "max-height": msg_height_px*msg_height/(msg_height+1),
-            "width": remaining_width
+            "max-height": msg_height_px*msg_height/(msg_height+1)
         });
         dungeon_renderer.fit_to(remaining_width, remaining_height,
                                 show_diameter);
 
         minimap.fit_to(stat_width_px, window_height);
 
-        $("#stats").css("width", stat_width_px + "px");
         $("#mobile_input input").width(remaining_width-12); // 2*padding+2*border
-
-        // Position Elden Ring floating action dock centered in the dungeon area
-        var dock_center_x = Math.round(remaining_width / 2);
-        var max_dock_w = Math.max(260, remaining_width - 16);
-        $("#elden-action-dock").css({
-            "left": dock_center_x + "px",
-            "transform": "translateX(-50%)",
-            "max-width": max_dock_w + "px"
-        });
 
         // Go back to the old layer
         set_ui_state(state);
@@ -226,6 +225,7 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
                 messages.hide();
             }
             $(".action-panel").hide();
+            $("#action_dock_row").hide();
 
             dungeon_renderer.fit_to(width, height, show_diameter);
         }
@@ -236,6 +236,7 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
                                     show_diameter);
             $("#right_column").show();
             $(".action-panel").show();
+            $("#action_dock_row").show();
             messages.show();
         }
         minimap.stop_minimap_farview();

@@ -76,6 +76,7 @@
 #include "tag-version.h"
 #include "teleport.h"
 #include "terrain.h"
+#include "tileweb.h"
 #ifdef USE_TILE
 #include "tilepick.h"
 #include "tileview.h"
@@ -4352,6 +4353,10 @@ int monster::hurt(const actor *agent, int amount, beam_type flavour,
         }
 
         amount = min(amount, hit_points);
+#ifdef USE_TILE_WEB
+        if (amount > 0)
+            tiles.queue_gameplay_event(*this, "damage", "", amount);
+#endif
         hit_points -= amount;
 
         if (flavour == BEAM_DESTRUCTION || flavour == BEAM_MINDBURST)

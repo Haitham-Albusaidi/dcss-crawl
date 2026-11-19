@@ -27,6 +27,7 @@ using std::vector;
 
 class xlog_fields;
 class Menu;
+class actor;
 
 enum WebtilesUIState
 {
@@ -167,6 +168,8 @@ public:
     void finish_message();
     void send_message(PRINTF(1, ));
     void flush_messages();
+    void queue_gameplay_event(const actor& target, const char* kind,
+                              const string& text = "", int amount = 0);
 
     bool has_receivers() { return !m_dest_addrs.empty(); }
     bool is_controlled_from_web() { return m_controlled_from_web; }
@@ -346,6 +349,17 @@ protected:
                     bool& current_uselessness,
                     bool force_full);
     void _send_messages();
+    void _send_gameplay_events();
+
+    struct gameplay_event
+    {
+        coord_def pos;
+        string kind;
+        string text;
+        int amount;
+        bool player;
+    };
+    vector<gameplay_event> m_gameplay_events;
 };
 
 // Main interface for tiles functions

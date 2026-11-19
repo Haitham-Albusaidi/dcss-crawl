@@ -6,6 +6,7 @@
 #include "AppHdr.h"
 
 #include "potion.h"
+#include "tileweb.h"
 
 #include <cstdio>
 #include <cstring>
@@ -77,6 +78,18 @@ bool PotionEffect::check_known_quaff() const
     return true;
 }
 
+static void _heal_from_potion(int amount)
+{
+#ifdef USE_TILE_WEB
+    const int old_hp = you.hp;
+#endif
+    inc_hp(amount);
+#ifdef USE_TILE_WEB
+    if (you.hp > old_hp)
+        tiles.queue_gameplay_event(you, "healing", "", you.hp - old_hp);
+#endif
+}
+
 class PotionCuring : public PotionEffect
 {
 private:
@@ -127,7 +140,7 @@ public:
             int amount = base;
             if (is_potion)
                 amount = you.scale_potion_healing(amount);
-            inc_hp(amount);
+            _heal_from_potion(amount);
         }
 
         if (ddoor)
@@ -210,7 +223,7 @@ public:
         int amount = base;
         if (is_potion)
             amount = you.scale_potion_healing(amount);
-        inc_hp(amount);
+        _heal_from_potion(amount);
         if (is_potion)
             print_potion_heal_message();
         mpr("You feel much better.");

@@ -91,6 +91,7 @@
 #include "stringutil.h"
 #include "tag-version.h"
 #include "terrain.h"
+#include "tileweb.h"
 #ifdef USE_TILE
  #include "tilepick.h"
  #include "tileview.h"
@@ -3303,6 +3304,9 @@ void level_change(bool skip_attribute_increase)
         }
         else  // Character has gained a new level
         {
+#ifdef USE_TILE_WEB
+            tiles.queue_gameplay_event(you, "action", "Level Up!");
+#endif
             // Don't want to see the dead creature at the prompt.
             redraw_screen();
             update_screen();
@@ -4766,6 +4770,10 @@ bool confuse_player(int amount, bool quiet, bool force)
 
     if (you.duration[DUR_CONF] > old_value)
     {
+#ifdef USE_TILE_WEB
+        if (!quiet && !old_value)
+            tiles.queue_gameplay_event(you, "status", "Confused!");
+#endif
         you.wake_up();
 
         if (!quiet)
@@ -4818,6 +4826,10 @@ bool poison_player(int amount, string source, string source_aux, bool force)
 
     if (you.duration[DUR_POISONING] > old_value)
     {
+#ifdef USE_TILE_WEB
+        if (!old_value)
+            tiles.queue_gameplay_event(you, "status", "Poisoned!");
+#endif
         if (poison_is_lethal() && !was_fatal)
             mprf(MSGCH_DANGER, "You are lethally poisoned!");
         else
@@ -5249,7 +5261,12 @@ bool slow_player(int turns)
     else
     {
         if (you.duration[DUR_SLOW] == 0)
+        {
             mprf(MSGCH_WARN, "You feel yourself slow down.");
+#ifdef USE_TILE_WEB
+            tiles.queue_gameplay_event(you, "status", "Slowed!");
+#endif
+        }
         else
             mprf(MSGCH_WARN, "You feel as though you will be slow longer.");
 
@@ -5395,7 +5412,12 @@ bool haste_player(int turns, bool rageext)
     const int threshold = 80;
 
     if (!you.duration[DUR_HASTE])
+    {
         mpr("You feel yourself speed up.");
+#ifdef USE_TILE_WEB
+        tiles.queue_gameplay_event(you, "status", "Hasted!");
+#endif
+    }
     else if (you.duration[DUR_HASTE] > threshold * BASELINE_DELAY)
         mpr("You already have as much speed as you can handle.");
     else if (!rageext)

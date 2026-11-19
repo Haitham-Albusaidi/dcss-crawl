@@ -73,6 +73,7 @@
 #include "stringutil.h"
 #include "teleport.h"
 #include "terrain.h"
+#include "tileweb.h"
 #include "transform.h"
 #include "tutorial.h"
 #include "view.h"
@@ -1510,7 +1511,15 @@ void ouch(int dam, kill_method_type death_type, mid_t source, const char *aux,
     }
     you.source_damage += dam;
 
+#ifdef USE_TILE_WEB
+    const int old_hp = you.hp;
+#endif
     dec_hp(dam, true);
+#ifdef USE_TILE_WEB
+    const int hp_lost = old_hp - max(0, you.hp);
+    if (hp_lost > 0)
+        tiles.queue_gameplay_event(you, "damage", "", hp_lost);
+#endif
 
     // Even if we have low HP messages off, we'll still give a
     // big hit warning (in this case, a hit for half our HPs) -- bwr

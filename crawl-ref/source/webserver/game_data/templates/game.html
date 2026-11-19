@@ -13,19 +13,6 @@
       $(document).trigger("game_init");
       client.uninhibit_messages();
 
-      // Safely initialize Modern Quick Action Toolbar
-      try {
-        require(["game-{{ version }}/modern_ui"], function (modern_ui) {
-          if (modern_ui && modern_ui.init) {
-            modern_ui.init();
-          }
-        }, function (err) {
-          console.warn("Modern UI require error:", err);
-        });
-      } catch (e) {
-        console.warn("Modern UI init error:", e);
-      }
-
       // Initialize Desktop Tiles Tab & Inventory Panel
       try {
         require(["game-{{ version }}/tiles_tab_panel"], function (ttp) {
@@ -93,6 +80,7 @@
       class="action-panel hidden"
       style="display: none"
     ></canvas>
+    <div id="action_dock_row"></div>
     <div id="message_pane">
       <div id="messages_container">
         <div id="messages"></div>
