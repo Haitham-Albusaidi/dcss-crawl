@@ -1,0 +1,20 @@
+{
+  "task_id": "webtiles-world-floating-events-review",
+  "title": "Review world-anchored WebTiles gameplay feedback",
+  "description": "Read-only review of local feature/webtiles-world-floating-events against 8fabbc380e. Inspect the existing overlay changes and game event routing. Return a status and concrete findings with file and line. Do not edit, push, publish, open a pull request, or merge.",
+  "assigned_agent": "antigravity",
+  "worktree_path": "C:\\Users\\Tempc\\Desktop\\dcss\\floating-events-dev",
+  "mode": "plan",
+  "timeout_seconds": 90,
+  "context_files": [],
+  "target_files": [
+    "crawl-ref/source/webserver/game_data/static/floating_events.js",
+    "crawl-ref/source/webserver/game_data/static/style.css",
+    "crawl-ref/source/webserver/floating_events_test.js"
+  ],
+  "acceptance_criteria": [
+    "Check projection, viewport clipping, lane stacking and discovery cleanup.",
+    "Check visibility and identification guards, WebTiles-only C++ hooks and message log preservation.",
+    "Review the feature branch locally and report blocking defects for the publisher handoff."
+  ]
+}

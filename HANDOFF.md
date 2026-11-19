@@ -392,3 +392,61 @@ native link still need verification.
     - **Help & Command Overlays**: Standardized `<kbd>` formatting across command reference lists (`keybinds_help_menu.png`, `keybinds_command_reference.png`).
 - Active worktrees preserved: `keybind-system-dev`, `item-inspection-ui-dev`, `character-creation-ui-dev`.
 
+
+
+## WebTiles world-anchored gameplay feedback
+
+- Branch `feature/webtiles-world-floating-events` in `floating-events-dev`
+- Base `8fabbc380e`
+- Local code commits `33ed288bb0` and `c57a645000`
+- [Antigravity review task](.ai-team/tasks/webtiles-world-floating-events-review.json)
+
+The existing `TilesFramework` queue accepts visible dungeon cells and retains
+the map origin used by WebTiles. Attack handlers use the weapon's primary damage
+category without rolling it. HP hooks use applied amounts, and the monster
+death path uses the saved visible position after revival checks pass. Discovery
+uses visible terrain and the top visible ground item. The server remembers
+tile, category, and displayed label per floor for the game session. It clears
+the cache for transient floors when the map resets.
+
+The existing overlay projects the cell every frame and limits display to
+three nearby lanes and twelve effects overall. Kills can displace a generic
+hit or discovery to keep the weapon label and damage visible. The overlay
+checks map visibility for discoveries, ignores pointer input, and uses a fade
+without travel when reduced motion is enabled. The original message-log path
+and game rules remain in place.
+
+### Checks
+
+- Full WSL WEBTILES=1 build and link passed and generated all seven sprite atlases.
+- Floating event Node tests passed 9/9, including camera scroll, resize, zoom, LOS, lane limits, and expiry.
+- Coordinator Python tests passed 29/29.
+- WebTiles server Python tests passed 27/27.
+- Socket gameplay on seed 126 verified SLASH! (war axe), SMASH! (flail), PIERCE! (trident), and SHOT! (shortbow).
+- Socket gameplay verified off-player attack, damage, and death coordinates, first discoveries, and the normal message stream.
+- A socket gameplay cast verified the exact Foxfire title at the caster's tile.
+
+Rendered browser gameplay remains unverified. Antigravity review is pending.
+Its plan-mode run denied its Bash command and the supplied-diff retry timed out.
+
+### Code changes relative to the base
+
+| File under `crawl-ref/source/` | Added | Removed |
+| --- | ---: | ---: |
+| `ability.cc` | 12 | 0 |
+| `attack.cc` | 8 | 0 |
+| `melee-attack.cc` | 52 | 0 |
+| `mon-cast.cc` | 16 | 0 |
+| `mon-death.cc` | 11 | 0 |
+| `monster.cc` | 7 | 0 |
+| `player.cc` | 6 | 0 |
+| `potion.cc` | 2 | 15 |
+| `ranged-attack.cc` | 19 | 1 |
+| `show.cc` | 52 | 0 |
+| `spl-cast.cc` | 6 | 2 |
+| `tileweb.cc` | 34 | 8 |
+| `tileweb.h` | 9 | 1 |
+| `traps.cc` | 12 | 0 |
+| `webserver/floating_events_test.js` | 107 | 5 |
+| `webserver/game_data/static/floating_events.js` | 55 | 11 |
+| `webserver/game_data/static/style.css` | 25 | 4 |
