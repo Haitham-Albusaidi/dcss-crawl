@@ -5738,3 +5738,175 @@ button:focus-visible:has(> .keybind-badge) {
     position: absolute;
     transform: translate(-100%, -100%);
 }
+
+/* The examination card occupies the existing top target slot. */
+#monster_hud.has-examination #top_target_card {
+    display: none !important;
+}
+
+#game:has(#ui-stack > .ui-popup:not(.hidden)) #monster_hud.has-detailed-examination {
+    display: block !important;
+    z-index: 100001;
+}
+
+#game:has(#ui-stack > .ui-popup:not(.hidden)) #monster_hud.has-detailed-examination #monster_roster {
+    display: none;
+}
+
+#game:has(#monster_hud.has-detailed-examination) #ui-stack > .ui-popup:not(.hidden) {
+    top: var(--er-examine-popup-top, 0px);
+}
+
+#game:has(#monster_hud.has-detailed-examination) #ui-stack > .ui-popup:not(.hidden) > .ui-popup-outer {
+    box-sizing: border-box;
+    margin-block: 8px !important;
+    max-height: calc(100dvh - var(--er-examine-popup-top, 0px) - 16px);
+}
+
+#game:has(#monster_hud.has-detailed-examination) #ui-stack > .ui-popup:not(.hidden) .ui-popup-inner {
+    max-height: calc(100dvh - var(--er-examine-popup-top, 0px) - 58px) !important;
+    overflow: auto;
+}
+
+.er-examine-card {
+    position: absolute;
+    inset-inline: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid #c49a45;
+    border-radius: 8px;
+    background: rgba(16, 20, 26, .92);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .6), 0 0 10px rgba(196, 154, 69, .2);
+    color: #eee8dc;
+    font: 13px/1.35 var(--er-font-sans);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-5px);
+    transition: opacity 140ms ease, transform 140ms ease, visibility 140ms;
+}
+
+.er-examine-card.is-active {
+    position: relative;
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+#monster_hud:has(#top_target_card:not([hidden])) .er-examine-card:not(.is-active) {
+    visibility: hidden;
+    transition: none;
+}
+
+.er-examine-avatar-box {
+    flex: 0 0 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid rgba(196, 154, 69, .55);
+    border-radius: 5px;
+    background: #0a0d12;
+}
+
+.er-examine-avatar-box canvas {
+    image-rendering: pixelated;
+    transform: scale(1.375);
+}
+
+.er-examine-body {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.er-examine-name {
+    color: #f6e6bd;
+    font: 600 clamp(16px, 3vw, 20px)/1.15 var(--er-font-serif, Cinzel, Georgia, serif);
+    margin-block: 4px;
+}
+
+.er-examine-labels, .er-examine-props {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+}
+
+.er-examine-category, .er-examine-badge {
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.er-examine-category, .er-examine-badge[data-tone="unique"],
+.er-examine-badge[data-tone="runed"] {
+    color: #e8c580;
+}
+
+.er-examine-badge { color: #c6ced7; }
+.er-examine-badge[data-tone="dangerous"],
+.er-examine-badge[data-tone="hostile"],
+.er-examine-badge[data-tone="cursed"] { color: #ff8c9b; }
+.er-examine-badge[data-tone="friendly"],
+.er-examine-badge[data-tone="open"] { color: #9ad494; }
+.er-examine-badge[data-tone="neutral"] { color: #a5cbf5; }
+.er-examine-badge[data-tone="hazard"],
+.er-examine-badge[data-tone="locked"] { color: #ffc18d; }
+
+.er-examine-badge:empty, .er-examine-props:empty, .er-examine-desc:empty,
+.er-examine-health[hidden] { display: none; }
+
+.er-examine-health {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    color: #e5d7be;
+    font-variant-numeric: tabular-nums;
+}
+
+.er-examine-health-track {
+    flex: 1;
+    height: 5px;
+    overflow: hidden;
+    background: #343239;
+    border-radius: 5px;
+}
+
+.er-examine-health-fill {
+    height: 100%;
+    transition: width 140ms ease;
+}
+
+.er-examine-props { margin: 5px 0 0; }
+.er-examine-props > div {
+    display: flex;
+    gap: 5px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: rgba(225, 208, 164, .09);
+}
+.er-examine-props dt { color: #e2c483; }
+.er-examine-props dd { margin: 0; }
+.er-examine-desc {
+    margin: 6px 0 0;
+    color: #dbd3c6;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+}
+
+@media (max-width: 460px) {
+    .er-examine-card { gap: 8px; padding: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .er-examine-card, .er-examine-health-fill { transition: none; }
+}

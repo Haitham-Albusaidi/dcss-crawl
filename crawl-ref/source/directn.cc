@@ -310,6 +310,10 @@ bool direction_chooser::targets_enemies() const
 
 void direction_chooser::describe_cell() const
 {
+#ifdef USE_TILE_WEB
+    if (!crawl_state.invisible_targeting)
+        tiles.send_examine_card(target());
+#endif
     print_top_prompt();
     print_key_hints();
     if (Options.monster_item_view_coordinates)
@@ -2315,6 +2319,10 @@ void direction_chooser::describe_target()
 {
     if (!map_bounds(target()) || !env.map_knowledge(target()).known())
         return;
+#ifdef USE_TILE_WEB
+    if (!crawl_state.invisible_targeting)
+        tiles.send_examine_card(target(), 0, true);
+#endif
     if (full_describe_square(target(), false))
         moves.isCancel = force_cancel = true;
     need_all_redraw = true;
@@ -2441,6 +2449,9 @@ void direction_chooser::finalize_moves()
 
 #ifdef USE_TILE
     tiles.place_cursor(CURSOR_MOUSE, NO_CURSOR);
+#ifdef USE_TILE_WEB
+    tiles.send_examine_card(NO_CURSOR);
+#endif
 #endif
 }
 
@@ -2616,8 +2627,16 @@ public:
     {
         if (map_bounds(gc) && m_dc.in_range(gc))
         {
+#ifdef USE_TILE_WEB
+            const coord_def previous = m_dc.target();
+#endif
             tiles.place_cursor(CURSOR_MOUSE, gc);
             process_command(CMD_TARGET_MOUSE_MOVE);
+#ifdef USE_TILE_WEB
+            // Re-entering the canvas on the same square does not redraw the prompt.
+            if (gc == previous && !crawl_state.invisible_targeting)
+                tiles.send_examine_card(gc);
+#endif
             return !m_is_alive;
         }
         return false;

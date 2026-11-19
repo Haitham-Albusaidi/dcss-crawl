@@ -1,0 +1,30 @@
+{
+  "task_id": "webtiles-world-examination-card-review",
+  "title": "Review the WebTiles dungeon examination card",
+  "description": "Review the local feature/webtiles-world-examination-card branch against ed6ff9adad through 17bb3403f9783a934738a1937f3662cea41482ae. This includes implementation commit 2ce0b2b9c7 and the follow-up popup spacing fix. Return a structured status and concrete findings with file and line. This review task is read-only. The publisher can stage and publish after recording the review and checking the handoff.",
+  "assigned_agent": "antigravity",
+  "worktree_path": "C:\\Users\\Tempc\\Desktop\\dcss\\examination-card-dev",
+  "branch": "feature/webtiles-world-examination-card",
+  "base_commit": "ed6ff9adad",
+  "implementation_commit": "17bb3403f9783a934738a1937f3662cea41482ae",
+  "mode": "plan",
+  "timeout_seconds": 150,
+  "context_files": [],
+  "target_files": [
+    "crawl-ref/source/directn.cc",
+    "crawl-ref/source/tileweb.cc",
+    "crawl-ref/source/tileweb.h",
+    "crawl-ref/source/dat/dlua/lm_timed.lua",
+    "crawl-ref/source/webserver/game_data/static/examination_card.js",
+    "crawl-ref/source/webserver/game_data/static/dungeon_renderer.js",
+    "crawl-ref/source/webserver/game_data/static/display.js",
+    "crawl-ref/source/webserver/game_data/static/style.css",
+    "crawl-ref/source/webserver/examination_card_test.js"
+  ],
+  "acceptance_criteria": [
+    "Check keyboard and mouse targeting, normal hover, and transitions back to gameplay.",
+    "Check fog of war, invisible enemies, unidentified items, and the apparent floor for unrevealed traps.",
+    "Check sprite rendering, mobile layout, overlap prevention, legacy detailed examination, and the message log.",
+    "Record review findings before publication."
+  ]
+}

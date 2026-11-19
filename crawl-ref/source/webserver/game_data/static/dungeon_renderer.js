@@ -1,7 +1,8 @@
 define(["jquery", "comm", "./cell_renderer", "./map_knowledge", "./options",
-    "./tileinfo-dngn", "./util", "./view_data", "./enums", "./mouse_control"],
+    "./tileinfo-dngn", "./util", "./view_data", "./enums", "./mouse_control",
+    "./examination_card"],
 function ($, comm, cr, map_knowledge, options, dngn, util, view_data, enums,
-    mouse_control) {
+    mouse_control, examination_card) {
     "use strict";
     var global_anim_counter = 0;
 
@@ -65,7 +66,7 @@ function ($, comm, cr, map_knowledge, options, dngn, util, view_data, enums,
         this.view = { x: 0, y: 0 };
         this.view_center = { x: 0, y: 0 };
         this.ui_state = -1;
-        this.last_sent_cursor = { x: 0, y: 0 };
+        this.last_sent_cursor = null;
     }
 
     DungeonViewRenderer.prototype = new cr.DungeonCellRenderer();
@@ -105,6 +106,8 @@ function ($, comm, cr, map_knowledge, options, dngn, util, view_data, enums,
                     this.tooltip_timeout = null;
                 }
 
+                examination_card.leaveDungeon();
+                this.last_sent_cursor = null;
                 view_data.remove_cursor(enums.CURSOR_MOUSE);
             }
             else
@@ -121,8 +124,9 @@ function ($, comm, cr, map_knowledge, options, dngn, util, view_data, enums,
 
                 if (game.can_target())
                 {
+                    examination_card.moveTarget(loc);
                     // XX refactor into mouse_control.js?
-                    if (loc.x != this.last_sent_cursor.x
+                    if (!this.last_sent_cursor || loc.x != this.last_sent_cursor.x
                         || loc.y != this.last_sent_cursor.y)
                     {
                         this.last_sent_cursor = {x: loc.x, y: loc.y};
@@ -133,6 +137,8 @@ function ($, comm, cr, map_knowledge, options, dngn, util, view_data, enums,
 
                 if (ev.type === "mousemove")
                 {
+                    if (game.get_input_mode() === enums.mouse_mode.COMMAND)
+                        examination_card.moveHover(loc);
 
                     if (this.tooltip_timeout)
                         clearTimeout(this.tooltip_timeout);
@@ -185,6 +191,7 @@ function ($, comm, cr, map_knowledge, options, dngn, util, view_data, enums,
                 y: y - Math.floor(this.rows / 2)
             };
             this.shift(this.view.x - old_view.x, this.view.y - old_view.y);
+            examination_card.onMapChange({});
         },
 
         // convert grid coordinates/dimensions to scaled canvas coordinates
@@ -430,16 +437,16 @@ function ($, comm, cr, map_knowledge, options, dngn, util, view_data, enums,
 
         update_mouse_mode: function (m)
         {
+            examination_card.modeChanged(game.can_target());
+            this.last_sent_cursor = null;
             if (!game.can_target())
-            {
-                this.last_sent_cursor = { x: 0, y: 0 };
                 this.aim_label = "";
-            }
             this.update_aim_marker();
         },
     });
 
     var renderer = new DungeonViewRenderer();
+    examination_card.setViewport(loc => renderer.in_view(loc.x, loc.y));
     var anim_interval = null;
 
     function update_animation_interval()

@@ -23,6 +23,8 @@
 #include "coord.h"
 #include "database.h"
 #include "describe.h"
+#include "describe-god.h"
+#include "cloud.h"
 #include "directn.h"
 #include "english.h"
 #include "env.h"
@@ -40,6 +42,7 @@
 #include "outer-menu.h"
 #include "message.h"
 #include "mon-util.h"
+#include "monster.h"
 #include "mon-info-flag-name.h"
 #include "notes.h"
 #include "options.h"
@@ -52,6 +55,8 @@
 #include "skills.h"
 #include "state.h"
 #include "status.h"
+#include "shopping.h"
+#include "terrain.h"
 #include "stringutil.h"
 #include "throw.h"
 #include "tile-flags.h"
@@ -368,6 +373,319 @@ wint_t TilesFramework::_receive_control_message()
     }
 }
 
+struct examination_card
+{
+    string type, name, category, badge, desc;
+    tileidx_t tile = 0;
+    int hp = -1;
+    vector<pair<string, string>> props;
+};
+
+static string _examine_snippet(string desc)
+{
+    desc = trimmed_string(desc);
+    const size_t paragraph = desc.find("\n\n");
+    if (paragraph != string::npos)
+        desc.resize(paragraph);
+    replace(desc.begin(), desc.end(), '\n', ' ');
+    return desc;
+}
+
+static examination_card _examine_item(const item_def &item)
+{
+    examination_card card;
+    card.type = "item";
+    if (item.is_identified())
+        card.name = item.name(DESC_PLAIN, false, false, false);
+    else
+    {
+        item_def visible_item = item;
+        visible_item.flags &= ~ISFLAG_CURSED;
+        card.name = visible_item.name(DESC_PLAIN, false, false, false);
+    }
+    card.name = uppercase_first(card.name);
+    switch (item.base_type)
+    {
+    case OBJ_WEAPONS:   card.category = "Weapon"; break;
+    case OBJ_ARMOUR:    card.category = "Armour"; break;
+    case OBJ_POTIONS:   card.category = "Potion"; break;
+    case OBJ_SCROLLS:   card.category = "Scroll"; break;
+    case OBJ_WANDS:     card.category = "Wand"; break;
+    case OBJ_JEWELLERY: card.category = "Jewellery"; break;
+    case OBJ_MISCELLANY: card.category = "Miscellany"; break;
+    default: card.category = uppercase_first(base_type_string(item)); break;
+    }
+
+    card.tile = tileidx_item(item);
+    if (item.quantity > 1)
+        card.props.emplace_back("Quantity", to_string(item.quantity));
+    if (item.is_identified())
+    {
+        if (item.flags & ISFLAG_CURSED)
+            card.badge = "Cursed";
+        if (item.base_type == OBJ_WEAPONS)
+        {
+            card.props.emplace_back("Base damage", to_string(property(item, PWPN_DAMAGE)));
+            card.props.emplace_back("Accuracy", make_stringf("%+d", property(item, PWPN_HIT)));
+            card.props.emplace_back("Base delay", make_stringf("%.1f turns",
+                                    property(item, PWPN_SPEED) / 10.0));
+            if (get_weapon_brand(item) != SPWPN_NORMAL)
+                card.props.emplace_back("Brand", weapon_brand_name(item, false));
+        }
+        else if (item.base_type == OBJ_ARMOUR)
+        {
+            card.props.emplace_back("Base AC", to_string(property(item, PARM_AC)));
+            card.props.emplace_back("Encumbrance", to_string(-property(item, PARM_EVASION) / 10));
+        }
+    }
+
+    if (item.is_identified() || item_type_known(item))
+        card.desc = _examine_snippet(getLongDescription(item.name(DESC_DBNAME)));
+    else
+        card.desc = "Unidentified.";
+    return card;
+}
+
+static examination_card _examine_monster(const monster_info &mi, int distance)
+{
+    examination_card card;
+    card.type = "monster";
+    card.category = "Monster";
+    card.name = mi.full_name(DESC_PLAIN);
+    if (mons_is_unique(mi.type))
+        card.badge = "Unique";
+    else if (mi.attitude == ATT_FRIENDLY)
+        card.badge = "Friendly";
+    else if (mi.attitude != ATT_HOSTILE)
+        card.badge = "Neutral";
+    else if (mi.threat >= MTHRT_TOUGH)
+        card.badge = "Dangerous";
+    else
+        card.badge = "Hostile";
+
+    card.props.emplace_back("Distance", distance <= 1 ? "⚔ Melee"
+                                        : make_stringf("🏹 Range %d", distance));
+    // Display the familiar wound bands without exposing exact combat HP.
+    switch (mi.dam)
+    {
+    case MDAM_OKAY:               card.hp = 100; break;
+    case MDAM_LIGHTLY_DAMAGED:     card.hp = 90; break;
+    case MDAM_MODERATELY_DAMAGED:  card.hp = 70; break;
+    case MDAM_HEAVILY_DAMAGED:     card.hp = 50; break;
+    case MDAM_SEVERELY_DAMAGED:    card.hp = 30; break;
+    case MDAM_ALMOST_DEAD:        card.hp = 10; break;
+    default: break;
+    }
+    const auto attrs = mi.attributes();
+    card.desc = comma_separated_line(attrs.begin(), attrs.end());
+    card.tile = tileidx_monster(mi).tile();
+    return card;
+}
+
+static examination_card _examine_cloud(const cloud_info &cloud)
+{
+    examination_card card;
+    card.type = "cloud";
+    card.category = "Cloud";
+    card.name = "Cloud of " + cloud_type_name(cloud.type);
+    card.tile = tileidx_cloud(cloud);
+    if (cloud_damages_over_time(cloud.type))
+        card.badge = "Hazard";
+    card.desc = _examine_snippet(get_cloud_desc(cloud.type, false));
+    if (card.desc.empty())
+    {
+        const string damage = desc_cloud_damage(cloud.type, true);
+        if (!damage.empty())
+            card.desc = "Exposure damage: " + damage + ".";
+    }
+    return card;
+}
+
+static examination_card _examine_feature(const coord_def &gc,
+                                         dungeon_feature_type feat)
+{
+    examination_card card;
+    card.type = "terrain";
+    card.category = "Terrain";
+    if (feat == DNGN_FLOOR)
+    {
+        card.name = "Floor";
+        card.tile = tileidx_feature_base(DNGN_FLOOR);
+        return card;
+    }
+
+    card.name = uppercase_first(feature_description_at(gc, false, DESC_BASENAME));
+    card.tile = tileidx_feature(gc);
+
+    if (feat_is_altar(feat))
+    {
+        card.type = "altar";
+        card.category = "Deity / Altar";
+        const god_type god = feat_altar_god(feat);
+        if (god != GOD_NO_GOD)
+        {
+            card.name = "Altar of " + god_name(god);
+            card.desc = _examine_snippet(getLongDescription(god_name(god)));
+            if (you_worship(god))
+                card.props.emplace_back("Standing", god_title(god, you.species,
+                                                              you.raw_piety));
+        }
+    }
+    else if (feat_is_door(feat))
+    {
+        card.type = "door";
+        card.category = "Door";
+        if (feat_is_runed(feat))
+            card.badge = "Runed";
+        else if (feat_is_sealed(feat))
+            card.badge = "Locked";
+        else if (feat_is_open_door(feat))
+            card.badge = "Open";
+        else if (feat_is_closed_door(feat))
+            card.badge = "Closed";
+        if (feat_is_clear_door(feat))
+            card.props.emplace_back("Material", "Clear glass");
+        else if (card.name.find("iron") != string::npos
+                 || starts_with(card.name, "Iron"))
+            card.props.emplace_back("Material", "Iron");
+        else if (card.name.find("stone") != string::npos
+                 || starts_with(card.name, "Stone"))
+            card.props.emplace_back("Material", "Stone");
+    }
+    else if (feat_is_trap(feat))
+    {
+        // The feature is taken from map knowledge. Unrevealed traps never
+        // reach this branch, and the live trap grid is deliberately unused.
+        card.type = "trap";
+        card.category = card.name;
+        card.badge = "Hazard";
+    }
+    else if (feat == DNGN_ENTER_SHOP)
+    {
+        card.type = "shop";
+        card.category = "Shop";
+        if (const shop_struct *shop = shop_at(gc))
+        {
+            card.name = shop_name(*shop);
+            card.props.emplace_back("Store type", shop_type_name(shop->type));
+            if (shop->type == SHOP_DISTILLERY)
+                card.desc = "Sells potions.";
+            else if (shop->type == SHOP_GENERAL || shop->type == SHOP_GENERAL_ANTIQUE)
+                card.desc = "Sells a variety of goods.";
+        }
+    }
+    else if (feat_is_stone_stair(feat) || feat_is_escape_hatch(feat)
+             || feat == DNGN_EXIT_DUNGEON)
+    {
+        card.type = "stair";
+        card.category = feat_is_escape_hatch(feat) ? "Escape hatch" : "Stairs";
+        const bool down = feat_stair_direction(feat) == CMD_GO_DOWNSTAIRS;
+        card.props.emplace_back("Direction", down ? "Down" : "Up");
+        // Only use destinations inferable from the visible staircase.
+        if (feat_is_stone_stair(feat))
+        {
+            const int depth = you.depth + (down ? 1 : -1);
+            if (depth > 0 && depth <= brdepth[you.where_are_you])
+                card.props.emplace_back("Destination",
+                                        level_id(you.where_are_you, depth).describe(true));
+        }
+        if (feat_is_escape_hatch(feat))
+            card.desc = "Quick escape. The hatch is one-way.";
+        else if (down)
+            card.desc = "Leads deeper into the dungeon.";
+    }
+    else if (feat_is_portal(feat) || feat_is_gate(feat)
+             || feat_is_branch_entrance(feat) || feat_is_branch_exit(feat))
+    {
+        card.type = "portal";
+        card.category = "Portal";
+        if (env.markers.property_at(gc, MAT_ANY, "examine_timed") == "yes")
+            card.props.emplace_back("Stability", "Temporary entrance");
+        for (branch_iterator it; it; ++it)
+            if (it->entry_stairs == feat)
+            {
+                card.props.emplace_back("Destination", it->longname);
+                break;
+            }
+    }
+    else if (feat_is_lava(feat) || feat_is_deep_water(feat))
+    {
+        card.badge = "Hazard";
+        card.desc = feat_is_lava(feat) ? "Dangerous without flight."
+                                        : "Requires flight or suitable movement.";
+    }
+    else if (feat_is_shallow_water(feat))
+        card.props.emplace_back("Movement", "Slows movement for most creatures");
+    else if (feat_is_solid(feat))
+        card.props.emplace_back("Movement", "Impassable");
+
+    if (card.desc.empty())
+    {
+        describe_info info;
+        get_feature_desc(gc, info, false);
+        card.desc = _examine_snippet(info.body.str());
+    }
+    return card;
+}
+
+void TilesFramework::send_examine_card(const coord_def &gc, int request,
+                                       bool detailed)
+{
+    examination_card card;
+    if (gc != NO_CURSOR && you.on_current_level && map_bounds(gc)
+        && you.see_cell(gc))
+    {
+        const map_cell &cell = env.map_knowledge(gc);
+        if (cell.visible())
+        {
+            const monster *mon = monster_at(gc);
+            const monster_info *mi = cell.monsterinfo();
+            const int item = you.visible_igrd(gc);
+            // Treat an unrevealed trap exactly like its apparent floor.
+            const dungeon_feature_type feat = cell.feat() == DNGN_UNDISCOVERED_TRAP
+                                              ? DNGN_FLOOR : cell.feat();
+            if (mi && mon && mon->alive() && mon->visible_to(&you)
+                && !cell.detected_monster() && !cell.invisible_monster())
+            {
+                card = _examine_monster(*mi, grid_distance(you.pos(), gc));
+            }
+            else if (cell.cloud() != CLOUD_NONE)
+                card = _examine_cloud(*cell.cloudinfo());
+            else if (item != NON_ITEM && !show_terrain_before_item(feat))
+                card = _examine_item(env.item[item]);
+            else if (feat != DNGN_UNSEEN && (feat != DNGN_FLOOR || request == 0))
+                card = _examine_feature(gc, feat);
+        }
+    }
+
+    json_open_object();
+    json_write_string("msg", "examine_card");
+    json_write_int("request", request);
+    json_write_bool("active", !card.type.empty());
+    if (!card.type.empty())
+    {
+        json_open_object("loc");
+        json_write_int("x", gc.x - m_origin.x);
+        json_write_int("y", gc.y - m_origin.y);
+        json_close_object();
+        json_write_bool("detailed", detailed);
+        json_write_string("type", card.type);
+        json_write_string("name", card.name);
+        json_write_string("category", card.category);
+        json_write_string("badge", card.badge);
+        json_write_string("desc", card.desc);
+        json_write_int("tile", card.tile);
+        if (card.hp >= 0)
+            json_write_int("hp", card.hp);
+        json_open_object("props");
+        for (const auto &prop : card.props)
+            json_write_string(prop.first, prop.second);
+        json_close_object();
+    }
+    json_close_object();
+    finish_message();
+}
+
 static int _handle_cell_target(const coord_def &gc)
 {
     // describe
@@ -549,6 +867,23 @@ wint_t TilesFramework::_handle_control_message(sockaddr_un addr, string data)
 
         c = _handle_cell_click(gc, button->number_,
                         force.node && force->tag == JSON_BOOL && force->bool_);
+    }
+    else if (msgtype == "examine_cell")
+    {
+        const JsonNode *x = json_find_member(obj.node, "x");
+        const JsonNode *y = json_find_member(obj.node, "y");
+        const JsonNode *request = json_find_member(obj.node, "request");
+        if (x && x->tag == JSON_NUMBER && abs(x->number_) < GXM
+            && y && y->tag == JSON_NUMBER && abs(y->number_) < GYM
+            && request && request->tag == JSON_NUMBER
+            && request->number_ >= 1 && request->number_ <= INT_MAX
+            && !m_origin.equals(-1, -1)
+            && !crawl_state.invisible_targeting
+            && mouse_control::current_mode() == MOUSE_MODE_COMMAND)
+        {
+            send_examine_card(coord_def(int(x->number_), int(y->number_))
+                              + m_origin, int(request->number_));
+        }
     }
     else if (msgtype == "target_cursor")
     {
@@ -1867,7 +2202,11 @@ void TilesFramework::_send_cell(const coord_def &gc,
 void TilesFramework::_send_cursor(cursor_type type)
 {
     if (m_cursor[type] == NO_CURSOR)
+    {
         send_message("{\"msg\":\"cursor\",\"id\":%d}", type);
+        if (type == CURSOR_MAP)
+            send_examine_card(NO_CURSOR);
+    }
     else
     {
         if (m_origin.equals(-1, -1))

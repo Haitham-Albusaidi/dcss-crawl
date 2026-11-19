@@ -460,3 +460,62 @@ and game rules remain in place.
 | `webserver/floating_events_test.js` | 107 | 5 |
 | `webserver/game_data/static/floating_events.js` | 55 | 11 |
 | `webserver/game_data/static/style.css` | 25 | 4 |
+
+
+## WebTiles world examination card
+
+- Branch `feature/webtiles-world-examination-card` in `examination-card-dev`
+- Base `ed6ff9adad`
+- Local code commits `2ce0b2b9c7` and `17bb3403f9`
+- [Antigravity review task](.ai-team/tasks/webtiles-world-examination-card-review.json)
+
+The WebTiles direction chooser sends `examine_card` messages for `x`, cursor
+movement, and the detailed `v` command. The renderer debounces normal hover
+requests and accepts the response for the current visible cell. The card uses
+the top monster HUD slot and restores the usual threat card when cleared.
+The legacy detailed popup opens below the card. Examination messages and
+popup actions continue through the original paths.
+
+The C++ dispatcher requires player line of sight and visible map knowledge.
+It omits invisible monsters, treats an unrevealed trap as ordinary floor, and
+gates item brands, pluses, and curses on identification. Monster percentages
+represent known wound bands. Timed portals display a temporary-entrance
+indicator based on the existing marker.
+
+### Checks
+
+- Full WSL build and incremental relink passed with `make -j4 WEBTILES=y crawl`.
+- Examination card Node tests passed 22/22. Floating event Node tests passed
+  9/9, and the keybind suite passed.
+- Coordinator Python unittest discovery passed 29/29 and 22/22 across the
+  two test directories. The assigned checkout uses unittest discovery.
+- WebTiles Python pytest passed 27/27.
+- A seeded live WebTiles socket verified keyboard and mouse target changes,
+  the `v` popup, the original message stream, targeting exit, terrain hover,
+  and an unidentified potion. The out-of-LOS response contained only the
+  request and inactive flag alongside the message type.
+- Headless Chromium on an isolated WebTiles server verified sprite pixels,
+  the `x` and `v` display, non-overlapping popup placement at desktop and
+  400px widths, Escape, normal mouse hover, and mouseleave.
+- Cross-agent review completed by Antigravity: **APPROVED** (status recorded in `.ai-team/reviews/webtiles-world-examination-card_review.json`).
+- Live WebTiles browser verification passed across all target categories:
+  - Stairs: `Staircase leading out of the dungeon` with `Direction Up` pill and sprite.
+  - Items: `Blue potion` (unidentified masking) and `2 stones` (quantity 2, throwable description).
+  - Monsters: `Frilled lizard` (health bar, hostile badge, range distance indicator).
+  - Terrain: Floor, rock walls (movement impassable).
+  - Detailed examination (`v`): Modal tactical codex opens cleanly below top card with dynamic vertical margin offset.
+  - Lifecycle: `Escape` dismisses card cleanly; mouse hover triggers smooth contextual inspection.
+
+### Code changes relative to the base
+
+| File under `crawl-ref/source/` | Added | Removed | Component |
+| --- | ---: | ---: | --- |
+| `dat/dlua/lm_timed.lua` | 3 | 0 | `TimedMarker` |
+| `directn.cc` | 19 | 0 | `direction_chooser`, `UIDirectionChooserView` |
+| `tileweb.cc` | 339 | 0 | `TilesFramework`, `examination_card` |
+| `tileweb.h` | 2 | 0 | `TilesFramework::send_examine_card` |
+| `webserver/examination_card_test.js` | 244 | 0 | Card fixtures and lifecycle |
+| `webserver/game_data/static/display.js` | 5 | 2 | Map updates and reset |
+| `webserver/game_data/static/dungeon_renderer.js` | 14 | 7 | `DungeonViewRenderer` |
+| `webserver/game_data/static/examination_card.js` | 209 | 0 | WebSocket handler, view state, sprite rendering |
+| `webserver/game_data/static/style.css` | 172 | 0 | `.er-examine-card`, HUD and popup placement |
