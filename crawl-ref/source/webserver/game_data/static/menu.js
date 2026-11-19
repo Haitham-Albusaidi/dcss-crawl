@@ -1,6 +1,6 @@
 define(["jquery", "comm", "client", "./ui", "./enums", "./cell_renderer",
-        "./util", "./options", "./scroller", "./tiles_tab_panel", "./player"],
-function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) {
+        "./util", "./options", "./scroller", "./tiles_tab_panel", "./player", "./keybinds"],
+function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player, keybinds) {
     "use strict";
 
     // Helpers
@@ -95,8 +95,8 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                 var rawText = (menu.tag === "pickup" ? elem.text() : item_text(item) || "").trim();
                 // Match hotkey e.g. "f - Golden Breath...", "a ) Manual", "1. Item"
                 var match = rawText.match(/^([a-zA-Z0-9?*!#+=-])(?:\s*[-.)]\s*|\s{2,})(.*)$/);
-                var hotkey = match ? match[1] : (item.hotkeys && item.hotkeys.length ? String.fromCharCode(item.hotkeys[0]) : "");
-                var desc = match ? match[2].trim() : rawText;
+                var hotkey = item.hotkeys && keybinds.keyValue(item.hotkeys[0]);
+                var desc = match && match[1] === hotkey ? match[2].trim() : rawText;
 
                 // Split multiple column fields (e.g. abilities / spells have: Name | Type/Cost | Failure/Level)
                 var cols = desc.split(/\s{2,}/);
@@ -185,7 +185,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                 var $card = $('<div class="inv-grid-card"></div>');
                 if (hotkey)
                 {
-                    $card.append('<span class="inv-hotkey-badge">' + hotkey.toUpperCase() + '</span>');
+                    $card.append(keybinds.badge(hotkey).addClass("inv-slot-key"));
                     elem.attr("data-hotkey", hotkey.toLowerCase());
                 }
 
@@ -200,7 +200,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                     var fallbackIcon = defaultIcons[menu.tag] || "✦";
                     if (menu.tag === "prompt")
                     {
-                        var lk = hotkey.toLowerCase();
+                        var lk = (hotkey || "").toLowerCase();
                         if (lk === "y") fallbackIcon = "✔️";
                         else if (lk === "n") fallbackIcon = "❌";
                         else fallbackIcon = "⚡";
@@ -387,12 +387,12 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                     '<div class="skills-active-modes" id="skills-mode-badges"></div>' +
                 '</div>' +
                 '<div class="skills-er-header-right">' +
-                    '<button class="skills-btn-ctrl" data-key="47" title="Toggle Auto/Manual Mode (/)">[/] Mode</button>' +
-                    '<button class="skills-btn-ctrl" data-key="42" title="Toggle Useful/All Skills (*)">[*] Filter</button>' +
-                    '<button class="skills-btn-ctrl" data-key="33" title="Toggle Training View (!)">[!] View</button>' +
-                    '<button class="skills-btn-ctrl" data-key="61" title="Set Skill Target (=)">[=] Target</button>' +
-                    '<button class="skills-btn-ctrl" data-key="63" title="Help (?)">[?] Help</button>' +
-                    '<button class="skills-btn-close" data-key="27" title="Close (Esc)">✕ Esc</button>' +
+                    '<button class="skills-btn-ctrl" data-key="47">' + keybinds.html("/") + ' Mode</button>' +
+                    '<button class="skills-btn-ctrl" data-key="42">' + keybinds.html("*") + ' Filter</button>' +
+                    '<button class="skills-btn-ctrl" data-key="33">' + keybinds.html("!") + ' View</button>' +
+                    '<button class="skills-btn-ctrl" data-key="61">' + keybinds.html("=") + ' Target</button>' +
+                    '<button class="skills-btn-ctrl" data-key="63">' + keybinds.html("?") + ' Help</button>' +
+                    '<button class="skills-btn-close" data-key="27" aria-label="Close">✕ Esc</button>' +
                 '</div>' +
             '</div>'
         );
@@ -403,19 +403,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
         menu_div.append(grid_view);
 
         // 3. Bottom controls bar
-        var footer = $(
-            '<div class="skills-er-footer">' +
-                '<div class="skills-footer-btns">' +
-                    '<button class="skills-action-pill" data-key="47"><kbd>[/]</kbd> Auto / Manual</button>' +
-                    '<button class="skills-action-pill" data-key="42"><kbd>[*]</kbd> Useful / All</button>' +
-                    '<button class="skills-action-pill" data-key="33"><kbd>[!]</kbd> Training / Target View</button>' +
-                    '<button class="skills-action-pill" data-key="61"><kbd>[=]</kbd> Set Target</button>' +
-                    '<button class="skills-action-pill" data-key="63"><kbd>[?]</kbd> Help & Aptitudes</button>' +
-                '</div>' +
-                '<div class="skills-footer-hint">Click a skill to toggle training / focus • Press hotkey letter or <kbd>Esc</kbd> to return</div>' +
-            '</div>'
-        );
-        menu_div.append(footer);
+
 
         // Bind clicks for control buttons
         menu_div.on("click", ".skills-btn-ctrl, .skills-btn-close, .skills-action-pill", function(e) {
@@ -508,7 +496,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                 var trainPercent = parseInt(s.train, 10) || 0;
 
                 cardsHtml += '<div class="' + cardClass + '" data-key="' + s.letter.charCodeAt(0) + '">';
-                cardsHtml += '  <span class="er-skill-key">[' + s.letter + ']</span>';
+                cardsHtml += '  ' + keybinds.html(s.letter) + '';
                 cardsHtml += '  <span class="er-skill-status ' + statusClass + '" title="' + statusTitle + '">' + statusIcon + '</span>';
                 cardsHtml += '  <span class="er-skill-name">' + s.name + '</span>';
                 cardsHtml += '  <span class="er-skill-level" title="Level ' + s.level + '">' + s.level + '</span>';
@@ -1116,8 +1104,8 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                 if (!mainHeading) mainHeading = (menu.tag ? menu.tag.toUpperCase() : "MENU");
             }
 
-            var hasTab = rawTitle.match(/tab/i) || rawTitle.match(/switch category/i);
-            var hasToggle = (menu.tag === "spell" || menu.tag === "ability") || rawTitle.match(/toggle/i) || rawTitle.match(/describe/i);
+            var hasTab = /\btab\b.*switch category/i.test(rawTitle);
+            var hasToggle = (menu.tag === "spell" || menu.tag === "ability") || /(?:\(!\)|\bpress !|! to toggle)/i.test(rawTitle);
 
             var html = '<div class="inv-header-bar">';
             html += '  <div class="inv-header-left">';
@@ -1128,16 +1116,16 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
             html += '  </div>';
             html += '  <div class="inv-header-actions">';
             if (menu.tag === "pickup") {
-                html += '<button type="button" class="inv-action-btn" id="inv-pickup-selected">Pick up selected <kbd>Enter</kbd></button>';
-                html += '    <button type="button" class="inv-action-btn inv-pickup-all-btn" id="inv-pickup-all-btn" title="Pick Up All (,)">📥 Pick Up All <span class="inv-kbd">,</span></button>';
+                html += '<button type="button" class="inv-action-btn" id="inv-pickup-selected">Pick up selected ' + keybinds.html("Enter") + '</button>';
+                html += '    <button type="button" class="inv-action-btn inv-pickup-all-btn" id="inv-pickup-all-btn">📥 Pick Up All ' + keybinds.html(",") + '</button>';
             }
             if (hasTab) {
-                html += '    <button type="button" class="inv-action-btn" id="inv-switch-cat-btn" title="Switch Category (Tab)">⇥ Category <span class="inv-kbd">Tab</span></button>';
+                html += '    <button type="button" class="inv-action-btn" id="inv-switch-cat-btn" data-hotkey="Tab">⇥ Category ' + keybinds.html("Tab") + '</button>';
             }
             if (hasToggle) {
-                html += '    <button type="button" class="inv-action-btn" id="inv-mode-btn" title="Toggle Mode / Help (! / ?)">⇄ Describe <span class="inv-kbd">!</span></button>';
+                html += '    <button type="button" class="inv-action-btn" id="inv-mode-btn">⇄ Describe ' + keybinds.html("!") + '</button>';
             }
-            html += '    <button type="button" class="inv-action-btn inv-close-btn" data-hotkey="Escape" id="inv-close-btn" title="Close (Esc)">✕ <span class="inv-kbd">Esc</span></button>';
+            html += '    <button type="button" class="inv-action-btn inv-close-btn" id="inv-close-btn" aria-label="Close">✕ ' + keybinds.html("Esc") + '</button>';
             html += '  </div>';
             html += '</div>';
 
@@ -1436,7 +1424,8 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
         if (menu.tag === "inventory")
         {
             // Ctrl + F: Search stashes
-            if (event.ctrlKey && (event.which === 70 || event.which === 102))
+            if (event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey
+                && (event.which === 70 || event.which === 102))
             {
                 comm.send_message("key", { keycode: 27 }); // close inventory
                 comm.send_message("key", { keycode: 6 });  // Ctrl+F
@@ -1444,8 +1433,9 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                 event.stopPropagation();
                 return false;
             }
-            // Escape (27), Space (32), or 'i' (73) closes inventory modal
-            if (!event.ctrlKey && !event.altKey && (event.which === 27 || event.which === 32 || event.which === 73))
+            // Escape and Space close the inventory modal.
+            if (!event.ctrlKey && !event.altKey && !event.metaKey
+                && (event.which === 27 || event.which === 32))
             {
                 comm.send_message("key", { keycode: 27 });
                 event.preventDefault();
@@ -1453,7 +1443,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
                 return false;
             }
             // Tab (9) cycles categories in inventory
-            if (event.which === 9)
+            if (event.which === 9 && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey)
             {
                 comm.send_message("key", { keycode: 9 });
                 event.preventDefault();
@@ -1619,27 +1609,27 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player) 
         {
             var chr = String.fromCharCode(event.which);
 
-            // 'i' or 'I' toggles inventory closed
-            if (chr === "i" || chr === "I")
-            {
-                comm.send_message("key", { keycode: 27 });
-                event.preventDefault();
-                event.stopPropagation();
-                return false;
-            }
-
             var slot = -1;
             if (chr >= "a" && chr <= "z")
                 slot = chr.charCodeAt(0) - 97;
             else if (chr >= "A" && chr <= "Z")
                 slot = chr.charCodeAt(0) - 65 + 26;
 
-            var hasItem = slot >= 0 && slot < 52 && player.inv && player.inv[slot] && player.inv[slot].name;
+            var hasItem = slot >= 0 && slot < 52 && player.inv && player.inv[slot] && player.inv[slot].name && player.inv[slot].quantity !== 0;
 
             if (hasItem)
             {
                 // Has an item in this slot: select/inspect in InvMenu
                 comm.send_message("key", { keycode: event.which });
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+
+            // 'i' or 'I' toggles inventory closed
+            if (chr === "i")
+            {
+                comm.send_message("key", { keycode: 27 });
                 event.preventDefault();
                 event.stopPropagation();
                 return false;

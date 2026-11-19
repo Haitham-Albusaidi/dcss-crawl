@@ -1,7 +1,7 @@
 define(["jquery", "comm", "client", "./ui", "./enums", "./cell_renderer",
     "./util", "./scroller", "./tileinfo-main", "./tileinfo-gui",
-    "./tileinfo-player", "./options"],
-function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, options) {
+    "./tileinfo-player", "./options", "./keybinds"],
+function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, options, keybinds) {
     "use strict";
 
     var describe_scale = 2.0;
@@ -209,12 +209,12 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
             action_text = action_text.substr(3);
         }
         var hotkeys = action_text.match(/\(.\)/); // very inclusive for the key name
-        var data_attr = ""
-        if (hotkeys)
-            data_attr = " data-hotkey='" + hotkeys[0][1] + "'";
-        return prefix
-            + "<span" + data_attr + ">" + action_text + "</span>"
-            + suffix;
+        if (!hotkeys)
+            return prefix + action_text + suffix;
+        return prefix + $("<span>").attr("data-hotkey", hotkeys[0][1])
+            .append(keybinds.badge(hotkeys[0][1]),
+                document.createTextNode(" " + action_text.replace(hotkeys[0], hotkeys[0][1])))
+            [0].outerHTML + suffix;
     }
 
     // Turn a list of actions like that found in the describe item popup into
@@ -239,7 +239,6 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
         var insp = desc.inspection || {};
         var stats = insp.stats || {};
         var sections = insp.sections || {};
-        var actions = insp.actions || [];
 
         // Save original data on popup element for spell-success toggle restoration
         $popup.data("item-desc-data", desc);
@@ -543,49 +542,15 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
         var $actionsDock = $popup.find(".actions");
         $actionsDock.empty().addClass("item-insp-actions-dock");
 
-        var actionsList = [];
-        if (actions && actions.length > 0) {
-            actions.forEach(function (act) {
-                var keyChar = String.fromCharCode(act.key);
-                actionsList.push({
-                    key: act.key,
-                    keyChar: keyChar,
-                    label: act.label
-                });
-            });
-        } else if (desc.actions) {
-            var actionParts = desc.actions.split(", ");
-            actionParts.forEach(function (part) {
-                var clean = part.replace(/^or\s+/i, "").replace(/\.$/, "").trim();
-                var match = clean.match(/\((.)\)/);
-                if (match) {
-                    var kChar = match[1];
-                    var kCode = kChar.charCodeAt(0);
-                    var label = clean.replace(/\((.)\)/, "$1");
-                    label = label.charAt(0).toUpperCase() + label.slice(1);
-                    actionsList.push({
-                        key: kCode,
-                        keyChar: kChar,
-                        label: label
-                    });
-                }
-            });
-        }
-
-        if (actionsList.length > 0) {
-            actionsList.forEach(function (act) {
-                var $btn = $("<button type='button' class='item-insp-action-btn' data-hotkey='" + act.keyChar + "'></button>");
-                $btn.append("<span class='item-insp-btn-key'>[" + act.keyChar + "]</span> ");
-                $btn.append("<span class='item-insp-btn-label'>" + act.label + "</span>");
-                $actionsDock.append($btn);
-            });
-        }
-
-        // Always add Close [Esc] button
-        var $closeBtn = $("<button type='button' class='item-insp-action-btn item-insp-close-btn' data-hotkey='Escape'></button>");
-        $closeBtn.append("<span class='item-insp-btn-key'>[Esc]</span> ");
-        $closeBtn.append("<span class='item-insp-btn-label'>Close</span>");
-        $actionsDock.append($closeBtn);
+        keybinds.inspectionActions(desc).concat({ key: 27, label: "Close" }).forEach(function (action) {
+            var key = keybinds.keyValue(action.key);
+            var $button = $("<button type='button' class='item-insp-action-btn'>")
+                .attr({ "data-hotkey": key, "data-keycode": action.key });
+            if (action.key === 27)
+                $button.addClass("item-insp-close-btn");
+            $button.append(keybinds.badge(key), $("<span class='item-insp-btn-label'>").text(action.label));
+            $actionsDock.append($button);
+        });
 
         // 4. Scroller and Keyboard Event Handling
         var s = scroller($body[0]);
@@ -784,7 +749,7 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
                 if (showing) {
                     $mainContent.addClass("hidden");
                     $spellSuccess.empty().removeClass("hidden");
-                    $spellSuccess.append("<div class='item-insp-spell-success-banner'>⚡ Spell Failure Comparison <span class='item-insp-banner-sub'>(Press [!] to return to item description)</span></div>");
+                    $spellSuccess.append("<div class='item-insp-spell-success-banner'>⚡ Spell Failure Comparison <span class='item-insp-banner-sub'>Press " + keybinds.html("!") + " to return to item description</span></div>");
                     $spellSuccess.append("<div class='item-insp-card item-insp-desc-card'><div class='item-insp-card-body'>" + fmt_body_txt(desc.body) + "</div></div>");
                 } else {
                     $spellSuccess.addClass("hidden").empty();
@@ -1052,7 +1017,7 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
         if (have_quote) tabs.push({ id: 2, label: "Lore & Quote", icon: "💬" });
 
         var html = '<div class="er-codex-tab-bar">';
-        html += '  <button type="button" class="er-codex-switch-key-btn" title="Press ! to switch tabs"><span class="kbd">!</span> Switch View</button>';
+        html += '  <button type="button" class="er-codex-switch-key-btn">' + keybinds.html("!") + ' Switch View</button>';
         html += '  <div class="er-codex-tabs-list">';
         for (var i = 0; i < tabs.length; i++) {
             var t = tabs[i];
@@ -1079,7 +1044,7 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
         $titleGroup.append($('<div class="er-codex-subtitle">TACTICAL CODEX & BEAST LORE</div>'));
         $headerLeft.append($avatarBox).append($titleGroup);
 
-        var $closeBtn = $('<button type="button" class="er-codex-close-btn" title="Close Codex (Esc)">✕ <span class="kbd">Esc</span></button>');
+        var $closeBtn = $('<button type="button" class="er-codex-close-btn" aria-label="Close Codex">✕ ' + keybinds.html("Esc") + '</button>');
         $closeBtn.on("click", function (e) {
             e.stopPropagation();
             comm.send_message("key", { keycode: 27 });
@@ -1697,10 +1662,22 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
         html += '</div>'; // end bottom cards
 
         // 5. Footer Hint
-        html += '<div class="er-profile-footer-hint">[Press <kbd>Esc</kbd> or <kbd>Space</kbd> or click anywhere to return]</div>';
+        html += '<div class="er-profile-footer-hint">Press ' + keybinds.html("Esc") + ' or ' + keybinds.html("Space") + ' or click anywhere to return</div>';
 
         html += '</div>'; // end container
         return html;
+    }
+
+    // Command help uses white text for keys and yellow for section headings.
+    // Keep the server's preformatted columns and only decorate key tokens.
+    function format_help_keys($body)
+    {
+        $body.find(".fg15").each(function () {
+            var $entry = $(this);
+            var key = $entry.text().trim();
+            if (/^(?:[!-~]|(?:Ctrl|Alt|Shift)[-+]\S+|Esc|Tab|Enter|Space|Bksp|Backspace|Del|Home|End|PgUp|PgDn|Dir\.)$/.test(key))
+                $entry.contents().replaceWith(keybinds.badge(key.replace(/^(Ctrl|Alt|Shift)-/, "$1+")));
+        });
     }
 
     function formatted_scroller(desc)
@@ -1734,6 +1711,8 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
             $popup.attr("data-tag", "dungeon_overview");
             $popup.addClass("er-overview-popup");
             $body.html(body_html);
+            if (desc.tag === "help")
+                format_help_keys($body);
             var overviewHeader = $(
                 '<div class="er-overview-header-bar">' +
                 '  <div class="er-overview-header-left">' +
@@ -1741,7 +1720,7 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
                 '    <span class="er-overview-title">DUNGEON OVERVIEW & LOCATIONS</span>' +
                 '  </div>' +
                 '  <div class="er-overview-header-right">' +
-                '    <span class="er-overview-hint"><kbd>G</kbd> Travel &nbsp;|&nbsp; <kbd>_</kbd> Altars &nbsp;|&nbsp; <kbd>Esc</kbd> Close</span>' +
+                '    <span class="er-overview-hint">' + keybinds.html("G") + ' Travel &nbsp;|&nbsp; ' + keybinds.html("_") + ' Altars &nbsp;|&nbsp; ' + keybinds.html("Esc") + ' Close</span>' +
                 '    <button class="er-overview-close-btn" title="Close (Esc)">✕</button>' +
                 '  </div>' +
                 '</div>'
@@ -1755,6 +1734,8 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
         else
         {
             $body.html(body_html);
+            if (desc.tag === "help")
+                format_help_keys($body);
         }
 
         if (desc.more)
@@ -1810,6 +1791,8 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
             else
             {
                 $body.html(util.formatted_string_to_html(msg.text));
+                if ($popup.attr("data-tag") === "help")
+                    format_help_keys($body);
             }
             var ss = $popup.find(".body").eq(0).data("scroller");
             if (ss && ss.recalculateImmediate)
@@ -2054,9 +2037,12 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
                 var rec = choice.recommendation || "unknown";
                 var hotkeyChar = ui.key_value_from_utf8(btn.hotkey);
 
-                var $card = $("<div class='button cc-card'>");
+                var $card = $("<button type='button' class='button cc-card'>");
                 $card.attr("menu_id", menu_id);
-                $card.attr("data-hotkey", hotkeyChar);
+                if (btn.disabled)
+                    $card.prop("disabled", true);
+                else if (hotkeyChar)
+                    $card.attr("data-hotkey", hotkeyChar);
                 $card.attr("data-name", choiceName);
                 $card.attr("data-group", group.name);
                 $card.attr("data-recommendation", rec);
@@ -2069,7 +2055,8 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
                 $card.attr("data-description-index", $descriptions.children().length - 1);
 
                 // Hotkey badge
-                $card.append($("<span class='cc-hotkey'>").text(hotkeyChar));
+                if (!btn.disabled && hotkeyChar)
+                    $card.append(keybinds.badge(hotkeyChar));
 
                 // Canvas icon
                 var $iconCanvas = $("<canvas class='cc-card-icon glyph-mode-hidden'>");
@@ -2109,20 +2096,20 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
 
                 // Event wiring
                 $card.on("mouseenter", function () {
-                    focus_button($(this));
+                    if (!btn.disabled)
+                        focus_button($(this));
                 });
                 $card.on("click", function (e) {
                     focus_button($(this));
-                    var hk = $(this).attr("data-hotkey");
-                    var keycode = ui.utf8_from_key_value(hk);
-                    if (keycode) {
+                    var keycode = btn.hotkey;
+                    if (!btn.disabled && keycode) {
                         comm.send_message("key", { keycode: keycode });
                     }
                     e.stopPropagation();
                 });
 
                 $grid.append($card);
-                if (!firstButton) firstButton = $card;
+                if (!firstButton && !btn.disabled) firstButton = $card;
             });
 
             // Append unavailable backgrounds if any match this group
@@ -2130,7 +2117,6 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
                 $.each(unavailable, function (_, unav) {
                     if (unav.group === group.name) {
                         var $banned = $("<div class='cc-card cc-card-banned'>");
-                        $banned.append("<span class='cc-hotkey cc-hotkey-banned'>-</span>");
                         var $bannedInfo = $("<div class='cc-card-info'>");
                         $bannedInfo.append($("<span class='cc-card-name'>").text(unav.name));
                         $bannedInfo.append("<span class='cc-badge cc-badge-banned'>🚫 Banned for " + species + "</span>");
@@ -2170,17 +2156,20 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
         var sub_menu_id = subData.menu_id || "sub-menu";
         var $subGrid = $("<div class='cc-dock-actions' menu_id='" + sub_menu_id + "'>");
 
-        $.each(subData.buttons || [], function (_, sBtn) {
+        $.each(keybinds.creationControls(msg), function (_, sBtn) {
             var sHotkey = ui.key_value_from_utf8(sBtn.hotkey);
             var sLabel = clean_lbl(sBtn.label || (sBtn.labels ? sBtn.labels[0] : ""));
-            var $sPill = $("<button class='button cc-dock-pill'>");
+            if (sHotkey)
+                sLabel = sLabel.replace(/^\S+\s+-\s+/, "");
+            var $sPill = $("<button type='button' class='button cc-dock-pill'>");
             $sPill.attr("menu_id", sub_menu_id);
             $sPill.attr("data-hotkey", sHotkey);
-            $sPill.append($("<span class='cc-dock-hotkey'>").text("[" + sHotkey + "]"));
+            if (sHotkey)
+                $sPill.append(keybinds.badge(sHotkey));
             $sPill.append($("<span class='cc-dock-label'>").text(sLabel));
 
             $sPill.on("click", function (e) {
-                var keycode = ui.utf8_from_key_value(sHotkey);
+                var keycode = sBtn.hotkey;
                 if (keycode) {
                     comm.send_message("key", { keycode: keycode });
                 }
@@ -2305,8 +2294,7 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
                 $button.on('mouseenter', function () { focus_button($(this)); });
                 $button.on('click', function (e) {
                     focus_button($(this));
-                    var hotkey = $(this).attr("data-hotkey");
-                    var keycode = ui.utf8_from_key_value(hotkey);
+                    var keycode = button.hotkey;
                     if (keycode) {
                         comm.send_message("key", { keycode: keycode });
                     }
@@ -2344,7 +2332,13 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
     {
         var $popup = $(".templates > .describe-generic").clone();
         $popup.find(".header > span").html(util.formatted_string_to_html(msg.prompt));
-        $popup.find(".body").html("Do you want to play this combination? [Y/n/q]");
+        var $body = $popup.find(".body").text("Do you want to play this combination? ");
+        [{ key: "y", label: "Play" }, { key: "n", label: "Try again" },
+            { key: "q", label: "Cancel" }].forEach(function (action) {
+            var $button = $("<button type='button'>").attr("data-hotkey", action.key);
+            $button.append(keybinds.badge(action.key), document.createTextNode(" " + action.label));
+            $body.append($button, " ");
+        });
 
         var $canvas = $popup.find(".header > canvas");
         var renderer = new cr.DungeonCellRenderer();

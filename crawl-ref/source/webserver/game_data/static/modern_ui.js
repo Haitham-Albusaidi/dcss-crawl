@@ -2,39 +2,39 @@
  * Elden Ring & Souls-like Immersive HUD for Dungeon Crawl Stone Soup (WebTiles)
  * Replaces clunky dashboard panels with a sleek floating action dock and diegetic fantasy aesthetics.
  */
-define(["jquery", "comm", "client"], function ($, comm, client) {
+define(["jquery", "comm", "client", "./keybinds", "./cell_renderer", "./util", "./tileinfo-gui"], function ($, comm, client, keybinds, cr, util, gui) {
     "use strict";
 
     var PRIMARY_SLOTS = [
-        { id: "autoexplore", icon: "🧭", label: "Auto-Explore", key: "o", desc: "Automap and explore level, collect safe items, and halt immediately on monster threats." },
-        { id: "autofight", icon: "⚔️", label: "Auto-Fight", key: "Tab", keycode: 9, desc: "Attack adjacent enemy or step towards closest visible foe." },
-        { id: "pickup", icon: "📥", label: "Pick Up Floor", key: ",", badge: ",", desc: "Choose items on your tile to pick up." },
-        { id: "rest", icon: "💤", label: "Rest / Heal", key: "5", desc: "Rest in place until HP and MP are fully restored or danger appears." },
-        { id: "cast", icon: "🪄", label: "Cast Spell", key: "z", desc: "Open spell grimoire to choose and cast memorised incantations." },
-        { id: "ability", icon: "⚡", label: "Invoke Talent", key: "a", desc: "Unleash divine God powers, racial gifts, and supernatural mutations." },
-        { id: "fire", icon: "🏹", label: "Quiver / Fire", key: "f", desc: "Fire quivered missile, wand, or targeted spell at lock-on target." },
-        { id: "inventory", icon: "🎒", label: "Equipment Bag", key: "i", desc: "Inspect inventory items, weapons, armor, jewels, and consumables." },
-        { id: "use", icon: "🧪", label: "Drink / Read", key: "e", desc: "Quaff healing elixir, read arcane scroll, or use magical talisman." },
-        { id: "map", icon: "🗺️", label: "Dungeon Map", key: "X", desc: "Unfurl full floor map to view discovered rooms and click-travel." },
-        { id: "examine", icon: "👁️", label: "Examine / Look", key: "x", desc: "Target cursor to inspect enemy stats, vulnerabilities, and floor tiles." },
-        { id: "upstairs", icon: "🪜", label: "Ascend Stairs", key: "<", desc: "Ascend staircase or egress hatch to previous dungeon floor." },
-        { id: "downstairs", icon: "🪜", label: "Descend Stairs", key: ">", desc: "Descend staircase deeper into the perilous dungeon depths." },
-        { id: "wait", icon: "⏳", label: "Wait Turn", key: ".", desc: "Wait in place for 1 turn (passes time for buffs or enemy approach)." }
+        { id: "autoexplore", tile: gui.CMD_EXPLORE, label: "Auto-Explore", key: "o", desc: "Automap and explore level, collect safe items, and halt immediately on monster threats." },
+        { id: "autofight", tile: gui.CMD_AUTOFIGHT, label: "Auto-Fight", key: "Tab", keycode: 9, desc: "Attack adjacent enemy or step towards closest visible foe." },
+        { id: "pickup", tile: gui.CMD_MAP_FIND_STASH, label: "Pick Up Floor", key: ",", desc: "Choose items on your tile to pick up." },
+        { id: "rest", tile: gui.CMD_REST, label: "Rest / Heal", key: "5", desc: "Rest in place until HP and MP are fully restored or danger appears." },
+        { id: "cast", tile: gui.CMD_CAST_SPELL, label: "Cast Spell", key: "z", desc: "Open spell grimoire to choose and cast memorised incantations." },
+        { id: "ability", tile: gui.CMD_USE_ABILITY, label: "Use Ability", key: "a", desc: "Unleash divine God powers, racial gifts, and supernatural mutations." },
+        { id: "fire", tile: gui.CMD_AUTOFIGHT, label: "Fire Quivered Action", key: "f", desc: "Fire quivered missile, wand, or targeted spell at lock-on target." },
+        { id: "inventory", tile: gui.CMD_DISPLAY_INVENTORY, label: "Inventory", key: "i", desc: "Inspect inventory items, weapons, armor, jewels, and consumables." },
+        { id: "use", tile: gui.CMD_DISPLAY_INVENTORY, label: "Equip Item", key: "e", desc: "Choose an item to equip." },
+        { id: "map", tile: gui.CMD_DISPLAY_MAP, label: "Dungeon Map", key: "X", desc: "Unfurl full floor map to view discovered rooms and click-travel." },
+        { id: "examine", tile: gui.CMD_MAP_GOTO_TARGET, label: "Examine / Look", key: "x", desc: "Target cursor to inspect enemy stats, vulnerabilities, and floor tiles." },
+        { id: "upstairs", tile: gui.CMD_MAP_FIND_UPSTAIR, label: "Ascend Stairs", key: "<", desc: "Ascend staircase or egress hatch to previous dungeon floor." },
+        { id: "downstairs", tile: gui.CMD_MAP_FIND_DOWNSTAIR, label: "Descend Stairs", key: ">", desc: "Descend staircase deeper into the perilous dungeon depths." },
+        { id: "wait", tile: gui.CMD_WAIT, label: "Wait Turn", key: ".", desc: "Wait in place for 1 turn (passes time for buffs or enemy approach)." }
     ];
 
     var DRAWER_SLOTS = [
-        { id: "skills", icon: "📊", label: "Skills Training", key: "m", badge: "m", desc: "Train weapon masteries, fighting, magic schools, and stealth." },
-        { id: "sheet", icon: "📜", label: "Character Profile", key: "%", badge: "%", desc: "View attributes, resistances (rF, rC, rElec, rPois), AC, EV, and SH." },
-        { id: "religion", icon: "⛩️", label: "Divine Altar / God", key: "^", badge: "^", desc: "Review piety rating, divine boons, passive prayers, and divine wrath." },
-        { id: "mutations", icon: "🧬", label: "Mutations", key: "A", badge: "A", desc: "Review demonic, innate, and potion-induced mutations and boons." },
-        { id: "messages", icon: "💬", label: "Chronicle Log", key: "p", ctrlKey: true, badge: "Ctrl+P", desc: "Review full battle log and history of dungeon events." },
-        { id: "find", icon: "🔍", label: "Search Memory", key: "f", ctrlKey: true, badge: "Ctrl+F", desc: "Search entire dungeon memory for items, altars, shops, or portals." },
-        { id: "overview", icon: "🏰", label: "Dungeon Overview", key: "o", ctrlKey: true, badge: "Ctrl+O", desc: "Overview of discovered branches, depths, runes of Zot, and shops." },
-        { id: "pickup", icon: "📥", label: "Pick Up Floor", key: ",", badge: ",", desc: "Choose items on your tile to pick up." },
-        { id: "drop", icon: "📤", label: "Drop Item", key: "d", badge: "d", desc: "Drop selected items from inventory onto current tile." },
-        { id: "known", icon: "✨", label: "Known Items", key: "\\", badge: "\\", desc: "Review identified weapons, armour, jewellery, and runes of Zot." },
-        { id: "help", icon: "❓", label: "Guide & Hotkeys", key: "?", badge: "?", desc: "Open comprehensive in-game manual and keybinding compendium." },
-        { id: "save", icon: "💾", label: "Save & Quit", key: "s", ctrlKey: true, badge: "Ctrl+S", desc: "Save progress safely and return to title screen." }
+        { id: "skills", icon: "📊", label: "Skills Training", key: "m", desc: "Train weapon masteries, fighting, magic schools, and stealth." },
+        { id: "sheet", icon: "📜", label: "Character Profile", key: "%", desc: "View attributes, resistances (rF, rC, rElec, rPois), AC, EV, and SH." },
+        { id: "religion", icon: "⛩️", label: "Divine Altar / God", key: "^", desc: "Review piety rating, divine boons, passive prayers, and divine wrath." },
+        { id: "mutations", icon: "🧬", label: "Mutations", key: "A", desc: "Review demonic, innate, and potion-induced mutations and boons." },
+        { id: "messages", icon: "💬", label: "Chronicle Log", key: "p", ctrlKey: true, desc: "Review full battle log and history of dungeon events." },
+        { id: "find", icon: "🔍", label: "Search Memory", key: "f", ctrlKey: true, desc: "Search entire dungeon memory for items, altars, shops, or portals." },
+        { id: "overview", icon: "🏰", label: "Dungeon Overview", key: "o", ctrlKey: true, desc: "Overview of discovered branches, depths, runes of Zot, and shops." },
+        { id: "pickup", icon: "📥", label: "Pick Up Floor", key: ",", desc: "Choose items on your tile to pick up." },
+        { id: "drop", icon: "📤", label: "Drop Item", key: "d", desc: "Drop selected items from inventory onto current tile." },
+        { id: "known", icon: "✨", label: "Known Items", key: "\\", desc: "Review identified weapons, armour, jewellery, and runes of Zot." },
+        { id: "help", icon: "❓", label: "Guide & Hotkeys", key: "?", desc: "Open comprehensive in-game manual and keybinding compendium." },
+        { id: "save", icon: "💾", label: "Save & Quit", key: "s", ctrlKey: true, desc: "Save progress safely and return to title screen." }
     ];
 
     var DPAD_COMPASS = [
@@ -42,7 +42,7 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
         { label: "↑", key: "k", desc: "North (k / 8)" },
         { label: "↗", key: "u", desc: "Northeast (u / 9)" },
         { label: "←", key: "h", desc: "West (h / 4)" },
-        { label: "•", key: ".", desc: "Wait Turn (5 / .)" },
+        { label: "•", key: ".", desc: "Wait Turn (. / s)" },
         { label: "→", key: "l", desc: "East (l / 6)" },
         { label: "↙", key: "b", desc: "Southwest (b / 1)" },
         { label: "↓", key: "j", desc: "South (j / 2)" },
@@ -53,47 +53,37 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
     var show_drawer = false;
     var $dock = null;
     var $tooltip = null;
+    var drawerKeydown = null;
 
     function send_game_command(action) {
         if (client.is_watching && client.is_watching())
             return;
 
-        // If any modal/menu is currently open, dismiss it first
-        if ($(".menu:visible").length > 0 || $(".ui-popup:visible").length > 0) {
-            comm.send_message("key", { keycode: 27 }); // Esc
-        }
+        var code = keybinds.commandCode(typeof action === "string" ? { key: action } : action);
+        if (!code)
+            return;
 
-
-        var code;
-        if (action.keycode) {
-            code = action.keycode;
-        } else if (action.ctrlKey && action.key) {
-            var rawKey = action.key.replace(/^ctrl\+/i, "");
-            code = rawKey.toUpperCase().charCodeAt(0) - 64;
-        } else if (action.key && action.key.length === 1) {
-            code = action.key.charCodeAt(0);
-        } else if (typeof action === "string") {
-            code = action.charCodeAt(0);
-        }
-
-        if (code !== undefined) {
-            if (comm && comm.send_message) {
-                comm.send_message("key", { keycode: code });
-            } else if (window.socket && window.socket.readyState === 1) {
-                window.socket.send('{"msg":"key","keycode":' + code + '}');
-            }
-        }
+        if ($(".menu:visible, .ui-popup:visible").length)
+            comm.send_message("key", { keycode: 27 });
+        comm.send_message("key", { keycode: code });
     }
 
-    function create_slot(item, extraClass) {
-        var $slot = $('<button type="button" class="elden-slot ' + (extraClass || '') + '"></button>');
-        $slot.data("action", item);
-        $slot.attr("aria-label", item.label);
-
-        var displayKey = item.ctrlKey ? "^" + item.key.toUpperCase() : item.key;
-        $slot.append($('<span class="elden-slot-icon"></span>').text(item.icon),
-            $('<span class="elden-slot-badge"></span>').text(displayKey));
-        return $slot;
+    function create_slot(item) {
+        var $slot = $('<button type="button" class="elden-slot">')
+            .data("action", item).attr("aria-label", item.label);
+        var $icon = $('<canvas class="elden-slot-icon" aria-hidden="true">');
+        util.init_canvas($icon[0], 32, 32);
+        var $tilesheet = $("#" + gui.get_img(item.tile));
+        function drawIcon() {
+            var renderer = new cr.DungeonCellRenderer();
+            renderer.init($icon[0]);
+            renderer.draw_gui(item.tile, 0, 0);
+        }
+        if ($tilesheet[0] && $tilesheet[0].naturalWidth)
+            drawIcon();
+        else
+            $tilesheet.one("load", drawIcon);
+        return $slot.append($icon, keybinds.badge(keybinds.commandLabel(item)).addClass("elden-slot-key"));
     }
 
     function create_dom() {
@@ -147,12 +137,11 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
         );
         var $drawerGrid = $drawer.find(".elden-drawer-grid");
         $.each(DRAWER_SLOTS, function (i, item) {
-            var badgeText = item.badge || (item.ctrlKey ? "Ctrl+" + item.key.toUpperCase() : item.key);
             var $itemBtn = $(
                 '<button type="button" class="elden-drawer-item" data-id="' + item.id + '">' +
                 '  <span class="item-icon-box">' + item.icon + '</span>' +
                 '  <span class="item-label">' + item.label + '</span>' +
-                '  <span class="item-kbd">' + badgeText + '</span>' +
+                keybinds.html(keybinds.commandLabel(item)) +
                 '</button>'
             );
             $itemBtn.data("action", item);
@@ -267,11 +256,15 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
         });
 
         // Physical Keyboard listener for drawer
-        $(document).off("keydown.elden_drawer").on("keydown.elden_drawer", function (e) {
+        if (drawerKeydown)
+            document.removeEventListener("keydown", drawerKeydown, true);
+        drawerKeydown = function (e) {
+            if ($(e.target).is("input, textarea, [contenteditable]")
+                || $(".ui-popup:visible, .menu:visible").length)
+                return;
+
             if (e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey
-                && (e.originalEvent || e).code === "KeyD"
-                && $("#normal").is(":visible") && !$(".ui-popup:visible, .menu:visible").length
-                && !$(e.target).is("input, textarea, [contenteditable]")) {
+                && e.code === "KeyD" && $("#normal").is(":visible")) {
                 e.preventDefault();
                 $dock.find(".elden-slots-row button").first().focus();
                 return;
@@ -279,9 +272,9 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
             if (!show_drawer) return;
 
             // Escape closes drawer
-            if (e.which === 27) {
+            if (e.key === "Escape" && !e.ctrlKey && !e.altKey && !e.metaKey) {
                 e.preventDefault();
-                e.stopPropagation();
+                e.stopImmediatePropagation();
                 close_drawer();
                 return false;
             }
@@ -289,57 +282,27 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
             // Route keypress to matching drawer action
             for (var i = 0; i < DRAWER_SLOTS.length; i++) {
                 var item = DRAWER_SLOTS[i];
-                var matches = false;
-
-                if (item.ctrlKey) {
-                    if (e.ctrlKey && !e.altKey) {
-                        var targetCode = item.key.toUpperCase().charCodeAt(0);
-                        if (e.which === targetCode) {
-                            matches = true;
-                        }
-                    }
-                } else {
-                    if (!e.ctrlKey && !e.altKey) {
-                        if (item.key === "%" && e.shiftKey && (e.which === 53 || e.key === "%")) {
-                            matches = true;
-                        } else if (item.key === "^" && e.shiftKey && (e.which === 54 || e.key === "^")) {
-                            matches = true;
-                        } else if (item.key === "A" && e.shiftKey && (e.which === 65 || e.key === "A")) {
-                            matches = true;
-                        } else if (item.key === "?" && (e.key === "?" || (e.shiftKey && e.which === 191))) {
-                            matches = true;
-                        } else if (item.key === "\\" && (e.key === "\\" || e.which === 220)) {
-                            matches = true;
-                        } else if (item.key === "," && (e.key === "," || e.which === 188 || e.key === "g" || e.which === 71)) {
-                            matches = true;
-                        } else if (item.key === "m" && !e.shiftKey && (e.which === 77 || e.key === "m")) {
-                            matches = true;
-                        } else if (item.key === "d" && !e.shiftKey && (e.which === 68 || e.key === "d")) {
-                            matches = true;
-                        }
-                    }
-                }
-
-                if (matches) {
+                if (keybinds.matches(e, item)) {
                     e.preventDefault();
-                    e.stopPropagation();
+                    e.stopImmediatePropagation();
                     close_drawer();
                     send_game_command(item);
                     return false;
                 }
             }
-        });
+        };
+        document.addEventListener("keydown", drawerKeydown, true);
 
         var tooltip_targets = ".elden-slot, .elden-drawer-item, .elden-compass-btn";
         $dock.on("mouseenter focusin", tooltip_targets, function () {
             var action = $(this).data("action");
             if (!action) return;
 
-            var key = action.ctrlKey ? "Ctrl+" + action.key.toUpperCase() : action.key;
+            var key = keybinds.commandLabel(action);
             var $header = $('<div class="elden-tooltip-header"></div>')
                 .append($('<span class="elden-tooltip-title"></span>').text(action.label));
             if (key)
-                $header.append($('<kbd class="elden-tooltip-badge"></kbd>').text(key));
+                $header.append(keybinds.badge(key));
             $tooltip.empty().append($header);
             if (action.desc)
                 $tooltip.append($('<div class="elden-tooltip-body"></div>').text(action.desc));
@@ -368,7 +331,9 @@ define(["jquery", "comm", "client"], function ($, comm, client) {
     }
 
     $(document).on("game_cleanup.modern_ui", function () {
-        $(document).off("keydown.elden_drawer");
+        if (drawerKeydown)
+            document.removeEventListener("keydown", drawerKeydown, true);
+        drawerKeydown = null;
         if ($tooltip)
             $tooltip.removeClass("visible");
     });

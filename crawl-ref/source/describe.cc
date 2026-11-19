@@ -4424,9 +4424,9 @@ static void _write_inspection_stats(const item_def &item)
     tiles.json_close_object();
 }
 
-static void _write_inspection_actions(const vector<string>& labels)
+static void _write_inspection_actions(const char* field, const vector<string>& labels)
 {
-    tiles.json_open_array("actions");
+    tiles.json_open_array(field);
     for (auto label : labels)
     {
         // These labels come from the engine's static action table.
@@ -4639,6 +4639,7 @@ command_type describe_item_popup(const item_def &item,
     write_spellset(spells, &item, nullptr);
 
     tiles.json_write_string("actions", footer_text.tostring());
+    _write_inspection_actions("action_keys", action_labels);
     if (const char* kind = _inspection_kind(item))
     {
         tiles.json_open_object("inspection");
@@ -4655,7 +4656,7 @@ command_type describe_item_popup(const item_def &item,
             }
         }
         _write_inspection_stats(item);
-        _write_inspection_actions(action_labels);
+        _write_inspection_actions("actions", action_labels);
         if (!fixup_desc)
         {
             tiles.json_open_object("sections");

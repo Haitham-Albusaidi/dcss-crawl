@@ -3,8 +3,8 @@
  * Exact recreation of the desktop DCSS SDL2 tiles inventory and action region.
  */
 define(["jquery", "comm", "client", "./cell_renderer", "./player",
-        "./tileinfo-gui", "./tileinfo-main", "./tileinfo-icons", "./util", "./enums"],
-function ($, comm, client, cr, player, gui, main, icons, util, enums) {
+        "./tileinfo-gui", "./tileinfo-main", "./tileinfo-icons", "./util", "./enums", "./keybinds"],
+function ($, comm, client, cr, player, gui, main, icons, util, enums, keybinds) {
     "use strict";
 
     var NUM_COLS = 12;
@@ -12,30 +12,30 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
     var CELL_SIZE = 32;
 
     var COMMANDS = [
-        { id: "explore", tile: gui.CMD_EXPLORE, key: "o", label: "Auto-Explore (o)" },
-        { id: "travel", tile: gui.CMD_INTERLEVEL_TRAVEL, key: "G", label: "Interlevel Travel (G)" },
-        { id: "rest", tile: gui.CMD_REST, key: "5", label: "Rest / Heal (5)" },
-        { id: "wait", tile: gui.CMD_WAIT, key: ".", label: "Wait 1 Turn (.)" },
-        { id: "autofight", tile: gui.CMD_AUTOFIGHT, keycode: 9, key: "Tab", label: "Auto-Fight (Tab)" },
-        { id: "pickup", tile: null, iconText: "📥", key: ",", label: "Pick Up Floor (,)" },
-        { id: "drop", tile: gui.CMD_DROP, key: "d", label: "Drop Item (d)" },
-        { id: "cast", tile: gui.CMD_CAST_SPELL, key: "z", label: "Cast Spell (z)" },
-        { id: "ability", tile: gui.CMD_USE_ABILITY, key: "a", label: "Use Ability (a)" },
-        { id: "skills", tile: gui.CMD_DISPLAY_SKILLS, key: "m", label: "Skills (m)" },
-        { id: "memorise", tile: gui.CMD_MEMORISE_SPELL, key: "M", label: "Memorise Spell (M)" },
-        { id: "map", tile: gui.CMD_DISPLAY_MAP, key: "X", label: "Dungeon Map (X)" },
-        { id: "known", tile: gui.CMD_KNOWN_ITEMS, key: "\\", label: "Known Items (\\)" },
-        { id: "search", tile: gui.CMD_SEARCH_STASHES, keycode: 6, ctrl: true, label: "Search Stashes (Ctrl+F)" }
+        { id: "explore", tile: gui.CMD_EXPLORE, key: "o", label: "Auto-Explore" },
+        { id: "travel", tile: gui.CMD_INTERLEVEL_TRAVEL, key: "G", label: "Interlevel Travel" },
+        { id: "rest", tile: gui.CMD_REST, key: "5", label: "Rest / Heal" },
+        { id: "wait", tile: gui.CMD_WAIT, key: ".", label: "Wait 1 Turn" },
+        { id: "autofight", tile: gui.CMD_AUTOFIGHT, keycode: 9, key: "Tab", label: "Auto-Fight" },
+        { id: "pickup", tile: null, iconText: "📥", key: ",", label: "Pick Up Floor" },
+        { id: "drop", tile: gui.CMD_DROP, key: "d", label: "Drop Item" },
+        { id: "cast", tile: gui.CMD_CAST_SPELL, key: "z", label: "Cast Spell" },
+        { id: "ability", tile: gui.CMD_USE_ABILITY, key: "a", label: "Use Ability" },
+        { id: "skills", tile: gui.CMD_DISPLAY_SKILLS, key: "m", label: "Skills" },
+        { id: "memorise", tile: gui.CMD_MEMORISE_SPELL, key: "M", label: "Memorise Spell" },
+        { id: "map", tile: gui.CMD_DISPLAY_MAP, key: "X", label: "Dungeon Map" },
+        { id: "known", tile: gui.CMD_KNOWN_ITEMS, key: "\\", label: "Known Items" },
+        { id: "search", tile: gui.CMD_SEARCH_STASHES, key: "f", ctrlKey: true, label: "Search Stashes" }
     ];
 
     var TABS = [
-        { id: "item", tile: gui.TAB_ITEM, label: "Inventory (i)", key: "i" },
-        { id: "spell", tile: gui.TAB_SPELL, label: "Spells (z)", key: "z" },
-        { id: "memorise", tile: gui.TAB_MEMORISE, label: "Memorise (M)", key: "M" },
-        { id: "ability", tile: gui.TAB_ABILITY, label: "Abilities (a)", key: "a" },
-        { id: "skill", tile: gui.TAB_SKILL, label: "Skills (m)", key: "m" },
-        { id: "command", tile: gui.TAB_COMMAND, label: "Commands (?)", key: "?" },
-        { id: "navigation", tile: gui.TAB_NAVIGATION, label: "Map / Travel (X)", key: "X" }
+        { id: "item", tile: gui.TAB_ITEM, label: "Inventory", key: "i" },
+        { id: "spell", tile: gui.TAB_SPELL, label: "Spells", key: "z" },
+        { id: "memorise", tile: gui.TAB_MEMORISE, label: "Memorise", key: "M" },
+        { id: "ability", tile: gui.TAB_ABILITY, label: "Abilities", key: "a" },
+        { id: "skill", tile: gui.TAB_SKILL, label: "Skills", key: "m" },
+        { id: "command", tile: gui.TAB_COMMAND, label: "Commands", key: "?" },
+        { id: "navigation", tile: gui.TAB_NAVIGATION, label: "Map / Travel", key: "X" }
     ];
 
     var $tooltip = null;
@@ -50,9 +50,9 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
         return $tooltip;
     }
 
-    function showTooltip(x, y, text) {
+    function showTooltip(x, y, content) {
         var tt = getTooltip();
-        tt.text(text);
+        tt.empty().append(content);
         
         var ttWidth = tt.outerWidth() || 240;
         var ttHeight = tt.outerHeight() || 80;
@@ -71,61 +71,48 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
         tt.hide();
     }
 
-    function getItemAction(item) {
-        if (!item || !item.name) return null;
-        var letter = item.letter || player.index_to_letter(item.slot);
-        var isWorn = item.name && item.name.indexOf("(worn)") !== -1;
-        var isWielded = item.name && (item.name.indexOf("(weapon)") !== -1 || item.slot === player.weapon_index);
-        var lower = item.name.toLowerCase();
-        var isJewel = lower.indexOf("ring") !== -1 || lower.indexOf("amulet") !== -1;
+    // Item class values in the 0.35 WebTiles inventory protocol.
+    var armour = 2;
+    var jewellery = 6;
+    var primaryItemActions = {
+        0: { verb: "Wield", hotkey: "w" },    // Weapons
+        2: { verb: "Wear", hotkey: "W" },     // Armour
+        3: { verb: "Evoke", hotkey: "V" },    // Wands
+        5: { verb: "Read", hotkey: "r" },     // Scrolls
+        6: { verb: "Put on", hotkey: "P" },   // Jewellery
+        7: { verb: "Quaff", hotkey: "q" },    // Potions
+        9: { verb: "Wield", hotkey: "w" },    // Staves
+        10: { verb: "Wear", hotkey: "W" },    // Orbs
+        11: { verb: "Evoke", hotkey: "V" }    // Miscellaneous evokers
+    };
 
-        if (isWielded) {
-            return { verb: "Unwield", hotkey: "w", subkey: "-", letter: letter, isUnwield: true };
-        } else if (isWorn) {
-            if (isJewel) {
-                return { verb: "Remove", hotkey: "R", letter: letter };
-            } else {
-                return { verb: "Take off", hotkey: "T", letter: letter };
-            }
-        } else {
-            if (item.action_verb) {
-                var v = item.action_verb.toLowerCase();
-                var hk = "w";
-                if (v === "wear") hk = "W";
-                else if (v === "wield") hk = "w";
-                else if (v === "quaff") hk = "q";
-                else if (v === "read") hk = "r";
-                else if (v === "evoke") hk = "V";
-                else if (v === "put on") hk = "P";
-                return { verb: item.action_verb, hotkey: hk, letter: letter };
-            } else if (lower.indexOf("potion") !== -1) {
-                return { verb: "Quaff", hotkey: "q", letter: letter };
-            } else if (lower.indexOf("scroll") !== -1) {
-                return { verb: "Read", hotkey: "r", letter: letter };
-            } else if (lower.indexOf("wand") !== -1) {
-                return { verb: "Evoke", hotkey: "V", letter: letter };
-            } else if (isJewel) {
-                return { verb: "Put on", hotkey: "P", letter: letter };
-            } else if (lower.indexOf("armour") !== -1 || lower.indexOf("shield") !== -1 || lower.indexOf("mail") !== -1 || lower.indexOf("robe") !== -1 || lower.indexOf("leather") !== -1 || lower.indexOf("helmet") !== -1 || lower.indexOf("cloak") !== -1 || lower.indexOf("boots") !== -1 || lower.indexOf("gloves") !== -1) {
-                return { verb: "Wear", hotkey: "W", letter: letter };
-            } else {
-                return { verb: "Wield", hotkey: "w", letter: letter };
-            }
+    function getItemAction(item) {
+        if (item.name.includes("(weapon)") || item.slot === player.weapon_index)
+            return { verb: "Unwield", hotkey: "w", subkey: "-" };
+        if (item.name.includes("(worn)")) {
+            if (item.base_type === jewellery)
+                return { verb: "Remove", hotkey: "R" };
+            if (item.base_type === armour || item.base_type === 10)
+                return { verb: "Take off", hotkey: "T" };
         }
+        if (item.useless || (item.base_type === 11 && !item.action_verb))
+            return null;
+        return primaryItemActions[item.base_type];
     }
 
     function formatItemTooltip(item) {
-        if (!item || !item.name) return "";
+        if (!item || !item.name || item.quantity === 0) return [];
         var action = getItemAction(item);
-        if (!action) return "";
-        var letter = action.letter;
-        var lines = [
-            letter + " - " + item.name,
-            "[L-Click] " + action.verb + (action.hotkey ? " (" + action.hotkey + ")" : ""),
-            "[R-Click] Describe",
-            "[Shift + L-Click] Drop"
-        ];
-        return lines.join("\n");
+        var letter = item.letter || player.index_to_letter(item.slot);
+        var lines = [tooltipLine(letter, item.name)];
+        if (action)
+            lines.push(tooltipLine("L-Click", action.verb));
+        lines.push(tooltipLine("R-Click", "Describe"), tooltipLine("Shift + L-Click", "Drop"));
+        return lines;
+    }
+
+    function tooltipLine(key, text) {
+        return $("<div>").append(keybinds.badge(key), document.createTextNode(" " + text));
     }
 
     function TilesPanel($container, isPopup) {
@@ -150,7 +137,7 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
                  + '<div class="tiles-cmd-bar"><canvas class="tp_cmd_canvas"></canvas></div>'
                  + '<div class="tiles-body">'
                  + '  <div class="tiles-tabs-col"><canvas class="tp_tabs_canvas"></canvas></div>'
-                 + '  <div class="tiles-grid-area"><canvas class="tp_grid_canvas" tabindex="0" aria-label="Inventory. Use arrow keys to inspect items."></canvas></div>'
+                 + '  <div class="tiles-grid-area"><canvas class="tp_grid_canvas" tabindex="0" aria-label="Inventory. Use arrow keys to inspect items."></canvas><div class="tiles-slot-keys" aria-hidden="true"></div></div>'
                  + '</div>';
         this.$container.html(html);
 
@@ -158,6 +145,7 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
         this.$cmdCanvas = this.$container.find(".tp_cmd_canvas");
         this.$tabsCanvas = this.$container.find(".tp_tabs_canvas");
         this.$gridCanvas = this.$container.find(".tp_grid_canvas");
+        this.$slotKeys = this.$container.find(".tiles-slot-keys");
     };
 
     TilesPanel.prototype.bindEvents = function () {
@@ -170,7 +158,7 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
                 if (!item || !item.name || !item.quantity) continue;
                 var rect = self.$gridCanvas[0].getBoundingClientRect();
                 var text = formatItemTooltip(item);
-                self.$gridCanvas.attr("aria-label", text);
+                self.$gridCanvas.attr("aria-label", item.letter + " " + item.name);
                 showTooltip(rect.left + (self.hoverSlot % NUM_COLS + 1) * CELL_SIZE,
                     rect.top + Math.floor(self.hoverSlot / NUM_COLS) * CELL_SIZE, text);
                 self.drawGrid();
@@ -209,7 +197,7 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
                     self.hoverSlot = slot;
                     self.drawGrid();
                 }
-                if (slot < 52 && player.inv && player.inv[slot] && player.inv[slot].name) {
+                if (slot < 52 && player.inv && player.inv[slot] && player.inv[slot].name && player.inv[slot].quantity !== 0) {
                     showTooltip(e.pageX, e.pageY, formatItemTooltip(player.inv[slot]));
                 } else {
                     hideTooltip();
@@ -232,14 +220,13 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
         this.$gridCanvas.on("mousedown", function (e) {
             if (self.hoverSlot < 0 || self.hoverSlot >= 52) return;
             var item = player.inv ? player.inv[self.hoverSlot] : null;
-            if (!item || !item.name) return;
+            if (!item || !item.name || item.quantity === 0) return;
 
             e.preventDefault();
             e.stopPropagation();
 
             var action = getItemAction(item);
-            if (!action) return;
-            var letterCode = action.letter.charCodeAt(0);
+            var letterCode = player.index_to_letter(self.hoverSlot).charCodeAt(0);
             var isModal = self.isPopup || $(".menu_inventory:visible").length > 0;
 
             if (e.shiftKey && e.which === 1) {
@@ -249,13 +236,13 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
                 }
                 comm.send_message("key", { keycode: 100 }); // 'd'
                 comm.send_message("key", { keycode: letterCode });
-            } else if (e.which === 1) {
+            } else if (e.which === 1 && action) {
                 // Left click: perform action (Wear/Take off/Quaff/Read/Evoke/Wield/Unwield)
                 if (isModal) {
                     comm.send_message("key", { keycode: 27 }); // Close menu first
                 }
                 comm.send_message("key", { keycode: action.hotkey.charCodeAt(0) });
-                if (action.isUnwield && action.subkey) {
+                if (action.subkey) {
                     comm.send_message("key", { keycode: action.subkey.charCodeAt(0) });
                 } else {
                     comm.send_message("key", { keycode: letterCode });
@@ -285,7 +272,7 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
                     self.hoverCmd = idx;
                     self.drawCommands();
                 }
-                showTooltip(e.pageX, e.pageY, COMMANDS[idx].label);
+                showTooltip(e.pageX, e.pageY, tooltipLine(self.isPopup ? "L-Click" : keybinds.commandLabel(COMMANDS[idx]), COMMANDS[idx].label));
             } else {
                 if (self.hoverCmd !== -1) {
                     self.hoverCmd = -1;
@@ -308,11 +295,7 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
                 if (isModal) {
                     comm.send_message("key", { keycode: 27 }); // Close inventory modal
                 }
-                if (cmd.keycode) {
-                    comm.send_message("key", { keycode: cmd.keycode });
-                } else if (cmd.key) {
-                    comm.send_message("key", { keycode: cmd.key.charCodeAt(0) });
-                }
+                comm.send_message("key", { keycode: keybinds.commandCode(cmd) });
             }
         });
 
@@ -326,7 +309,7 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
                     self.hoverTab = idx;
                     self.drawTabs();
                 }
-                showTooltip(e.pageX, e.pageY, TABS[idx].label);
+                showTooltip(e.pageX, e.pageY, tooltipLine(self.isPopup ? "L-Click" : TABS[idx].key, TABS[idx].label));
             } else {
                 if (self.hoverTab !== -1) {
                     self.hoverTab = -1;
@@ -370,7 +353,7 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
             var rect = this.getBoundingClientRect();
             var x = e.clientX - rect.left;
             if (x < CELL_SIZE) {
-                showTooltip(e.pageX, e.pageY, "Monsters (Tab)");
+                showTooltip(e.pageX, e.pageY, tooltipLine(self.isPopup ? "L-Click" : "Tab", "Auto-Fight"));
             } else {
                 hideTooltip();
             }
@@ -397,20 +380,7 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
             self.update();
         });
 
-        if (this.isPopup) {
-            $(document).off("keydown.tiles_popup").on("keydown.tiles_popup", function (e) {
-                if (e.which === 27 || (!e.ctrlKey && !e.altKey && (e.which === 73 || e.which === 32))) { // Escape, 'i', Space
-                    e.preventDefault();
-                    e.stopPropagation();
-                    $(document).off("keydown.tiles_popup");
-                    hideTooltip();
-                    comm.send_message("key", { keycode: 27 });
-                    if ($(".inv-close-btn:visible").length > 0) {
-                        $(".inv-close-btn").click();
-                    }
-                }
-            });
-        }
+
     };
 
     TilesPanel.prototype.drawMonsterHeader = function () {
@@ -601,6 +571,17 @@ function ($, comm, client, cr, player, gui, main, icons, util, enums) {
         this.drawCommands();
         this.drawTabs();
         this.drawGrid();
+
+        this.$slotKeys.empty();
+        for (var slot = 0; slot < 52; slot++) {
+            var item = player.inv && player.inv[slot];
+            if (item && item.name && item.quantity) {
+                this.$slotKeys.append(keybinds.badge(player.index_to_letter(slot)).css({
+                    left: (slot % NUM_COLS + 1) * CELL_SIZE - 2,
+                    top: (Math.floor(slot / NUM_COLS) + 1) * CELL_SIZE - 2
+                }));
+            }
+        }
     };
 
     var defaultInstance = null;

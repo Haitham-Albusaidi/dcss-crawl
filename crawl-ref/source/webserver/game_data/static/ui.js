@@ -1,5 +1,5 @@
-define(["jquery", "comm", "client", "./options", "./focus-trap"],
-function ($, comm, client, options, focus_trap) {
+define(["jquery", "comm", "client", "./options", "./focus-trap", "./keybinds"],
+function ($, comm, client, options, focus_trap, keybinds) {
     "use strict";
 
     // Touch event duration
@@ -47,6 +47,14 @@ function ($, comm, client, options, focus_trap) {
         // or if outside the ui stack (probably the chat dialog)
         if ($(focused).closest("#ui-stack").length !== 1)
             return;
+
+        if (!ev.shiftKey && (ev.key === "Tab" || ev.key === "Escape")
+            && wrapper.find(".character-creation-modern, .modern-item-insp, #inv-switch-cat-btn").length)
+        {
+            ui_hotkey_handler(ev);
+            if (ev.defaultPrevented)
+                return;
+        }
 
         if (ev.key == "Escape" && focused)
         {
@@ -283,37 +291,31 @@ function ($, comm, client, options, focus_trap) {
 
     function utf8_from_key_value(key)
     {
-        if (key.length === 1)
-            return key.charCodeAt(0);
-        else switch (key) {
-            case "Tab": return 9;
-            case "Enter": return 13;
-            case "Escape": return 27;
-            default: return 0;
-        }
+        return keybinds.commandCode({ key: key });
     }
 
     function key_value_from_utf8(num)
     {
-        switch (num) {
-            case 9: return "Tab";
-            case 13: return "Enter";
-            case 27: return "Escape";
-            default: return String.fromCharCode(num);
-        }
+        return keybinds.keyValue(num);
     }
 
     function ui_hotkey_handler(ev) {
         if (ev.type === "click") {
-            var key_value = $(ev.currentTarget).attr("data-hotkey");
-            var keycode = utf8_from_key_value(key_value);
+            var $target = $(ev.currentTarget);
+            if ($target.is(":disabled, [aria-disabled='true']"))
+                return;
+            var keycode = Number($target.attr("data-keycode"))
+                || utf8_from_key_value($target.attr("data-hotkey"));
             if (keycode)
                 comm.send_message("key", { keycode: keycode });
-        } else if (ev.type == "keydown") {
+        } else if (ev.type === "keydown" && !ev.ctrlKey && !ev.altKey && !ev.metaKey) {
             var $top = top_popup();
             if ($top === undefined)
                 return;
-            var $elem = $top.find("[data-hotkey=\""+ev.key+"\"]");
+            var $elem = $top.find("[data-hotkey]").filter(function () {
+                return !$(this).is(":disabled, [aria-disabled='true']")
+                    && $(this).attr("data-hotkey") === ev.key;
+            });
             if ($elem.length === 1) {
                 $elem.click();
                 ev.preventDefault();
