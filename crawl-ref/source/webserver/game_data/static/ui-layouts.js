@@ -1469,6 +1469,383 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
         return $popup;
     }
 
+    function update_cc_preview($popup, $button)
+    {
+        if (!$popup || !$button || $button.length === 0)
+            return;
+        var name = $button.attr("data-name") || "";
+        var group = $button.attr("data-group") || "";
+        var rec = $button.attr("data-recommendation") || "";
+        var skill = $button.attr("data-skill") || "";
+        var apt = $button.attr("data-aptitude");
+        var desc = $button.attr("data-desc") || "";
+        var tile = $button.data("tile");
+        var doll = $popup.data("doll");
+        var step = $popup.data("step");
+
+        var $codex = $popup.find(".cc-codex-card");
+        if ($codex.length === 0)
+            return;
+
+        // Title and Group
+        $codex.find(".cc-codex-title").text(name);
+        $codex.find(".cc-codex-group").text(group ? "── " + group + " ──" : "");
+
+        // Recommendation Badge
+        var $recBadge = $codex.find(".cc-codex-rec");
+        if (rec === "recommended")
+        {
+            $recBadge.html("<span class='cc-badge cc-badge-rec'>★ Recommended for your character</span>").show();
+        }
+        else if (rec === "allowed" && step !== "species")
+        {
+            $recBadge.html("<span class='cc-badge cc-badge-allowed'>Allowed Option</span>").show();
+        }
+        else
+        {
+            $recBadge.empty().hide();
+        }
+
+        // Weapon Stats (for weapon step)
+        var $weaponStats = $codex.find(".cc-codex-weapon-stats");
+        if (skill)
+        {
+            var aptVal = parseInt(apt, 10);
+            var aptSign = isNaN(aptVal) ? "" : (aptVal > 0 ? "+" + aptVal : "" + aptVal);
+            var aptCls = aptVal > 0 ? "apt-pos" : (aptVal < 0 ? "apt-neg" : "apt-zero");
+            var statsHtml = "<div class='cc-stat-row'>" +
+                "<div class='cc-stat-chip'><span class='cc-stat-lbl'>Skill:</span> <span class='cc-stat-val'>" + skill + "</span></div>" +
+                (aptSign ? "<div class='cc-stat-chip'><span class='cc-stat-lbl'>Aptitude:</span> <span class='cc-stat-val " + aptCls + "'>" + aptSign + " apt</span></div>" : "") +
+                "</div>";
+            $weaponStats.html(statsHtml).show();
+        }
+        else
+        {
+            $weaponStats.empty().hide();
+        }
+
+        // Description
+        $codex.find(".cc-codex-desc").html(util.formatted_string_to_html(desc));
+
+        // Canvas Avatar
+        var $canvas = $codex.find(".cc-codex-avatar");
+        if ($canvas.length > 0)
+        {
+            var ctx = $canvas[0].getContext("2d");
+            ctx.clearRect(0, 0, $canvas[0].width, $canvas[0].height);
+            var renderer = new cr.DungeonCellRenderer();
+            renderer.init($canvas[0]);
+            if (step === "weapon" && doll && doll.length > 0)
+            {
+                $.each(doll, function (_, part) {
+                    renderer.draw_player(part[0], 0, 0, 0, 0, part[1]);
+                });
+            }
+            else if (tile && tile.length > 0)
+            {
+                $.each(tile, function (_, t) {
+                    renderer.draw_from_texture(t.t, 0, 0, t.tex, 0, 0, t.ymax, false);
+                });
+            }
+        }
+    }
+
+    function build_character_creation_ui(msg, $popup)
+    {
+        var creation = msg.creation || {};
+        var step = creation.step || "species";
+        var species = creation.species || "";
+        var background = creation.background || "";
+        var unavailable = creation.unavailable_backgrounds || [];
+        var renderer = new cr.DungeonCellRenderer();
+
+        $popup.addClass("character-creation-modern step-" + step);
+        $popup.data("step", step);
+        if (msg.doll)
+            $popup.data("doll", msg.doll);
+
+        // Header & Stepper
+        var $header = $("<div class='cc-header'>");
+        var $topRow = $("<div class='cc-top-row'>");
+        var $titleBox = $("<div class='cc-title-box'>");
+
+        var stepTitles = {
+            "species": "Choose Your Species",
+            "background": "Choose Your Background",
+            "weapon": "Choose Your Starting Weapon"
+        };
+        var stepTitle = stepTitles[step] || "Character Creation";
+        $titleBox.append($("<h2 class='cc-main-title'>").text(stepTitle));
+        var subtitle = msg.prompt ? util.formatted_string_to_html(msg.prompt) :
+            (step === "species" ? "Select the lineage that defines your intrinsic resistances and aptitudes." :
+             step === "background" ? "Select your profession, starting equipment, and initial training." :
+             "Select your starting weapon suited to your combat training.");
+        $titleBox.append($("<div class='cc-subtitle'>").html(subtitle));
+        $topRow.append($titleBox);
+
+        // Close / Esc button
+        var $closeBtn = $("<button class='cc-close-btn' title='Cancel [Esc]'>✕</button>");
+        $closeBtn.on("click", function () {
+            comm.send_message("key", { keycode: 27 }); // Esc
+        });
+        $topRow.append($closeBtn);
+        $header.append($topRow);
+
+        // Stepper Progress Bar
+        var $stepper = $("<div class='cc-stepper'>");
+
+        // Step 1: Species
+        var $step1 = $("<div class='cc-step-item'>").attr("data-step", "species");
+        if (step === "species") $step1.addClass("active");
+        else if (species) $step1.addClass("completed");
+        var s1Text = species ? "✓ " + species : "1. Species";
+        $step1.html("<span class='cc-step-num'>I</span><span class='cc-step-label'>" + s1Text + "</span>");
+
+        // Step 2: Background
+        var $step2 = $("<div class='cc-step-item'>").attr("data-step", "background");
+        if (step === "background") $step2.addClass("active");
+        else if (background) $step2.addClass("completed");
+        var s2Text = background ? "✓ " + background : "2. Background";
+        $step2.html("<span class='cc-step-num'>II</span><span class='cc-step-label'>" + s2Text + "</span>");
+
+        // Step 3: Weapon
+        var $step3 = $("<div class='cc-step-item'>").attr("data-step", "weapon");
+        if (step === "weapon") $step3.addClass("active");
+        var s3Text = step === "weapon" ? "3. Weapon" : "3. Weapon";
+        $step3.html("<span class='cc-step-num'>III</span><span class='cc-step-label'>" + s3Text + "</span>");
+
+        $stepper.append($step1).append("<div class='cc-step-arrow'>──►</div>")
+                .append($step2).append("<div class='cc-step-arrow'>──►</div>")
+                .append($step3);
+        $header.append($stepper);
+
+        // Main Body Layout (Left: Choices, Right: Codex)
+        var $body = $("<div class='cc-body'>");
+        var $choicesCol = $("<div class='cc-choices-column'>");
+        var $codexCol = $("<div class='cc-codex-column'>");
+
+        // Organize buttons into groups based on main-items.labels
+        var labels = msg["main-items"].labels || [];
+        var buttons = msg["main-items"].buttons || [];
+        var menu_id = msg["main-items"].menu_id;
+
+        function clean_lbl(raw) {
+            return $("<div>").html(util.formatted_string_to_html(raw)).text().trim();
+        }
+
+        var groupsMap = [];
+        var groupNames = [];
+
+        if (labels.length > 0) {
+            var sortedLabels = labels.slice().sort(function (a, b) {
+                return (a.x - b.x) || (a.y - b.y);
+            });
+            $.each(sortedLabels, function (_, lbl) {
+                var name = clean_lbl(lbl.label);
+                if (name && groupNames.indexOf(name) === -1) {
+                    groupNames.push(name);
+                    groupsMap.push({ name: name, label: lbl, buttons: [] });
+                }
+            });
+        }
+        if (groupsMap.length === 0) {
+            groupsMap.push({ name: "Available Choices", label: null, buttons: [] });
+        }
+
+        // Map each button to closest label above it in the same column
+        $.each(buttons, function (_, btn) {
+            var matchedGroup = null;
+            var bestDist = Infinity;
+            $.each(groupsMap, function (_, g) {
+                if (g.label) {
+                    if (g.label.x === btn.x && g.label.y < btn.y) {
+                        var dist = btn.y - g.label.y;
+                        if (dist < bestDist) {
+                            bestDist = dist;
+                            matchedGroup = g;
+                        }
+                    }
+                }
+            });
+            if (!matchedGroup) {
+                var colIdx = Math.min(btn.x, groupsMap.length - 1);
+                matchedGroup = groupsMap[colIdx] || groupsMap[0];
+            }
+            matchedGroup.buttons.push(btn);
+        });
+
+        // Hidden descriptions paneset for compatibility
+        var $descriptions = $("<div class='descriptions paneset' style='display:none;'>");
+
+        // Render each group
+        var firstButton = null;
+        $.each(groupsMap, function (_, group) {
+            if (group.buttons.length === 0 && (!unavailable || unavailable.length === 0))
+                return;
+
+            var $groupDiv = $("<div class='cc-group'>");
+            $groupDiv.append($("<div class='cc-group-header'>").text(group.name));
+            var $grid = $("<div class='cc-cards-grid' menu_id='" + menu_id + "'>");
+
+            $.each(group.buttons, function (_, btn) {
+                var choice = btn.choice || {};
+                var choiceName = choice.name || clean_lbl(btn.label || (btn.labels ? btn.labels[0] : "")).replace(/^[a-zA-Z0-9]\s*-\s*/, "");
+                var rec = choice.recommendation || "unknown";
+                var hotkeyChar = ui.key_value_from_utf8(btn.hotkey);
+
+                var $card = $("<div class='button cc-card'>");
+                $card.attr("menu_id", menu_id);
+                $card.attr("data-hotkey", hotkeyChar);
+                $card.attr("data-name", choiceName);
+                $card.attr("data-group", group.name);
+                $card.attr("data-recommendation", rec);
+                $card.attr("data-desc", btn.description || "");
+                $card.data("tile", btn.tile || []);
+                $card.addClass("hlc-" + btn.highlight_colour);
+
+                // Hidden description for paneset_cycle
+                $descriptions.append("<span class='pane'>" + (btn.description || "") + "</span>");
+                $card.attr("data-description-index", $descriptions.children().length - 1);
+
+                // Hotkey badge
+                $card.append($("<span class='cc-hotkey'>").text(hotkeyChar));
+
+                // Canvas icon
+                var $iconCanvas = $("<canvas class='cc-card-icon glyph-mode-hidden'>");
+                util.init_canvas($iconCanvas[0], renderer.cell_width, renderer.cell_height);
+                renderer.init($iconCanvas[0]);
+                $.each(btn.tile || [], function (_, t) {
+                    renderer.draw_from_texture(t.t, 0, 0, t.tex, 0, 0, t.ymax, false);
+                });
+                $card.append($iconCanvas);
+
+                // Name & Badges
+                var $infoBox = $("<div class='cc-card-info'>");
+                $infoBox.append($("<span class='cc-card-name'>").text(choiceName));
+
+                var $badgeRow = $("<div class='cc-card-badges'>");
+                if (rec === "recommended") {
+                    $badgeRow.append("<span class='cc-badge cc-badge-rec'>★ Rec</span>");
+                } else if (rec === "allowed" && step !== "species") {
+                    $badgeRow.append("<span class='cc-badge cc-badge-allowed'>Allowed</span>");
+                }
+
+                if (choice.skill) {
+                    $card.attr("data-skill", choice.skill);
+                    $badgeRow.append($("<span class='cc-badge cc-badge-skill'>").text(choice.skill));
+                }
+                if (choice.aptitude !== undefined) {
+                    $card.attr("data-aptitude", choice.aptitude);
+                    var aptVal = parseInt(choice.aptitude, 10);
+                    var aptSign = aptVal > 0 ? "+" + aptVal : "" + aptVal;
+                    var aptCls = aptVal > 0 ? "apt-pos" : (aptVal < 0 ? "apt-neg" : "apt-zero");
+                    $badgeRow.append($("<span class='cc-badge cc-badge-apt " + aptCls + "'>").text(aptSign + " apt"));
+                }
+                if ($badgeRow.children().length > 0)
+                    $infoBox.append($badgeRow);
+
+                $card.append($infoBox);
+
+                // Event wiring
+                $card.on("mouseenter", function () {
+                    focus_button($(this));
+                });
+                $card.on("click", function (e) {
+                    focus_button($(this));
+                    var hk = $(this).attr("data-hotkey");
+                    var keycode = ui.utf8_from_key_value(hk);
+                    if (keycode) {
+                        comm.send_message("key", { keycode: keycode });
+                    }
+                    e.stopPropagation();
+                });
+
+                $grid.append($card);
+                if (!firstButton) firstButton = $card;
+            });
+
+            // Append unavailable backgrounds if any match this group
+            if (step === "background" && unavailable.length > 0) {
+                $.each(unavailable, function (_, unav) {
+                    if (unav.group === group.name) {
+                        var $banned = $("<div class='cc-card cc-card-banned'>");
+                        $banned.append("<span class='cc-hotkey cc-hotkey-banned'>-</span>");
+                        var $bannedInfo = $("<div class='cc-card-info'>");
+                        $bannedInfo.append($("<span class='cc-card-name'>").text(unav.name));
+                        $bannedInfo.append("<span class='cc-badge cc-badge-banned'>🚫 Banned for " + species + "</span>");
+                        $banned.append($bannedInfo);
+                        $grid.append($banned);
+                    }
+                });
+            }
+
+            $groupDiv.append($grid);
+            $choicesCol.append($groupDiv);
+        });
+
+        $body.append($choicesCol);
+
+        // Right Column: Inspection Codex Card
+        var $codexCard = $("<div class='cc-codex-card'>");
+        var $avatarFrame = $("<div class='cc-codex-avatar-frame'>");
+        var $avatarCanvas = $("<canvas class='cc-codex-avatar'>");
+        util.init_canvas($avatarCanvas[0], renderer.cell_width, renderer.cell_height);
+        $avatarFrame.append($avatarCanvas);
+        $codexCard.append($avatarFrame);
+
+        $codexCard.append($("<h3 class='cc-codex-title'>").text(""));
+        $codexCard.append($("<div class='cc-codex-group'>").text(""));
+        $codexCard.append($("<div class='cc-codex-rec'>"));
+        $codexCard.append($("<div class='cc-codex-weapon-stats'>"));
+        $codexCard.append("<div class='cc-codex-divider'></div>");
+        $codexCard.append($("<div class='cc-codex-desc'>").text(""));
+
+        $codexCol.append($codexCard);
+        $body.append($codexCol);
+
+        // Footer Action Dock (Sub-items)
+        var $dock = $("<div class='cc-dock'>");
+        var subData = msg["sub-items"] || {};
+        var sub_menu_id = subData.menu_id || "sub-menu";
+        var $subGrid = $("<div class='cc-dock-actions' menu_id='" + sub_menu_id + "'>");
+
+        $.each(subData.buttons || [], function (_, sBtn) {
+            var sHotkey = ui.key_value_from_utf8(sBtn.hotkey);
+            var sLabel = clean_lbl(sBtn.label || (sBtn.labels ? sBtn.labels[0] : ""));
+            var $sPill = $("<button class='button cc-dock-pill'>");
+            $sPill.attr("menu_id", sub_menu_id);
+            $sPill.attr("data-hotkey", sHotkey);
+            $sPill.append($("<span class='cc-dock-hotkey'>").text("[" + sHotkey + "]"));
+            $sPill.append($("<span class='cc-dock-label'>").text(sLabel));
+
+            $sPill.on("click", function (e) {
+                var keycode = ui.utf8_from_key_value(sHotkey);
+                if (keycode) {
+                    comm.send_message("key", { keycode: keycode });
+                }
+                e.stopPropagation();
+            });
+            $subGrid.append($sPill);
+        });
+        $dock.append($subGrid);
+
+        // Assemble $popup
+        $popup.empty();
+        $popup.append($header);
+        $popup.append($body);
+        $popup.append($dock);
+        $popup.append($descriptions);
+
+        // Auto-focus first button to populate codex immediately
+        if (firstButton) {
+            setTimeout(function () {
+                focus_button(firstButton);
+            }, 0);
+        }
+
+        return $popup;
+    }
+
     function focus_button($button)
     {
         var $popup = $button.closest(".newgame-choice");
@@ -1484,9 +1861,21 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
                     br.bottom > gr.bottom ? br.bottom - gr.bottom : 0;
             $scr[0].scrollTop += delta;
         }
+        var $ccChoices = $button.closest(".cc-choices-column");
+        if ($ccChoices.length === 1)
+        {
+            var cbr = $button[0].getBoundingClientRect();
+            var cgr = $ccChoices[0].getBoundingClientRect();
+            var cdelta = cbr.top < cgr.top ? cbr.top - cgr.top - 10 :
+                    cbr.bottom > cgr.bottom ? cbr.bottom - cgr.bottom + 10 : 0;
+            if (cdelta !== 0)
+                $ccChoices[0].scrollTop += cdelta;
+        }
 
         var $descriptions = $popup.find(".descriptions");
         paneset_cycle($descriptions, $button.attr("data-description-index"));
+        if ($popup.hasClass("character-creation-modern"))
+            update_cc_preview($popup, $button);
         comm.send_message("outer_menu_focus", {
             hotkey: ui.utf8_from_key_value($button.attr("data-hotkey")),
             menu_id: menu_id,
@@ -1496,6 +1885,10 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
     function newgame_choice(msg)
     {
         var $popup = $(".templates > .newgame-choice").clone();
+        if (msg.creation)
+        {
+            return build_character_creation_ui(msg, $popup);
+        }
         if (msg.doll)
         {
             var $canvas = $("<canvas>");
