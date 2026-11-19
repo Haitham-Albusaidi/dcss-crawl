@@ -2105,21 +2105,6 @@ body {
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
 }
 
-.elden-slot-badge {
-    position: absolute;
-    bottom: 2px;
-    right: 3px;
-    font-family: var(--er-font-title);
-    font-size: 9px;
-    font-weight: 700;
-    color: var(--er-gold-primary);
-    background: rgba(0, 0, 0, 0.65);
-    padding: 0 2px;
-    border-radius: 2px;
-    line-height: 1.1;
-    text-shadow: 0 1px 2px #000;
-}
-
 .elden-slot.elden-toggle-slot {
     border-style: dashed;
     border-color: rgba(197, 160, 89, 0.5);
@@ -2272,28 +2257,6 @@ body {
     text-overflow: ellipsis;
 }
 
-.elden-drawer-item .item-kbd {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
-    font-size: 10px;
-    font-weight: 700;
-    color: #f7d479;
-    background: rgba(0, 0, 0, 0.65);
-    border: 1px solid rgba(212, 175, 55, 0.38);
-    padding: 2px 7px;
-    border-radius: 4px;
-    letter-spacing: 0.04em;
-    flex-shrink: 0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-    text-transform: none; /* Keep case faithful: m is m, A is A */
-}
-
-.elden-drawer-item:hover .item-kbd {
-    border-color: #f7d479;
-    color: #fff4cc;
-    background: rgba(212, 175, 55, 0.15);
-    box-shadow: 0 0 6px rgba(212, 175, 55, 0.3);
-}
-
 /* 8-Directional Movement Compass Popover */
 .elden-dpad-popover {
     margin-bottom: 8px;
@@ -2382,16 +2345,6 @@ body {
     letter-spacing: 0.05em;
     color: var(--er-gold-bright);
     text-transform: uppercase;
-}
-
-.elden-tooltip-badge {
-    font-family: var(--er-font-title);
-    font-size: 9px;
-    font-weight: 700;
-    color: #000;
-    background: var(--er-gold-primary);
-    padding: 0 4px;
-    border-radius: 2px;
 }
 
 .elden-tooltip-body {
@@ -2783,16 +2736,6 @@ body {
     box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
 }
 
-.inv-kbd {
-    font-family: var(--er-font-title);
-    font-size: 9px;
-    font-weight: 700;
-    color: var(--er-gold-dim);
-    background: rgba(0, 0, 0, 0.6);
-    padding: 1px 4px;
-    border-radius: 2px;
-}
-
 /* Scroll Area & Container */
 .menu:not(.menu_txt) .menu_contents {
     overflow-y: auto !important;
@@ -2897,22 +2840,6 @@ body {
 }
 
 /* Hotkey Badge */
-.inv-hotkey-badge {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    font-family: var(--er-font-title);
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--er-gold-bright);
-    background: rgba(0, 0, 0, 0.75);
-    border: 1px solid rgba(197, 160, 89, 0.45);
-    border-radius: 3px;
-    padding: 1px 4px;
-    line-height: 1;
-    text-shadow: 0 1px 2px #000;
-}
-
 /* Tile Icon Box & Canvas */
 .inv-tile-box {
     margin: 2px 0 4px 0;
@@ -3234,17 +3161,6 @@ body {
     font-family: var(--er-font-sans) !important;
     font-size: 11px !important;
     color: var(--er-text-secondary) !important;
-}
-
-.er-overview-hint kbd {
-    background: rgba(0, 0, 0, 0.6) !important;
-    border: 1px solid rgba(197, 160, 89, 0.4) !important;
-    border-radius: 3px !important;
-    padding: 1px 5px !important;
-    color: var(--er-gold-bright) !important;
-    font-family: var(--er-font-title) !important;
-    font-size: 10px !important;
-    font-weight: 700 !important;
 }
 
 .er-overview-close-btn {
@@ -3816,14 +3732,6 @@ body {
     opacity: 0.55;
 }
 
-.er-skill-key {
-    font-family: var(--er-font-title);
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--er-gold-bright);
-    min-width: 22px;
-}
-
 .er-skill-status {
     width: 18px;
     height: 18px;
@@ -3967,12 +3875,6 @@ body {
     border-color: var(--er-gold-bright);
     color: #fff;
     box-shadow: 0 0 8px rgba(197, 160, 89, 0.3);
-}
-
-.skills-action-pill kbd {
-    font-family: var(--er-font-title);
-    font-weight: 700;
-    color: var(--er-gold-bright);
 }
 
 .skills-footer-hint {
@@ -4258,13 +4160,6 @@ body {
     font-size: 13px !important;
 }
 
-.menu_prompt li[data-hotkey="y"] .inv-hotkey-badge,
-.menu_prompt li:first-child .inv-hotkey-badge {
-    background: rgba(34, 197, 94, 0.25) !important;
-    border-color: rgba(34, 197, 94, 0.6) !important;
-    color: #86efac !important;
-}
-
 /* No Option (Crimson Theme) */
 .menu_prompt li[data-hotkey="n"] .inv-grid-card,
 .menu_prompt li:nth-child(2) .inv-grid-card {
@@ -4278,13 +4173,6 @@ body {
     color: #fca5a5 !important;
     font-weight: 700 !important;
     font-size: 13px !important;
-}
-
-.menu_prompt li[data-hotkey="n"] .inv-hotkey-badge,
-.menu_prompt li:nth-child(2) .inv-hotkey-badge {
-    background: rgba(239, 68, 68, 0.25) !important;
-    border-color: rgba(239, 68, 68, 0.6) !important;
-    color: #fca5a5 !important;
 }
 
 /* Hover & Selected / Active State */
@@ -4354,11 +4242,6 @@ body {
     font: inherit;
     font-size: 12px;
     cursor: pointer;
-}
-
-.empty-grimoire-actions kbd {
-    margin-inline-start: 4px;
-    color: var(--er-text-secondary);
 }
 
 
@@ -4531,15 +4414,6 @@ body {
     color: #fff !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 4px 12px rgba(197, 160, 89, 0.25) !important;
-}
-
-.er-codex-close-btn .kbd {
-    background: rgba(197, 160, 89, 0.2) !important;
-    border: 1px solid rgba(197, 160, 89, 0.5) !important;
-    color: var(--er-gold-bright) !important;
-    font-size: 10px !important;
-    padding: 1px 4px !important;
-    border-radius: 3px !important;
 }
 
 /* Codex Body & Scroll Panes */
@@ -4892,16 +4766,6 @@ body {
     color: var(--er-gold-bright) !important;
 }
 
-.er-codex-switch-key-btn .kbd {
-    background: rgba(197, 160, 89, 0.2) !important;
-    border: 1px solid rgba(197, 160, 89, 0.5) !important;
-    color: var(--er-gold-bright) !important;
-    font-weight: 700 !important;
-    font-size: 11px !important;
-    padding: 1px 5px !important;
-    border-radius: 3px !important;
-}
-
 .er-codex-tabs-list {
     display: flex !important;
     align-items: center !important;
@@ -5031,23 +4895,6 @@ button.status_light {
     line-height: 1.4;
 }
 
-.cc-close-btn {
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #94a3b8;
-    border-radius: 4px;
-    padding: 4px 10px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.15s ease;
-}
-
-.cc-close-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: #ef4444;
-    color: #fca5a5;
-}
-
 /* Stepper Progress Bar */
 .cc-stepper {
     display: flex;
@@ -5146,6 +4993,8 @@ button.status_light {
 
 /* Choice Cards */
 .cc-card {
+    color: inherit;
+    text-align: left;
     background: rgba(18, 24, 38, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 4px;
@@ -5156,22 +5005,6 @@ button.status_light {
     cursor: pointer;
     transition: all 0.15s ease;
     box-sizing: border-box;
-}
-
-.cc-hotkey {
-    background: #090c12;
-    border: 1px solid rgba(201, 170, 113, 0.45);
-    border-radius: 3px;
-    color: #c9aa71;
-    font-family: monospace;
-    font-size: 12px;
-    font-weight: bold;
-    width: 22px;
-    height: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
 }
 
 .cc-card-icon {
@@ -5261,22 +5094,12 @@ button.status_light {
     transform: translateY(-1px);
 }
 
-.cc-card.selected .cc-hotkey {
-    background: #c9aa71;
-    color: #090c12;
-}
-
 /* Unavailable Backgrounds */
 .cc-card-banned {
     opacity: 0.45;
     cursor: not-allowed;
     border: 1px dashed rgba(239, 68, 68, 0.35);
     pointer-events: none;
-}
-
-.cc-hotkey-banned {
-    border-color: rgba(239, 68, 68, 0.4);
-    color: #ef4444;
 }
 
 .cc-badge-banned {
@@ -5439,12 +5262,6 @@ button.status_light {
     border-color: #c9aa71;
     color: #f1e5cd;
     box-shadow: 0 0 8px rgba(201, 170, 113, 0.2);
-}
-
-.cc-dock-hotkey {
-    color: #c9aa71;
-    font-weight: bold;
-    font-family: monospace;
 }
 
 /* Responsive Rules */
@@ -5785,12 +5602,6 @@ button.status_light {
     outline: none;
 }
 
-.describe-item.modern-item-insp .item-insp-btn-key {
-    color: #c9aa71;
-    font-weight: 700;
-    font-family: monospace;
-}
-
 .describe-item.modern-item-insp .item-insp-close-btn {
     margin-left: auto;
     border-color: rgba(201, 170, 113, 0.4);
@@ -5816,4 +5627,93 @@ button.status_light {
         margin-bottom: 10px;
         padding-bottom: 10px;
     }
+}
+
+/* Shortcut badges share typography and interaction states across WebTiles. */
+.keybind-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    min-inline-size: 1.25em;
+    padding: 0.05em 0.32em;
+    border: 1px solid rgba(196, 154, 69, 0.4);
+    border-radius: 3px;
+    background: rgba(16, 17, 22, 0.9);
+    color: #e5c158;
+    font: 600 11px/1.2 ui-monospace, Consolas, monospace;
+    letter-spacing: normal;
+    text-transform: none;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+button:hover > .keybind-badge,
+button:focus-visible > .keybind-badge,
+[data-hotkey]:hover > .keybind-badge,
+.cc-card.selected > .keybind-badge {
+    border-color: #c49a45;
+    color: #fff0bf;
+}
+
+button:focus-visible:has(> .keybind-badge) {
+    outline: 2px solid #e5c158;
+    outline-offset: 2px;
+}
+
+:is(:disabled, [aria-disabled="true"]) > .keybind-badge {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+
+.elden-slot-key,
+.elden-slot-badge,
+.inv-slot-key {
+    position: absolute;
+    inset-inline-end: 2px;
+    inset-block-end: 2px;
+}
+
+.elden-slot-badge {
+    color: #e5c158;
+    font-size: 9px;
+}
+
+.elden-slot canvas.elden-slot-icon {
+    width: 24px;
+    height: 24px;
+    image-rendering: pixelated;
+}
+
+.inv-slot-key {
+    inset: 4px auto auto 4px;
+}
+
+.formatted-scroller[data-tag="help"] .keybind-badge {
+    display: inline;
+    padding: 0;
+    font: inherit;
+    outline: 1px solid rgba(196, 154, 69, 0.4);
+    outline-offset: 1px;
+    border: 0;
+}
+
+#tiles-inv-tooltip > div + div {
+    margin-top: 3px;
+}
+
+.tiles-grid-area {
+    position: relative;
+}
+
+.tiles-slot-keys {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.tiles-slot-keys > .keybind-badge {
+    position: absolute;
+    transform: translate(-100%, -100%);
 }

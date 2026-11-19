@@ -1,9 +1,9 @@
 define(["jquery", "comm", "client",
         "./cell_renderer", "./enums", "./options", "./player",
         "./tileinfo-icons", "./tileinfo-gui", "./tileinfo-main",
-        "./util", "./focus-trap", "./ui"],
+        "./util", "./focus-trap", "./ui", "./keybinds"],
 function ($, comm, client, cr, enums, options, player, icons, gui, main,
-          util, focus_trap, ui) {
+          util, focus_trap, ui, keybinds) {
     "use strict";
 
     var filtered_inv;
@@ -159,23 +159,22 @@ function ($, comm, client, cr, enums, options, player, icons, gui, main,
                      left: x + 10 + "px"});
         if (slot == -2)
         {
-            $tooltip.html("<span>Left click: minimize</span><br />"
-                          + "<span>Right click: open settings</span>");
+            $tooltip.html(keybinds.html("L-Click") + " Minimize<br />"
+                          + keybinds.html("R-Click") + " Open settings");
         }
         else if (slot == -1 && game.get_input_mode() == enums.mouse_mode.COMMAND)
-            $tooltip.html("<span>Left click: show main menu</span>");
+            $tooltip.html(keybinds.html("L-Click") + " Show main menu");
         else
         {
             var item = filtered_inv[slot];
-            $tooltip.empty().text(String.fromCharCode(item.letter) + " - ");
+            $tooltip.empty().append(keybinds.badge(player.index_to_letter(item.slot)), " ");
             $tooltip.append(player.inventory_item_desc(item.slot));
             if (game.get_input_mode() == enums.mouse_mode.COMMAND)
             {
-                if (item.action_verb)
-                    $tooltip.append("<br /><span>Left click: "
-                                    + item.action_verb.toLowerCase()
-                                    + "</span>");
-                $tooltip.append("<br /><span>Right click: describe</span>");
+                if (item.action_verb && !item.useless)
+                    $tooltip.append("<br />", keybinds.badge("L-Click"),
+                        document.createTextNode(" " + item.action_verb));
+                $tooltip.append("<br />", keybinds.badge("R-Click"), " Describe");
             }
         }
         $tooltip.show();

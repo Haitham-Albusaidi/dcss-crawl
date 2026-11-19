@@ -350,3 +350,32 @@ frontend assignment, and live capture tests are documented in
      - **Potion of Curing** (`inspection_potion_curing.png`): Universal consumable layout, health restoration details, contextual ailment status, lore quote, and responsive `[Esc] Close`.
    - C++ backend contract reviewed and approved in `.ai-team/reviews/webtiles-item-inspection_review.json`.
    - Execution report written to `.ai-team/reports/webtiles-item-inspection_report.json`.
+
+
+## WebTiles shortcut system rebuild
+
+- Branch: `feature/webtiles-keybind-system`
+- Worktree: `C:\Users\Tempc\Desktop\dcss\keybind-system-dev`
+- Base: `c5914a65ee`
+- Code commits: `3518273b5e`, `c009a9f75f`, `6b4852da54`, `a07a3cb6c1`, `09ea621642`
+- Review task: `.ai-team/tasks/webtiles-keybind-system-review.json`
+
+WebTiles shares one semantic key badge across character creation, inventory,
+item and feature inspection, skills, HUD, and formatted command help. Item
+inspection uses numeric `action_keys` on all item classes and accepts the
+previous inspection and footer formats for older games. Character creation
+uses existing server hotkeys, including the saved-character Tab preset when
+offered and the weapon screen's Backspace. Toolbar commands use the shipped
+bindings. The `e` label is Equip Item to match `CMD_EQUIP`. These changes
+leave the native command tables, item rules, and terminal UI untouched.
+
+Verification passed with 22 coordinator unit tests, 27 WebTiles Python tests,
+the keybind and floating-event Node tests, JavaScript syntax checks, a check
+of 12 GUI sprite identifiers and their tilesheet, and a WSL WebTiles compile
+of `describe.o`. Keyboard and click contracts were checked with simulated
+frames. Browser gameplay, player-specific command remaps, and the full
+native link still need verification.
+
+The Antigravity adapter returned without review text after a read-only
+request. Cross-agent approval is pending. The branch is ready for a local
+review against the base. Publishing remains assigned to Antigravity.
