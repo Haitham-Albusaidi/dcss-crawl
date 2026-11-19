@@ -176,6 +176,18 @@ void MenuButton::serialize()
     tiles.json_write_string("description", description);
     tiles.json_write_int("hotkey", hotkey);
     tiles.json_write_int("highlight_colour", highlight_colour);
+    if (!character_choice.name.empty())
+    {
+        tiles.json_open_object("choice");
+        tiles.json_write_string("name", character_choice.name);
+        tiles.json_write_string("recommendation", character_choice.recommendation);
+        if (!character_choice.skill.empty())
+        {
+            tiles.json_write_string("skill", character_choice.skill);
+            tiles.json_write_int("aptitude", character_choice.aptitude);
+        }
+        tiles.json_close_object();
+    }
     if (auto text = dynamic_cast<Text*>(m_child.get()))
         tiles.json_write_string("label", text->get_text().to_colour_string(LIGHTGREY));
     else if (auto box = dynamic_cast<Box*>(m_child.get()))

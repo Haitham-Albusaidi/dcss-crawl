@@ -257,3 +257,13 @@ session. The final implementation is in the local development branch for
 Antigravity to review. Native checks were blocked by WSL access and the Python
 WebTiles suite by missing pytest. Integration and publication belong to
 Antigravity.
+
+## WebTiles character creation contract
+
+Codex added optional character creation metadata on
+`feature/webtiles-character-creation-contract`. The engine still owns
+selection rules and keybindings. The existing Antigravity UI task has its
+own branch and worktree. Its adapter timed out during authentication before
+making edits. See
+[`character-creation.md`](crawl-ref/source/webserver/character-creation.md)
+for the data contract, frontend assignment, and live payload checks.

@@ -1315,6 +1315,12 @@ protected:
         btn->description = desc;
         btn->hotkey = letter;
         btn->highlight_colour = hl;
+#ifdef USE_TILE_WEB
+        btn->character_choice.name = item_name;
+        if (item_status != ITEM_STATUS_UNKNOWN)
+            btn->character_choice.recommendation =
+                item_status == ITEM_STATUS_ALLOWED ? "recommended" : "allowed";
+#endif
         btn->set_margin_for_crt(0, 1, 0, 0);
 
         m_main_items->add_button(btn, position.x, position.y);
@@ -1439,9 +1445,42 @@ void UINewGameMenu::_allocate_region()
 }
 
 #ifdef USE_TILE_WEB
+static void _open_creation_info(const newgame_def& ng, const char* step)
+{
+    tiles.json_open_object("creation");
+    tiles.json_write_string("step", step);
+    if (ng.species != SP_UNKNOWN)
+        tiles.json_write_string("species", species::name(ng.species));
+    if (ng.job != JOB_UNKNOWN)
+        tiles.json_write_string("background", get_job_name(ng.job));
+}
+
 void UINewGameMenu::serialize()
 {
     tiles.json_write_string("title", welcome.to_colour_string(LIGHTGREY));
+    _open_creation_info(m_ng, m_choice_type == C_JOB ? "background" : "species");
+    if (m_choice_type == C_JOB && m_ng.species != SP_UNKNOWN)
+    {
+        // Informational only. These entries never receive a menu slot or hotkey.
+        tiles.json_open_array("unavailable_backgrounds");
+        for (const job_group& group : job_groups)
+            for (job_type job : group.jobs)
+            {
+                if (job == JOB_UNKNOWN)
+                    break;
+                if (job == JOB_DELVER && m_ng.type == GAME_TYPE_SPRINT)
+                    continue;
+                if (_job_allowed(m_ng.species, job) == CC_BANNED)
+                {
+                    tiles.json_open_object();
+                    tiles.json_write_string("name", get_job_name(job));
+                    tiles.json_write_string("group", group.name);
+                    tiles.json_close_object();
+                }
+            }
+        tiles.json_close_array(true);
+    }
+    tiles.json_close_object();
     m_main_items->serialize("main-items");
     m_sub_items->serialize("sub-items");
 }
@@ -1744,8 +1783,8 @@ static void _construct_weapon_menu(const newgame_def& ng,
         label->set_text(formatted_string(text, fg));
 
         hbox->set_main_alignment(Widget::Align::STRETCH);
-        string apt_text = make_stringf("(%+d apt)",
-                species_apt(choice.skill, ng.species));
+        const int aptitude = species_apt(choice.skill, ng.species);
+        string apt_text = make_stringf("(%+d apt)", aptitude);
         auto suffix = make_shared<Text>(formatted_string(apt_text, fg));
         hbox->add_child(suffix);
 
@@ -1754,6 +1793,13 @@ static void _construct_weapon_menu(const newgame_def& ng,
         btn->id = wpn_type;
         btn->hotkey = letter;
         btn->highlight_colour = bg;
+#ifdef USE_TILE_WEB
+        btn->character_choice.name = choice.label;
+        btn->character_choice.recommendation =
+            wpn_restriction == CC_UNRESTRICTED ? "recommended" : "allowed";
+        btn->character_choice.skill = skill_name(choice.skill);
+        btn->character_choice.aptitude = aptitude;
+#endif
 
         // Is this item our default weapon?
         if (wpn_type == defweapon || (defweapon == WPN_UNKNOWN && i == 0))
@@ -1900,6 +1946,8 @@ static bool _prompt_weapon(const newgame_def& ng, newgame_def& ng_choice,
     tiles.json_open_object();
     tiles.json_write_string("title", title->get_text().to_colour_string(LIGHTGREY));
     tiles.json_write_string("prompt", prompt->get_text().to_colour_string(LIGHTGREY));
+    _open_creation_info(ng, "weapon");
+    tiles.json_close_object();
     main_items->serialize("main-items");
     sub_items->serialize("sub-items");
     tiles.send_doll(doll, false, false);
