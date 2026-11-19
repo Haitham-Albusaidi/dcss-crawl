@@ -35,6 +35,14 @@ public:
     bool activate();
 
 #ifdef USE_TILE_WEB
+    struct CharacterChoice
+    {
+        string name;
+        const char* recommendation = "unknown";
+        string skill;
+        int aptitude = 0;
+    };
+    CharacterChoice character_choice;
     void serialize();
 #endif
 

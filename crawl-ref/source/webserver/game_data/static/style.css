@@ -4970,3 +4970,508 @@ button.status_light {
     padding: 0 2px;
     font: bold 10px monospace;
 }
+
+
+/* ==========================================================================
+   Modern Dark-Fantasy Character Creation (Species, Background, Weapon)
+   ========================================================================== */
+
+.newgame-choice.character-creation-modern {
+    display: flex;
+    flex-direction: column;
+    max-width: 1350px;
+    width: 95vw;
+    max-height: 92vh;
+    background: radial-gradient(circle at 50% 15%, #151b26 0%, #0a0d14 100%);
+    border: 1px solid rgba(201, 170, 113, 0.45);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 16px 20px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.newgame-choice.character-creation-modern > .header,
+.newgame-choice.character-creation-modern > .body {
+    min-height: 0;
+}
+
+.cc-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+
+.cc-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.cc-title-box {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cc-main-title {
+    margin: 0;
+    font-family: 'Cinzel', serif;
+    font-size: 20px;
+    color: #f1e5cd;
+    letter-spacing: 1.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.cc-subtitle {
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+.cc-close-btn {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #94a3b8;
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.15s ease;
+}
+
+.cc-close-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    color: #fca5a5;
+}
+
+/* Stepper Progress Bar */
+.cc-stepper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    background: rgba(8, 12, 20, 0.6);
+    border: 1px solid rgba(201, 170, 113, 0.2);
+    border-radius: 20px;
+    align-self: flex-start;
+}
+
+.cc-step-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #64748b;
+    padding: 2px 8px;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.cc-step-num {
+    font-family: 'Cinzel', serif;
+    font-weight: bold;
+    font-size: 11px;
+}
+
+.cc-step-item.active {
+    background: rgba(201, 170, 113, 0.18);
+    border: 1px solid #c9aa71;
+    color: #f1e5cd;
+    box-shadow: 0 0 10px rgba(201, 170, 113, 0.3);
+}
+
+.cc-step-item.completed {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #34d399;
+}
+
+.cc-step-arrow {
+    color: rgba(201, 170, 113, 0.4);
+    font-size: 11px;
+}
+
+/* Body: 2-column layout */
+.cc-body {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.cc-choices-column {
+    flex: 1 1 65%;
+    overflow-y: auto;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(201, 170, 113, 0.4) rgba(15, 23, 42, 0.4);
+}
+
+.cc-choices-column::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cc-choices-column::-webkit-scrollbar-thumb {
+    background: rgba(201, 170, 113, 0.4);
+    border-radius: 3px;
+}
+
+.cc-group {
+    margin-bottom: 14px;
+}
+
+.cc-group-header {
+    color: #d4af37;
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+    padding-bottom: 3px;
+}
+
+.cc-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 6px;
+}
+
+/* Choice Cards */
+.cc-card {
+    background: rgba(18, 24, 38, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-sizing: border-box;
+}
+
+.cc-hotkey {
+    background: #090c12;
+    border: 1px solid rgba(201, 170, 113, 0.45);
+    border-radius: 3px;
+    color: #c9aa71;
+    font-family: monospace;
+    font-size: 12px;
+    font-weight: bold;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.cc-card-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    image-rendering: pixelated;
+}
+
+.cc-card-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.cc-card-name {
+    color: #f1f5f9;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cc-card-badges {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+    flex-wrap: wrap;
+}
+
+.cc-badge {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cc-badge-rec {
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.cc-badge-allowed {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.cc-badge-skill {
+    color: #60a5fa;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.cc-badge-apt {
+    font-family: monospace;
+    font-size: 11px;
+}
+
+.cc-badge-apt.apt-pos {
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.15);
+}
+
+.cc-badge-apt.apt-neg {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.15);
+}
+
+.cc-badge-apt.apt-zero {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.1);
+}
+
+/* Card Selection & Hover */
+.cc-card:hover,
+.cc-card.selected {
+    background: rgba(30, 39, 60, 0.95);
+    border-color: #c9aa71;
+    box-shadow: 0 0 12px rgba(201, 170, 113, 0.25);
+    transform: translateY(-1px);
+}
+
+.cc-card.selected .cc-hotkey {
+    background: #c9aa71;
+    color: #090c12;
+}
+
+/* Unavailable Backgrounds */
+.cc-card-banned {
+    opacity: 0.45;
+    cursor: not-allowed;
+    border: 1px dashed rgba(239, 68, 68, 0.35);
+    pointer-events: none;
+}
+
+.cc-hotkey-banned {
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+}
+
+.cc-badge-banned {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    font-size: 10px;
+}
+
+/* Right Column: Live Inspection Codex */
+.cc-codex-column {
+    flex: 0 0 35%;
+    min-width: 310px;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.cc-codex-card {
+    background: linear-gradient(180deg, #151a24 0%, #0c0f16 100%);
+    border: 1px solid rgba(201, 170, 113, 0.35);
+    border-radius: 6px;
+    padding: 14px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-height: 0;
+    box-sizing: border-box;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.cc-codex-avatar-frame {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 6px;
+    background: radial-gradient(circle, rgba(201, 170, 113, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.cc-codex-avatar {
+    width: 48px;
+    height: 48px;
+    image-rendering: pixelated;
+}
+
+.cc-codex-title {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    color: #f1e5cd;
+    text-align: center;
+    margin: 2px 0;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.cc-codex-group {
+    color: #d4af37;
+    font-size: 12px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+
+.cc-codex-rec {
+    display: flex;
+    justify-content: center;
+}
+
+.cc-codex-weapon-stats {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    padding: 6px 10px;
+    margin: 4px 0;
+}
+
+.cc-stat-row {
+    display: flex;
+    justify-content: space-around;
+    gap: 8px;
+}
+
+.cc-stat-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.cc-stat-lbl {
+    color: #94a3b8;
+}
+
+.cc-stat-val {
+    font-weight: 600;
+    color: #f1f5f9;
+}
+
+.cc-stat-val.apt-pos {
+    color: #34d399;
+}
+
+.cc-stat-val.apt-neg {
+    color: #f87171;
+}
+
+.cc-codex-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201, 170, 113, 0.35), transparent);
+    margin: 4px 0;
+}
+
+.cc-codex-desc {
+    color: #cbd5e1;
+    font-size: 13px;
+    line-height: 1.55;
+    font-family: 'Crimson Text', Georgia, serif;
+    overflow-y: auto;
+    flex: 1 1 auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    padding-right: 4px;
+}
+
+/* Footer Action Dock */
+.cc-dock {
+    border-top: 1px solid rgba(201, 170, 113, 0.2);
+    padding-top: 10px;
+    margin-top: 8px;
+    flex-shrink: 0;
+}
+
+.cc-dock-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.cc-dock-pill {
+    background: rgba(18, 24, 38, 0.85);
+    border: 1px solid rgba(201, 170, 113, 0.3);
+    border-radius: 20px;
+    padding: 4px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: #e2e8f0;
+    font-size: 12px;
+    transition: all 0.15s ease;
+}
+
+.cc-dock-pill:hover {
+    background: rgba(30, 41, 65, 1);
+    border-color: #c9aa71;
+    color: #f1e5cd;
+    box-shadow: 0 0 8px rgba(201, 170, 113, 0.2);
+}
+
+.cc-dock-hotkey {
+    color: #c9aa71;
+    font-weight: bold;
+    font-family: monospace;
+}
+
+/* Responsive Rules */
+@media screen and (max-width: 1024px) {
+    .cc-body {
+        flex-direction: column;
+    }
+    .cc-codex-column {
+        flex: 0 0 auto;
+        max-width: 100%;
+        min-width: 0;
+        max-height: 220px;
+    }
+}
+
+@media screen and (max-height: 768px) {
+    .cc-card {
+        padding: 4px 8px;
+    }
+    .cc-card-name {
+        font-size: 12px;
+    }
+    .cc-codex-avatar {
+        width: 36px;
+        height: 36px;
+    }
+    .newgame-choice.character-creation-modern {
+        padding: 10px 14px;
+    }
+}

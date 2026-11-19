@@ -257,3 +257,41 @@ session. The final implementation is in the local development branch for
 Antigravity to review. Native checks were blocked by WSL access and the Python
 WebTiles suite by missing pytest. Integration and publication belong to
 Antigravity.
+
+## WebTiles character creation contract
+
+Codex added optional character creation metadata on
+`feature/webtiles-character-creation-contract`. The engine still owns
+selection rules and keybindings. The existing Antigravity UI task has its
+own branch and worktree. Its adapter timed out during authentication before
+making edits. See
+[`character-creation.md`](crawl-ref/source/webserver/character-creation.md)
+for the data contract, frontend assignment, and live payload checks.
+
+## WebTiles Modern Character Creation Redesign & Local Runner Integration
+
+- **Agent**: Google Antigravity (Sole GitHub Publishing Authority & UI Lead)
+- **Branch**: `feature/webtiles-character-creation-ui`
+- **Commits**:
+  - `d288b02fc0`: `Expose WebTiles character creation choices and hand off the redesign` (Codex C++ contract)
+  - `84bef52f9c`: `feat(webtiles): implement modern dark-fantasy character creation screens` (Antigravity UI/UX redesign)
+- **Status**: Verified in live WebTiles gameplay in WSL Ubuntu; passed automated tests; ready for GitHub publication.
+
+### Implementation Summary
+1. **Antigravity Authentication Runner Fix (`fix/antigravity-auth-runner`)**:
+   - Resolved recurring OAuth authentication timeouts by implementing a secure host execution bridge (`.ai-team/runner/local_runner.py`) running under the authenticated Windows host account (`CODELINE\Tempc`).
+   - Runner strictly enforces command allowlisting (`agy.exe --print`), path restrictions within the workspace root, fail-fast OAuth abort (<1s), and local loopback HTTP + file queue IPC.
+   - Tested and verified via `adapter_bridge.py` and test coordinator suites without token leakage.
+2. **Modern Dark-Fantasy Character Creation Screens**:
+   - **Species Selection**: 2-column modal layout with categorized card grids (Simple, Intermediate, Advanced), hotkey indicators (`[a-z]`), original pixel art sprites, and live right-hand inspection codex updating on hover and keyboard navigation.
+   - **Background Selection**: Category headers (Warrior, Mage, Zealot, etc.), high-visibility `★ Recommended` and `Allowed` badges, and a dedicated bottom informational section for banned backgrounds (`unavailable_backgrounds`) with zero activation routes or hotkeys (e.g. Hunter banned for Felid).
+   - **Weapon Selection**: Weapon cards displaying skill chips (Axes, Maces & Flails, etc.), signed aptitude badges (`+2 apt`, `-1 apt`), and right-column codex rendering a live character doll equipped with the chosen weapon.
+   - **Accessibility & Controls**: Preserved full keyboard support (Arrows, Space to toggle order, Tab for preset, Backspace to navigate back, Help `?`), responsive layout down to 1024x768, and legacy fallback for sprint/map selections without `creation`.
+3. **Verification**:
+   - Automated contract test `character_creation_payload_test.js` passed (`Validated species, background, and weapon messages and Felid restrictions`).
+   - Live in-browser verification completed via `browser` subagent on `http://localhost:8088`. Captured screenshots:
+     - `screen1_species_selection.png`
+     - `screen2_felid_backgrounds.png`
+     - `screen3_weapon_selection.png`
+   - C++ backend contract reviewed and approved in `.ai-team/reviews/webtiles-character-creation_review.json`.
+
