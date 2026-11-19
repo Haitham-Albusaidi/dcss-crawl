@@ -234,29 +234,363 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
     function describe_item(desc)
     {
         var $popup = $(".templates > .describe-item").clone();
-        $popup.find(".header > span").text(desc.title);
+        $popup.addClass("modern-item-insp");
+
+        var insp = desc.inspection || {};
+        var stats = insp.stats || {};
+        var sections = insp.sections || {};
+        var actions = insp.actions || [];
+
+        // Save original data on popup element for spell-success toggle restoration
+        $popup.data("item-desc-data", desc);
+        $popup.data("item-showing-spell-success", false);
+
+        // 1. Title and basic classification
+        var rawTitle = desc.title || "";
+        var cleanTitle = rawTitle.replace(/^[a-z0-9]\s*[-–]\s*/i, "").trim();
+        $popup.find(".header > span").addClass("item-insp-title").text(cleanTitle || rawTitle);
+
+        // Determine item category
+        var category = "ITEM";
+        var categoryIcon = "📦";
+        if (insp.kind === "weapon") {
+            category = "WEAPON";
+            categoryIcon = "⚔️";
+        } else if (insp.kind === "armour") {
+            category = "ARMOUR";
+            categoryIcon = "🛡️";
+        } else if (insp.kind === "throwable") {
+            category = "THROWABLE";
+            categoryIcon = "🏹";
+        } else if (desc.spellset && desc.spellset.length > 0) {
+            category = "SPELLBOOK";
+            categoryIcon = "📖";
+        } else if (/potion/i.test(cleanTitle) || (desc.actions && /quaff/i.test(desc.actions))) {
+            category = "POTION";
+            categoryIcon = "🧪";
+        } else if (/scroll/i.test(cleanTitle) || (desc.actions && /read/i.test(desc.actions))) {
+            category = "SCROLL";
+            categoryIcon = "📜";
+        } else if (/wand/i.test(cleanTitle) || (desc.actions && /zap/i.test(desc.actions))) {
+            category = "WAND";
+            categoryIcon = "🪄";
+        } else if (/ring|amulet|necklace|choker|talisman/i.test(cleanTitle) || (desc.actions && /(put on|remove)/i.test(desc.actions))) {
+            category = "JEWELLERY";
+            categoryIcon = "💍";
+        } else if (/ration|meat|bread|fruit|chunk/i.test(cleanTitle) || (desc.actions && /eat/i.test(desc.actions))) {
+            category = "FOOD";
+            categoryIcon = "🍞";
+        } else if (/manual|tome/i.test(cleanTitle)) {
+            category = "BOOK";
+            categoryIcon = "📘";
+        } else if (/gold/i.test(cleanTitle)) {
+            category = "TREASURE";
+            categoryIcon = "🪙";
+        } else if (desc.actions && /evoke/i.test(desc.actions)) {
+            category = "EVOCABLE";
+            categoryIcon = "✨";
+        }
+
+        // Equipment Status
+        var equipStatus = null;
+        if (insp.equipped !== undefined) {
+            if (insp.equipped) {
+                equipStatus = insp.melded ? { label: "MELDED", icon: "🟣", cls: "melded" }
+                                          : { label: "EQUIPPED", icon: "🟢", cls: "equipped" };
+            } else {
+                equipStatus = { label: "IN PACK", icon: "⚪", cls: "in-pack" };
+            }
+        } else {
+            if (/\(worn\)|\(weapon\)|\(quivered\)|\(equipped\)/i.test(rawTitle)) {
+                equipStatus = { label: "EQUIPPED", icon: "🟢", cls: "equipped" };
+            } else if (/\(melded\)/i.test(rawTitle)) {
+                equipStatus = { label: "MELDED", icon: "🟣", cls: "melded" };
+            }
+        }
+
+        // Enchantment badge
+        var enchantment = null;
+        if (insp.enchantment !== undefined) {
+            enchantment = (insp.enchantment >= 0 ? "+" : "") + insp.enchantment;
+        } else {
+            var enchMatch = cleanTitle.match(/([+-]\d+)/);
+            if (enchMatch && !/\(\s*[+-]\d+\s*apt\s*\)/i.test(cleanTitle))
+                enchantment = enchMatch[1];
+        }
+
+        // Build header badges row
+        var $badgesRow = $("<div class='item-insp-badges'></div>");
+        $badgesRow.append("<span class='item-insp-badge item-badge-category'>" + categoryIcon + " " + category + "</span>");
+        if (equipStatus) {
+            $badgesRow.append("<span class='item-insp-badge item-badge-status " + equipStatus.cls + "'>" + equipStatus.icon + " " + equipStatus.label + "</span>");
+        }
+        if (enchantment) {
+            $badgesRow.append("<span class='item-insp-badge item-badge-enchant'>Enchantment " + enchantment + "</span>");
+        }
+        if (stats.hands) {
+            var handsStr = stats.hands === 1 ? "🗡️ 1-Handed" : "⚔️ 2-Handed";
+            $badgesRow.append("<span class='item-insp-badge item-badge-hands'>" + handsStr + "</span>");
+        }
+
+        // Wrap header elements nicely
+        var $header = $popup.find(".header");
+        $header.addClass("item-insp-header");
+        var $titleWrap = $("<div class='item-insp-title-wrap'></div>");
+        $header.find("span.item-insp-title").detach().appendTo($titleWrap);
+        $titleWrap.append($badgesRow);
+        $header.append($titleWrap);
+
+        // Canvas for sprites
+        var canvas = $header.find("canvas");
+        canvas.wrap("<div class='item-insp-canvas-frame'></div>");
+        var renderer = new cr.DungeonCellRenderer();
+        var scale = describe_scale || 2.0;
+        util.init_canvas(canvas[0],
+            renderer.cell_width * scale,
+            renderer.cell_height * scale);
+        renderer.init(canvas[0]);
+
+        if (desc.tiles && desc.tiles.length) {
+            desc.tiles.forEach(function (tile) {
+                renderer.draw_from_texture(tile.t, 0, 0, tile.tex, 0, 0, tile.ymax,
+                    false, scale);
+            });
+        }
+
+        // 2. Build structured body content
         var $body = $popup.find(".body");
-        $body.html(_fmt_spellset_html(desc.body));
-        _fmt_spells_list($body, desc.spellset, true);
+        $body.empty().addClass("item-insp-body");
+
+        function render_crawl_html(text) {
+            return typeof _fmt_spellset_html === "function" ? _fmt_spellset_html(text) : fmt_body_txt(text);
+        }
+
+        // Container for toggleable content (to support describe-spell-success seamlessly)
+        var $mainContent = $("<div class='item-insp-main-content'></div>");
+
+        // A. Stat Cards Grid
+        var statCards = [];
+        if (stats.base_damage !== undefined) {
+            statCards.push({
+                label: "BASE DAMAGE",
+                val: stats.base_damage,
+                sub: stats.damage_rating ? "Rating: " + stats.damage_rating : "Damage potential"
+            });
+        }
+        if (stats.accuracy !== undefined) {
+            statCards.push({
+                label: "ACCURACY",
+                val: (stats.accuracy >= 0 ? "+" : "") + stats.accuracy,
+                sub: "Hit modifier"
+            });
+        }
+        if (stats.current_delay_aut !== undefined) {
+            var curDelayTurns = (stats.current_delay_aut / 10).toFixed(1);
+            var minDelayTurns = stats.minimum_delay_aut !== undefined ? (stats.minimum_delay_aut / 10).toFixed(1) : null;
+            var subText = minDelayTurns ? "Min " + minDelayTurns + (stats.minimum_delay_skill !== undefined ? " @ Skill " + stats.minimum_delay_skill : "") : "Turns per attack";
+            statCards.push({
+                label: "ATTACK DELAY",
+                val: curDelayTurns + " turns",
+                sub: subText
+            });
+        } else if (stats.base_delay_aut !== undefined) {
+            var baseDelayTurns = (stats.base_delay_aut / 10).toFixed(1);
+            statCards.push({
+                label: "BASE DELAY",
+                val: baseDelayTurns + " turns",
+                sub: "Standard speed"
+            });
+        }
+        if (stats.skill) {
+            statCards.push({
+                label: "WEAPON SKILL",
+                val: stats.skill,
+                sub: stats.hands ? (stats.hands === 1 ? "1-Handed" : "2-Handed") : "Governing skill"
+            });
+        }
+        if (stats.base_armour !== undefined) {
+            statCards.push({
+                label: "BASE ARMOUR",
+                val: stats.base_armour,
+                sub: "Base AC rating"
+            });
+        }
+        if (stats.base_shield !== undefined) {
+            statCards.push({
+                label: "BASE SHIELD",
+                val: stats.base_shield,
+                sub: "Base SH rating"
+            });
+        }
+        if (stats.encumbrance !== undefined) {
+            statCards.push({
+                label: "ENCUMBRANCE",
+                val: stats.encumbrance,
+                sub: stats.encumbrance === 0 ? "No penalty" : "EV/Spell penalty"
+            });
+        }
+        if (stats.evasion !== undefined) {
+            statCards.push({
+                label: "EVASION MOD",
+                val: (stats.evasion >= 0 ? "+" : "") + stats.evasion,
+                sub: "Dodge modifier"
+            });
+        }
+        if (stats.max_enchantment !== undefined) {
+            statCards.push({
+                label: "MAX ENCHANT",
+                val: "+" + stats.max_enchantment,
+                sub: "Reinforcement cap"
+            });
+        }
+        if (stats.destroy_denominator !== undefined) {
+            var breakText = stats.destroy_denominator === 0 ? "Never"
+                          : stats.destroy_denominator === 1 ? "100%"
+                          : "1 in " + stats.destroy_denominator;
+            statCards.push({
+                label: "BREAK CHANCE",
+                val: breakText,
+                sub: "On projectile impact"
+            });
+        }
+
+        if (statCards.length > 0) {
+            var $statsGrid = $("<div class='item-insp-stats-grid'></div>");
+            statCards.forEach(function (card) {
+                var $c = $("<div class='item-stat-card'></div>");
+                $c.append("<div class='item-stat-label'>" + card.label + "</div>");
+                $c.append("<div class='item-stat-val'>" + card.val + "</div>");
+                if (card.sub)
+                    $c.append("<div class='item-stat-sub'>" + card.sub + "</div>");
+                $statsGrid.append($c);
+            });
+            $mainContent.append($statsGrid);
+        }
+
+        // B. Description & Lore parsing
+        var descText = "";
+        var advText = "";
+        var loreText = "";
+        var notesText = "";
+
+        if (sections.description !== undefined) {
+            descText = sections.description;
+            advText = sections.advanced || "";
+            loreText = sections.lore || "";
+            notesText = sections.notes || "";
+        } else {
+            var bodyRaw = desc.body || "";
+            var quoteSplit = bodyRaw.split(/\n?_{10,}\n+/);
+            if (quoteSplit.length > 1) {
+                descText = quoteSplit[0].trim();
+                loreText = quoteSplit.slice(1).join("\n").replace(/<\/?darkgrey>/g, "").trim();
+            } else {
+                descText = bodyRaw.trim();
+            }
+        }
+
+        // Description Card
+        if (descText) {
+            var $descCard = $("<div class='item-insp-card item-insp-desc-card'></div>");
+            $descCard.append("<div class='item-insp-card-title'>📜 Description</div>");
+            $descCard.append("<div class='item-insp-card-body'>" + render_crawl_html(descText) + "</div>");
+            $mainContent.append($descCard);
+        }
+
+        // Spells List (for Spellbooks)
+        if (desc.spellset && desc.spellset.length > 0) {
+            var $spellCard = $("<div class='item-insp-card item-insp-spellset-card'></div>");
+            $spellCard.append("<div class='item-insp-card-title'>📖 Contained Spells</div>");
+            var $spellsContainer = $("<div class='item-insp-spells-container'></div>");
+            _fmt_spells_list($spellsContainer, desc.spellset, true);
+            $spellCard.append($spellsContainer);
+            $mainContent.append($spellCard);
+        }
+
+        // Collapsible Advanced Mechanics & Formulas
+        if (advText) {
+            var $advCard = $("<details class='item-insp-card item-insp-advanced-card' open></details>");
+            $advCard.append("<summary class='item-insp-advanced-summary'>⚙️ Advanced Mechanics & Details</summary>");
+            $advCard.append("<div class='item-insp-card-body item-insp-advanced-body'>" + render_crawl_html(advText) + "</div>");
+            $mainContent.append($advCard);
+        }
+
+        // Lore Box
+        if (loreText) {
+            var $loreCard = $("<div class='item-insp-card item-insp-lore-card'></div>");
+            var $loreBox = $("<div class='item-insp-lore-box'></div>");
+            $loreBox.append("<span class='item-insp-lore-quote-mark'>“</span>");
+            $loreBox.append("<div class='item-insp-lore-text'>" + render_crawl_html(loreText) + "</div>");
+            $loreCard.append($loreBox);
+            $mainContent.append($loreCard);
+        }
+
+        // Notes / Hints Card
+        if (notesText) {
+            var $notesCard = $("<div class='item-insp-card item-insp-notes-card'></div>");
+            $notesCard.append("<div class='item-insp-card-title'>💡 Notes & Hints</div>");
+            $notesCard.append("<div class='item-insp-card-body'>" + render_crawl_html(notesText) + "</div>");
+            $mainContent.append($notesCard);
+        }
+
+        // Spell Failure Comparison Container (hidden by default)
+        var $spellSuccessContainer = $("<div class='item-insp-spell-success-container hidden'></div>");
+
+        $body.append($mainContent);
+        $body.append($spellSuccessContainer);
+
+        // 3. Actions Footer Dock
+        var $actionsDock = $popup.find(".actions");
+        $actionsDock.empty().addClass("item-insp-actions-dock");
+
+        var actionsList = [];
+        if (actions && actions.length > 0) {
+            actions.forEach(function (act) {
+                var keyChar = String.fromCharCode(act.key);
+                actionsList.push({
+                    key: act.key,
+                    keyChar: keyChar,
+                    label: act.label
+                });
+            });
+        } else if (desc.actions) {
+            var actionParts = desc.actions.split(", ");
+            actionParts.forEach(function (part) {
+                var clean = part.replace(/^or\s+/i, "").replace(/\.$/, "").trim();
+                var match = clean.match(/\((.)\)/);
+                if (match) {
+                    var kChar = match[1];
+                    var kCode = kChar.charCodeAt(0);
+                    var label = clean.replace(/\((.)\)/, "$1");
+                    label = label.charAt(0).toUpperCase() + label.slice(1);
+                    actionsList.push({
+                        key: kCode,
+                        keyChar: kChar,
+                        label: label
+                    });
+                }
+            });
+        }
+
+        if (actionsList.length > 0) {
+            actionsList.forEach(function (act) {
+                var $btn = $("<button type='button' class='item-insp-action-btn' data-hotkey='" + act.keyChar + "'></button>");
+                $btn.append("<span class='item-insp-btn-key'>[" + act.keyChar + "]</span> ");
+                $btn.append("<span class='item-insp-btn-label'>" + act.label + "</span>");
+                $actionsDock.append($btn);
+            });
+        }
+
+        // Always add Close [Esc] button
+        var $closeBtn = $("<button type='button' class='item-insp-action-btn item-insp-close-btn' data-hotkey='Escape'></button>");
+        $closeBtn.append("<span class='item-insp-btn-key'>[Esc]</span> ");
+        $closeBtn.append("<span class='item-insp-btn-label'>Close</span>");
+        $actionsDock.append($closeBtn);
+
+        // 4. Scroller and Keyboard Event Handling
         var s = scroller($body[0]);
         $popup.on("keydown keypress", function (event) {
             scroller_handle_key(s, event);
-        });
-        if (desc.actions)
-            $popup.find(".actions").html(clickify_actions(desc.actions));
-        else
-            $popup.find(".actions").remove();
-
-        var canvas = $popup.find(".header > canvas");
-        var renderer = new cr.DungeonCellRenderer();
-        util.init_canvas(canvas[0],
-            renderer.cell_width * describe_scale,
-            renderer.cell_height * describe_scale);
-        renderer.init(canvas[0]);
-
-        desc.tiles.forEach(function (tile) {
-            renderer.draw_from_texture(tile.t, 0, 0, tile.tex, 0, 0, tile.ymax,
-                false, describe_scale);
         });
 
         return $popup;
@@ -433,10 +767,37 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
     function describe_item_spell_success(desc)
     {
         var $popup = ui.top_popup();
+        if (!$popup || $popup.length === 0)
+            return;
+
         if (desc.body !== undefined)
         {
-            var $body = $popup.find(".simplebar-content");
-            $body.html(fmt_body_txt(desc.body));
+            var $mainContent = $popup.find(".item-insp-main-content");
+            var $spellSuccess = $popup.find(".item-insp-spell-success-container");
+
+            if ($mainContent.length > 0 && $spellSuccess.length > 0)
+            {
+                var showing = $popup.data("item-showing-spell-success") || false;
+                showing = !showing;
+                $popup.data("item-showing-spell-success", showing);
+
+                if (showing) {
+                    $mainContent.addClass("hidden");
+                    $spellSuccess.empty().removeClass("hidden");
+                    $spellSuccess.append("<div class='item-insp-spell-success-banner'>⚡ Spell Failure Comparison <span class='item-insp-banner-sub'>(Press [!] to return to item description)</span></div>");
+                    $spellSuccess.append("<div class='item-insp-card item-insp-desc-card'><div class='item-insp-card-body'>" + fmt_body_txt(desc.body) + "</div></div>");
+                } else {
+                    $spellSuccess.addClass("hidden").empty();
+                    $mainContent.removeClass("hidden");
+                }
+            }
+            else
+            {
+                var $body = $popup.find(".simplebar-content");
+                if ($body.length === 0)
+                    $body = $popup.find(".body");
+                $body.html(fmt_body_txt(desc.body));
+            }
         }
     }
 
