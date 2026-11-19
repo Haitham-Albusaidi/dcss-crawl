@@ -129,7 +129,7 @@ define(["jquery", "comm", "client", "./keybinds", "./cell_renderer", "./util", "
             '    <div class="elden-drawer-title"><span class="drawer-header-icon">📜</span> COMMAND GRIMOIRE &amp; UTILITIES</div>' +
             '    <div class="elden-drawer-actions">' +
             '      <span class="elden-drawer-hint">Click card or press key</span>' +
-            '      <button type="button" class="elden-drawer-close" id="elden-drawer-close" title="Close (Esc)">✕ Esc</button>' +
+            '      <button type="button" class="elden-drawer-close" id="elden-drawer-close" aria-label="Close">✕ ' + keybinds.html("Escape") + '</button>' +
             '    </div>' +
             '  </div>' +
             '  <div class="elden-drawer-grid"></div>' +

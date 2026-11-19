@@ -1518,7 +1518,7 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
         html += '      <span class="er-dot">•</span>';
         html += '      <span>TIME: <b>' + data.time + '</b></span>';
         html += '    </div>';
-        html += '    <button class="er-profile-close-btn" title="Close (Esc)">✕ Esc</button>';
+        html += '    <button class="er-profile-close-btn" aria-label="Close">✕ ' + keybinds.html("Escape") + '</button>';
         html += '  </div>';
         html += '</div>';
 
@@ -1721,7 +1721,7 @@ function ($, comm, client, ui, enums, cr, util, scroller, main, gui, player, opt
                 '  </div>' +
                 '  <div class="er-overview-header-right">' +
                 '    <span class="er-overview-hint">' + keybinds.html("G") + ' Travel &nbsp;|&nbsp; ' + keybinds.html("_") + ' Altars &nbsp;|&nbsp; ' + keybinds.html("Esc") + ' Close</span>' +
-                '    <button class="er-overview-close-btn" title="Close (Esc)">✕</button>' +
+                '    <button class="er-overview-close-btn" aria-label="Close">✕</button>' +
                 '  </div>' +
                 '</div>'
             );

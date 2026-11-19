@@ -392,7 +392,7 @@ function ($, comm, client, ui, enums, cr, util, options, scroller, ttp, player, 
                     '<button class="skills-btn-ctrl" data-key="33">' + keybinds.html("!") + ' View</button>' +
                     '<button class="skills-btn-ctrl" data-key="61">' + keybinds.html("=") + ' Target</button>' +
                     '<button class="skills-btn-ctrl" data-key="63">' + keybinds.html("?") + ' Help</button>' +
-                    '<button class="skills-btn-close" data-key="27" aria-label="Close">✕ Esc</button>' +
+                    '<button class="skills-btn-close" data-key="27" aria-label="Close">✕ ' + keybinds.html("Escape") + '</button>' +
                 '</div>' +
             '</div>'
         );
