@@ -163,6 +163,8 @@ public:
     void push_ui_cutoff();
     void pop_ui_cutoff();
 
+    void send_examine_card(const coord_def &gc, int request = 0,
+                           bool detailed = false);
     void send_exit_reason(const string& type, const string& message = "");
     void send_dump_info(const string& type, const string& filename);
 

@@ -1,7 +1,7 @@
 define(["jquery", "comm", "./map_knowledge", "./view_data", "./monster_list",
-        "./minimap", "./dungeon_renderer", "./floating_events"],
+        "./minimap", "./dungeon_renderer", "./floating_events", "./examination_card"],
 function ($, comm, map_knowledge, view_data, monster_list, minimap,
-          dungeon_renderer, floating_events) {
+          dungeon_renderer, floating_events, examination_card) {
     "use strict";
 
     // Message indicating any invisible monsters nearby whose location was
@@ -64,6 +64,7 @@ function ($, comm, map_knowledge, view_data, monster_list, minimap,
     function clear_map()
     {
         floating_events.clear();
+        examination_card.clear();
         map_knowledge.clear();
 
         dungeon_renderer.clear();
@@ -89,6 +90,8 @@ function ($, comm, map_knowledge, view_data, monster_list, minimap,
 
         if (data.cells)
             map_knowledge.merge(data.cells);
+
+        examination_card.onMapChange(data);
 
         if ("invis_mon_desc" in data)
             inv_mons_msg = data.invis_mon_desc;

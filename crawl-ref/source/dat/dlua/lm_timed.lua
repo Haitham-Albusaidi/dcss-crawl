@@ -55,6 +55,9 @@ function TimedMarker:activate(marker, verbose)
 end
 
 function TimedMarker:property(marker, pname)
+  if pname == "examine_timed" then
+    return "yes"
+  end
   return self.super.property(self, marker, pname)
 end
 
