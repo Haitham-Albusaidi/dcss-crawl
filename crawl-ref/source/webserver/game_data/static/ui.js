@@ -22,7 +22,7 @@ function ($, comm, client, options, focus_trap, keybinds) {
     function maybe_prevent_server_from_handling_key(ev)
     {
         var $focused = $(document.activeElement);
-        if (!$focused.is("[data-sync-id]"))
+        if (!$focused.is("[data-sync-id], button[data-hotkey]"))
             return;
         if ($focused.is("input[type=text]"))
             ev.stopPropagation();
