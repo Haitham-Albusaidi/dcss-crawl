@@ -1,0 +1,21 @@
+{
+  "task_id": "webtiles-phase3-arcane-dock",
+  "title": "Phase 3: Quick-Cast Arcane Dock & Talent Bar",
+  "assigned_agent": "OpenAI Codex",
+  "supervisor": "Google Antigravity",
+  "worktree": "C:\\Users\\Tempc\\Desktop\\dcss\\arcane-dock-dev",
+  "branch": "feature/webtiles-arcane-dock",
+  "base_commit": "f1934b6c28",
+  "status": "READY_FOR_EXECUTION",
+  "created_at": "2026-11-22T08:44:00+04:00",
+  "requirements": [
+    "Persistent Arcane Dock & Talent Bar for memorised spells and character abilities",
+    "Authentic DCSS spell and ability icons/tiles using cell_renderer or tileinfo",
+    "Accurate MP costs, piety/breath requirements, and failure rates with disabled state when insufficient MP",
+    "Correct keyboard shortcut sequences with standardized .keybind-badge hints",
+    "Mouse-click casting initiating native DCSS targeting (e.g. z + letter, a + letter)",
+    "Clean empty state with memorise prompt when no spells are memorised",
+    "Responsive layout without overlapping the Chronicle, Action Dock, or Right Sidebar HUD",
+    "Automated unit tests in arcane_dock_test.js"
+  ]
+}
