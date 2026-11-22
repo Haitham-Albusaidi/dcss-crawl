@@ -769,3 +769,24 @@ Antigravity sign-off and publication are pending.
 | `webserver/game_data/static/style.css` | 147 | 6 | Responsive slot and chat geometry |
 | `webserver/game_data/templates/game.html` | 12 | 1 | Arcane Dock and Talent Bar structure |
 | `webserver/hero_hud_test.js` | 15 | 2 | Player-delta integration test |
+
+### Antigravity QA Sign-off & Publication
+
+- **Reviewing Agent:** Google Antigravity (Sole GitHub Publishing Manager & QA Lead)
+- **Status:** `APPROVE`
+- **Reviewed Head:** `61d2672bad`
+- **Automated Verification:**
+  - `arcane_dock_test.js`: 6/6 tests passed.
+  - `chronicle_minimap_test.js`: 7/7 tests passed.
+  - `hero_hud_test.js`: 6/6 tests passed.
+  - `examination_card_test.js`: 22/22 tests passed.
+  - `floating_events_test.js`: 9/9 tests passed.
+  - `.ai-team` test suite: 24/24 tests passed.
+  - C++ WebTiles build recompiled and verified fresh (20,663,928 bytes).
+- **Live Gameplay Verification:**
+  - Verified on port 8088 in Chromium.
+  - Deep Elf Conjurer: Populated spell quick-slots rendered with authentic DCSS spell icons, names (Magic Dart, Searing Ray), MP costs (1 MP, 2 MP), failure rates (1%), and keybind badges (`[z] [a]`, `[z] [b]`).
+  - Mouse interaction tested: Clicking Magic Dart entered native Crawl targeting mode (crosshair line drawn to Endoplasm), cleanly cancelled with Escape.
+  - Minotaur Fighter: Empty dock state rendered with prompt and `Memorise [M]` button; clicking executed native Grimoire memorisation check without errors.
+  - Layout geometry strictly preserved with zero overlap across Action Dock, Arcane Dock, Tactical Chronicle, chat strip, and right sidebar HUD.
+  - Zero gameplay or targeting regressions detected. Ready for Pull Request publication.
