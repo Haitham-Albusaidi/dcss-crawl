@@ -685,4 +685,34 @@ and archived message rows.
   - Tactical Chronicle channel tabs (`All`, `Combat`, `Alerts & Danger`, `Story & Discoveries`) switch cleanly without affecting raw message history.
   - Expandable drawer opens and collapses smoothly; live search filters messages accurately (tested `staircase`). Action dock clearance preserved.
   - Cartographer minimap renders antique gold corner frame, compass (`▲ N`), branch/depth breadcrumb (`Dungeon: 1`), and discovered POI marker (`<` staircase) with hover tooltip.
-  - Zero gameplay or rendering regressions detected. Ready for Pull Request publication.
+  - **Zero gameplay or rendering regressions detected. Ready for Pull Request publication.**
+
+### Merged into Main
+
+- **Merge Commit:** `ef06fcdba2d788602cd2a296cbc66523517a1557`
+- **Active Branch:** `main` (synchronized with `origin/main`)
+- **Status:** Integrated, verified, and published.
+- **Verification Details:**
+  - PR #13 successfully merged via normal non-force merge.
+  - All 12 GitHub Actions CI jobs passed across Ubuntu and Windows.
+  - Local `main` fast-forwarded to `ef06fcdba2`.
+  - Rebuilt and synchronized C++ WebTiles binary (20,654,480 bytes).
+  - All 7 Chronicle & Minimap tests, 5 Hero HUD suites, 22 examination card tests, 9 floating event tests, and 24 .ai-team Python tests passed.
+  - Verified `play_dcss.bat` launch and clean server initialization.
+  - Development worktree `chronicle-minimap-dev` and all historical worktrees preserved.
+
+---
+
+## Phase 3 — Quick-Cast Arcane Dock & Talent Bar
+
+- **Branch:** `feature/webtiles-arcane-dock`
+- **Worktree:** `C:\Users\Tempc\Desktop\dcss\arcane-dock-dev`
+- **Base:** `main` (`ef06fcdba2`)
+- **Primary Developer:** OpenAI Codex CLI
+- **Supervisor & GitHub Publisher:** Google Antigravity
+- **Scope:**
+  - Persistent Arcane Dock & Talent Bar at the bottom of the screen.
+  - Authentic DCSS spell and ability icons, failure rates, and MP costs.
+  - Direct keyboard shortcut integration (e.g., matching DCSS cast commands).
+  - Mouse-click quick-casting with targeting integration.
+  - Cohesive dark-fantasy styling consistent with Hero HUD and Tactical Chronicle.
