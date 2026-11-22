@@ -1719,13 +1719,24 @@ void no_ability_msg()
 
 // Prompts the user for an ability to use, first checking the lua hook
 // c_choose_ability
-bool activate_ability()
+bool activate_ability(ability_type choice)
 {
     vector<talent> talents = your_talents();
 
     if (talents.empty())
     {
         no_ability_msg();
+        crawl_state.zero_turns_taken();
+        return false;
+    }
+
+    if (choice != ABIL_NON_ABILITY)
+    {
+        for (const talent& tal : talents)
+            if (tal.which == choice)
+                return activate_talent(tal);
+
+        mpr("You can't do that.");
         crawl_state.zero_turns_taken();
         return false;
     }

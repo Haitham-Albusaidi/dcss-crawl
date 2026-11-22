@@ -1,9 +1,9 @@
 define(["jquery", "exports", "comm", "client", "key_conversion", "./dungeon_renderer",
         "./display", "./minimap", "./enums", "./messages", "./options", "./modern_ui",
-        "./mouse_control", "./text", "./menu", "./action_panel",  "./player",
-        "./ui","./ui-layouts"],
+        "./mouse_control", "./arcane_dock", "./text", "./menu", "./action_panel",
+        "./player", "./ui","./ui-layouts"],
 function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
-        minimap, enums, messages, options, modern_ui, mouse_control) {
+        minimap, enums, messages, options, modern_ui, mouse_control, arcane_dock) {
     "use strict";
 
     var layout_parameters = null, ui_state, input_mode;
@@ -127,13 +127,15 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
         var available = window_height - dock_height - pane_padding
             - $("#chronicle_controls").outerHeight() - line_height;
         var expanded = messages.is_expanded();
-        // Leave room for the fixed chat strip where it crosses the drawer.
+        // Reserve the chat footprint when it crosses the dock and Chronicle.
         var chat_bar = $("#chat:visible");
-        if (expanded && chat_bar.length
+        var dock_visible = !$("#arcane_hotbar").prop("hidden");
+        if (chat_bar.length && (expanded || dock_visible)
             && chat_bar[0].getBoundingClientRect().left < left_edge + remaining_width)
         {
-            available -= parseFloat(chat_bar.css("bottom")) + chat_bar.outerHeight()
-                - ($("#chat_body:visible").outerHeight() || 0);
+            available -= parseFloat(chat_bar.css("bottom")) + chat_bar.outerHeight();
+            if (!dock_visible)
+                available += $("#chat_body:visible").outerHeight() || 0;
         }
         var log_height = expanded
             ? Math.min(line_height * 22, available * 0.55)
@@ -496,10 +498,18 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
     }
 
     $(document).ready(function () {
-        $(document).on("chronicle_layout.game", function () {
+        function relayout() {
             if (layout_parameters)
                 layout(layout_parameters, true);
-        });
+        }
+        $(document).on("chronicle_layout.game arcane_dock_layout.game", relayout);
+        var chat = $("#chat")[0];
+        if (chat && typeof ResizeObserver !== "undefined") {
+            new ResizeObserver(function () {
+                if (!$("#arcane_hotbar").prop("hidden"))
+                    relayout();
+            }).observe(chat);
+        }
         var resize_timer = null;
         $(window)
             .off("resize.game")
@@ -527,6 +537,10 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
 
     // ugly circular reference breaking
     mouse_control.game = game;
+    arcane_dock.can_use = function () {
+        return input_mode === enums.mouse_mode.COMMAND && ui_state === enums.ui.NORMAL
+            && !$(".menu:visible, .ui-popup:visible, #more:visible, #empty_grimoire:visible").length;
+    };
     minimap.can_travel = function () {
         return input_mode === enums.mouse_mode.COMMAND && ui_state === enums.ui.NORMAL;
     };

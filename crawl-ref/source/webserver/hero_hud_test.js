@@ -12,6 +12,7 @@ function setup()
 {
     const nodes = new Map();
     const handlers = {};
+    const dockUpdates = [];
     const document = {};
     const settings = {stat_colour: []};
 
@@ -70,7 +71,10 @@ function setup()
         }
 
         trigger() {}
-        triggerHandler() {}
+        triggerHandler(event, args) {
+            if (event === "arcane_dock_update")
+                dockUpdates.push([...args]);
+        }
         find(selector) { return $(this.selector + " " + selector); }
         data(key, value) { this.values[key] = value; return this; }
         outerWidth() { return 80; }
@@ -104,8 +108,17 @@ function setup()
     });
 
     $(document).events["game_init.player"]();
-    return {$, update: data => handlers.player(data)};
+    return {$, dockUpdates, update: data => handlers.player(data)};
 }
+
+test("player deltas retain dock entries and forward the current MP", () => {
+    const {dockUpdates, update} = setup();
+    const quick_cast = {spells: [], abilities: []};
+    update({quick_cast, mp: 4});
+    update({mp: 2});
+    update({hp: 6});
+    assert.deepEqual(dockUpdates, [[quick_cast, 4], [quick_cast, 2]]);
+});
 
 test("crest displays lineage, piety, penance and Gozag gold through deltas", () => {
     const {$, update} = setup();

@@ -71,7 +71,7 @@ skill_type abil_skill(ability_type abil);
 int abil_skill_weight(ability_type abil);
 
 void no_ability_msg();
-bool activate_ability();
+bool activate_ability(ability_type choice = ABIL_NON_ABILITY);
 bool check_ability_possible(const ability_type ability, bool quiet = false);
 bool ability_has_targeter(ability_type abil);
 unique_ptr<targeter> find_ability_targeter(ability_type ability);

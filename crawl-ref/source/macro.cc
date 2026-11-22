@@ -838,6 +838,11 @@ static keyseq _getch_mul()
         a = getch_ck();
         if (a != CK_NO_KEY)
             keys.push_back(a);
+#ifdef USE_TILE_WEB
+        // Finish dispatching the mouse command before polling more input.
+        if (a == CK_MOUSE_CMD)
+            break;
+#endif
     }
     while (keys.size() == 0 || ((kbhit() || a == 0) && a != CK_REDRAW));
 

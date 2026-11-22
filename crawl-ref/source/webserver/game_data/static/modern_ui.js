@@ -162,7 +162,7 @@ define(["jquery", "comm", "client", "./keybinds", "./cell_renderer", "./util", "
         $inner.append($drawer).append($dpadPopover).append($primaryRow);
         $dock.append($inner);
 
-        $("#action_dock_row").append($dock);
+        $("#action_dock_row").prepend($dock);
 
         // Tooltip
         if ($("#elden-tooltip").length === 0) {

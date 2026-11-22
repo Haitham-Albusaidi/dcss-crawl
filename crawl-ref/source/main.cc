@@ -1276,7 +1276,12 @@ static void _input()
 #ifdef USE_TILE_LOCAL
         cursor_control con(false);
 #endif
-        const command_type cmd = you.turn_is_over ? CMD_NO_CMD : _get_next_cmd();
+        command_type cmd = you.turn_is_over ? CMD_NO_CMD : _get_next_cmd();
+        int quick_slot = -1;
+        bool quick_cast = false;
+#ifdef USE_TILE_WEB
+        quick_cast = tiles.take_quick_cast(cmd, quick_slot);
+#endif
 
         if (crawl_state.seen_hups)
             save_game(true, "Game saved, see you later!");
@@ -1293,7 +1298,7 @@ static void _input()
         // it's not too important for the current use.
         const command_type real_prev_cmd = crawl_state.prev_cmd;
 
-        if (cmd != CMD_PREV_CMD_AGAIN && cmd != CMD_NO_CMD
+        if (!quick_cast && cmd != CMD_PREV_CMD_AGAIN && cmd != CMD_NO_CMD
             && !crawl_state.is_replaying_keys())
         {
             crawl_state.prev_cmd = cmd;
@@ -1305,8 +1310,11 @@ static void _input()
         // [dshaligram] If get_next_cmd encountered a Lua macro
         // binding, your turn may be ended by the first invoke of the
         // macro.
+        // A quick-cast click has no replayable command keys.
+        if (quick_cast)
+            repeat_again_rec.paused = true;
         if (!you.turn_is_over && cmd != CMD_NEXT_CMD)
-            ::process_command(cmd, real_prev_cmd);
+            ::process_command(cmd, real_prev_cmd, quick_slot);
 
         repeat_again_rec.paused = true;
 
@@ -2112,7 +2120,7 @@ public:
 // e.g. list_jewellery, etc.
 // calling this directly will not record the command for later replay; if you
 // want to ensure that it's recorded, see macro.cc:process_command_on_record.
-void process_command(command_type cmd, command_type prev_cmd)
+void process_command(command_type cmd, command_type prev_cmd, int quick_slot)
 {
     you.apply_berserk_penalty = true;
 
@@ -2259,7 +2267,10 @@ void process_command(command_type cmd, command_type prev_cmd)
         break;
 
         // Action commands.
-    case CMD_CAST_SPELL:           do_cast_spell_cmd(false); break;
+    case CMD_CAST_SPELL:
+        do_cast_spell_cmd(false, quick_slot < 0 ? SPELL_NO_SPELL
+                                               : static_cast<spell_type>(quick_slot));
+        break;
     case CMD_DISPLAY_SPELLS:       inspect_spells();         break;
     case CMD_FIRE:                 you.quiver_action.target(); break;
     case CMD_FORCE_CAST_SPELL:     do_cast_spell_cmd(true);  break;
@@ -2298,7 +2309,8 @@ void process_command(command_type cmd, command_type prev_cmd)
         break;
 
     case CMD_USE_ABILITY:
-        if (!activate_ability())
+        if (!activate_ability(quick_slot < 0 ? ABIL_NON_ABILITY
+                                             : static_cast<ability_type>(quick_slot)))
             flush_input_buffer(FLUSH_ON_FAILURE);
         break;
 

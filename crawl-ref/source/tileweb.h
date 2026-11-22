@@ -15,6 +15,7 @@
 
 #include <sys/un.h>
 
+#include "command-type.h"
 #include "cursor-type.h"
 #include "level-id.h"
 #include "map-cell.h"
@@ -146,6 +147,7 @@ public:
     const coord_def &get_cursor() const;
 
     void draw_doll_edit();
+    bool take_quick_cast(command_type& command, int& slot);
 
     // Webtiles-specific
     void textcolour(int col);
@@ -258,8 +260,8 @@ protected:
     bool _send_lock; // not thread safe
 
     void _await_connection();
-    wint_t _handle_control_message(sockaddr_un addr, string data);
-    wint_t _receive_control_message();
+    wint_t _handle_control_message(sockaddr_un addr, string data, bool waiting);
+    wint_t _receive_control_message(bool waiting = false);
 
     struct JsonFrame
     {
@@ -336,6 +338,28 @@ protected:
     string invis_mon_desc;
 
     string m_pending_text_input;
+
+    struct quick_slot
+    {
+        int id;
+        char letter;
+        tileidx_t tile;
+        int mp, failure;
+        bool available;
+        string title, cost;
+
+        bool operator==(const quick_slot& other) const
+        {
+            return std::tie(id, letter, tile, mp, failure, available, title, cost)
+                == std::tie(other.id, other.letter, other.tile, other.mp,
+                            other.failure, other.available, other.title, other.cost);
+        }
+    };
+    vector<quick_slot> m_quick_spells, m_quick_abilities;
+    std::tuple<string, string, string> m_quick_keys;
+    std::pair<command_type, int> m_pending_quick_cast { CMD_NEXT_CMD, -1 };
+    bool _queue_quick_cast(const string& kind, const string& letter, int id);
+    void _send_quick_cast(bool force_full);
 
     void _send_version();
     void _send_layout();
