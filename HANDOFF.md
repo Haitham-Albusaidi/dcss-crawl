@@ -790,3 +790,18 @@ Antigravity sign-off and publication are pending.
   - Minotaur Fighter: Empty dock state rendered with prompt and `Memorise [M]` button; clicking executed native Grimoire memorisation check without errors.
   - Layout geometry strictly preserved with zero overlap across Action Dock, Arcane Dock, Tactical Chronicle, chat strip, and right sidebar HUD.
   - Zero gameplay or targeting regressions detected. Ready for Pull Request publication.
+
+### Merged into Main
+
+- **Merge Commit:** `2009002e79c5cbcb9a379d9a1f849c9014972496`
+- **Active Branch:** `main` (synchronized with `origin/main`)
+- **Status:** Integrated, verified, and published.
+- **Verification Details:**
+  - PR #14 successfully merged via normal non-force merge.
+  - All 12 GitHub Actions CI jobs passed across Ubuntu and Windows.
+  - Local `main` fast-forwarded to `2009002e79`.
+  - Rebuilt and synchronized C++ WebTiles binary (20,663,928 bytes).
+  - All 6 Arcane Dock tests, 7 Chronicle & Minimap tests, 6 Hero HUD suites, 22 examination card tests, 9 floating event tests, and 24 .ai-team Python tests passed (74 tests total).
+  - Verified `play_dcss.bat` / `run_server.sh` launch and clean server initialization (HTTP 200 OK).
+  - Development worktree `arcane-dock-dev` and all historical worktrees preserved.
+  - **STOPPED**: Standing by for next user instruction; no new tasks or branches started.
