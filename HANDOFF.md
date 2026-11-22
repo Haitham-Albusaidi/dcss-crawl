@@ -591,3 +591,18 @@ The compact HP and MP meters ease value changes and respect reduced motion.
   - Dark Fantasy Attribute Deck: STR/INT/DEX, AC/EV/SH, XL progress, and Noise meter cards with mechanics tooltips.
   - Armament Dock: equipped weapon with sprite, slot hotkey badge, and working inspection modal.
   - Clean responsive layout without overlapping from 1920x1080 down to mobile viewports.
+
+---
+
+## 8. Post-Merge State — PR #12 Merged into `main`
+
+- **Merge Commit:** `ce9df20e034d6947e5b543fed03fa9e8458c2854`
+- **Active Branch:** `main` (synchronized with `origin/main`)
+- **Status:** Integrated, verified, and published.
+- **Verification Details:**
+  - PR #12 successfully merged via normal non-force merge.
+  - All 12 GitHub Actions CI jobs passed across Ubuntu and Windows.
+  - Local `main` fast-forwarded to `ce9df20e03`.
+  - Rebuilt and synchronized C++ WebTiles binary (20,650,304 bytes).
+  - All 5 Hero HUD suites, 22 examination card tests, 9 floating event tests, and 22 .ai-team Python tests passed.
+  - Development worktree `hero-hud-dev` and all historical worktrees preserved.
