@@ -667,3 +667,22 @@ in `webserver/game_data/static/game.js` and adds 11 lines in
 Chromium reverified all four viewports, chat and action dock clearance,
 the latest-message position on resize, and rollback across the compact
 and archived message rows.
+
+### Antigravity QA Sign-off & Publication
+
+- **Reviewing Agent:** Google Antigravity (Sole GitHub Publishing Manager & QA Lead)
+- **Status:** `APPROVE`
+- **Reviewed Head:** `ff8d9e1adf`
+- **Automated Verification:**
+  - `chronicle_minimap_test.js`: 7/7 tests passed.
+  - `hero_hud_test.js`: 5/5 tests passed.
+  - `examination_card_test.js`: 22/22 tests passed.
+  - `floating_events_test.js`: 9/9 tests passed.
+  - `.ai-team` test suite: 24/24 tests passed.
+  - C++ WebTiles build recompiled and verified fresh (20,654,480 bytes).
+- **Live Gameplay Verification:**
+  - Verified on port 8088 with Minotaur Fighter.
+  - Tactical Chronicle channel tabs (`All`, `Combat`, `Alerts & Danger`, `Story & Discoveries`) switch cleanly without affecting raw message history.
+  - Expandable drawer opens and collapses smoothly; live search filters messages accurately (tested `staircase`). Action dock clearance preserved.
+  - Cartographer minimap renders antique gold corner frame, compass (`▲ N`), branch/depth breadcrumb (`Dungeon: 1`), and discovered POI marker (`<` staircase) with hover tooltip.
+  - Zero gameplay or rendering regressions detected. Ready for Pull Request publication.
