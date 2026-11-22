@@ -362,6 +362,7 @@ function ($, comm, client, enums, map_knowledge, messages, options, util, keybin
         $("#hero_gold").text(player.gold);
         $("#hero_gold_badge").prop("hidden", player.god === "Gozag");
         $("#stats_place").text(player.place + (player.depth ? ":" + player.depth : ""));
+        $("#cartographer_place").text(player.place + (player.depth ? ": " + player.depth : ""));
 
         var time = options.get("show_game_time") === true;
         var delta = player.time_delta ? " (" + (player.time_delta / 10).toFixed(1) + ")" : "";

@@ -699,6 +699,29 @@ static int _handle_cell_target(const coord_def &gc)
     return 0;
 }
 
+// Only landmarks in the player's remembered terrain belong on the radar.
+static char _landmark_glyph(const map_cell &cell)
+{
+    if (!cell.seen())
+        return 0;
+    const auto feat = cell.feat();
+    if (feat_is_altar(feat))
+        return '_';
+    if (feat == DNGN_ENTER_SHOP)
+        return '$';
+    if (feat_is_stone_stair(feat) || feat_is_escape_hatch(feat)
+        || feat == DNGN_EXIT_DUNGEON)
+    {
+        return feat_stair_direction(feat) == CMD_GO_DOWNSTAIRS ? '>' : '<';
+    }
+    if (feat_is_gate(feat) || feat_is_branch_entrance(feat)
+        || feat_is_branch_exit(feat))
+    {
+        return '+';
+    }
+    return 0;
+}
+
 static int _handle_cell_click(const coord_def &gc, int button, bool force)
 {
     // describe
@@ -863,10 +886,32 @@ wint_t TilesFramework::_handle_control_message(sockaddr_un addr, string data)
         button.check(JSON_NUMBER);
         // XX force is currently unused
         JsonWrapper force = json_find_member(obj.node, "force");
-        coord_def gc = coord_def((int) x->number_, (int) y->number_) + m_origin;
+        const JsonNode *landmark = json_find_member(obj.node, "landmark");
+        if (landmark && landmark->tag == JSON_BOOL && landmark->bool_)
+        {
+            if (!m_origin.equals(-1, -1) && abs(x->number_) < GXM
+                && abs(y->number_) < GYM && button->number_ == 1
+                && mouse_control::current_mode() == MOUSE_MODE_COMMAND
+                && get_ui_state() == UI_NORMAL && you.on_current_level)
+            {
+                const coord_def gc = coord_def(int(x->number_), int(y->number_))
+                                     + m_origin;
+                if (in_bounds(gc) && _landmark_glyph(env.map_knowledge(gc))
+                    && gc != you.pos() && click_travel_safe(gc)
+                    && is_travelsafe_square(gc, false))
+                {
+                    start_travel(gc);
+                    c = CK_MOUSE_CMD;
+                }
+            }
+        }
+        else
+        {
+            coord_def gc = coord_def((int) x->number_, (int) y->number_) + m_origin;
 
-        c = _handle_cell_click(gc, button->number_,
-                        force.node && force->tag == JSON_BOOL && force->bool_);
+            c = _handle_cell_click(gc, button->number_,
+                            force.node && force->tag == JSON_BOOL && force->bool_);
+        }
     }
     else if (msgtype == "examine_cell")
     {
@@ -1957,6 +2002,34 @@ void TilesFramework::_send_cell(const coord_def &gc,
 {
     if (current_mc.feat() != next_mc.feat())
         json_write_int("f", next_mc.feat());
+
+    const char landmark = _landmark_glyph(next_mc);
+    const char old_landmark = _landmark_glyph(current_mc);
+    const bool shop_came_into_view = landmark == '$' && next_mc.visible()
+                                    && !current_mc.visible();
+    if (landmark && (landmark != old_landmark || current_mc.feat() != next_mc.feat()
+                     || shop_came_into_view))
+    {
+        const auto feat = next_mc.feat();
+        string label = feature_description(feat, "", DESC_PLAIN);
+        // The shop name is live data. Read it only while the shop is in sight.
+        if (landmark == '$' && next_mc.visible() && you.see_cell(gc))
+        {
+            if (const shop_struct *shop = shop_at(gc))
+                label = shop_name(*shop);
+        }
+        else if (feat_is_stone_stair(feat))
+        {
+            const level_id here = level_id::current();
+            const int depth = here.depth + (landmark == '>' ? 1 : -1);
+            if (depth >= 1 && depth <= brdepth[here.branch])
+                label = make_stringf("Stairs to %s: %d",
+                                     branches[here.branch].shortname, depth);
+        }
+        json_write_string("poi", string(1, landmark) + label);
+    }
+    else if (!landmark && old_landmark)
+        json_write_null("poi");
 
     if (next_mc.monsterinfo())
         _send_monster(gc, next_mc.monsterinfo(), new_monster_locs, force_full);

@@ -120,24 +120,16 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
         $("#left_column").width(remaining_width);
         $("#action_dock_row").show();
 
-        // Determine height of messages area
-
-        // need to clone this, not copy html, since there can be event handlers
-        // embedded in here on an input box.
-        var old_messages = $("#messages").clone(true);
-        var old_scroll_top = $("#messages_container").scrollTop();
-        var s = "";
-        for (var i = 0; i < msg_height+1; i++)
-            s = s + "<br>";
-        $("#messages").html(s);
-        var msg_height_px = $("#messages").outerHeight();
-        $("#messages").replaceWith(old_messages);
-        $("#messages_container").scrollTop(old_scroll_top);
-
+        var line_height = parseFloat(getComputedStyle($("#messages")[0]).lineHeight);
         var dock_height = $("#action_dock_row").outerHeight();
         var pane_padding = $("#message_pane").outerHeight() - $("#message_pane").height();
-        var remaining_height = Math.max(17, window_height - msg_height_px
-            - dock_height - pane_padding);
+        var available = window_height - dock_height - pane_padding
+            - $("#chronicle_controls").outerHeight() - line_height;
+        var log_height = messages.is_expanded()
+            ? Math.min(line_height * 22, available * 0.55)
+            : line_height * msg_height;
+        log_height = Math.max(line_height, Math.min(log_height, available - 17));
+        var remaining_height = Math.max(17, available - log_height);
 
         layout_parameters.remaining_width = remaining_width;
         layout_parameters.remaining_height = remaining_height;
@@ -145,12 +137,12 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
         // Position controls
         client.set_layer("normal");
         $("#messages_container").css({
-            "max-height": msg_height_px*msg_height/(msg_height+1)
+            "max-height": log_height
         });
         dungeon_renderer.fit_to(remaining_width, remaining_height,
                                 show_diameter);
 
-        minimap.fit_to(Math.max(1, stat_width_px - 2), window_height);
+        minimap.fit_to(Math.max(1, stat_width_px - 12), window_height);
 
         $("#mobile_input input").width(remaining_width-12); // 2*padding+2*border
 
@@ -308,6 +300,7 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
         if (mode == input_mode) return;
         input_mode = mode;
         dungeon_renderer.update_mouse_mode(input_mode);
+        messages.set_prompt_mode(mode !== enums.mouse_mode.COMMAND);
         if (mode == enums.mouse_mode.COMMAND)
             messages.new_command();
     }
@@ -495,6 +488,10 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
     }
 
     $(document).ready(function () {
+        $(document).on("chronicle_layout.game", function () {
+            if (layout_parameters)
+                layout(layout_parameters, true);
+        });
         var resize_timer = null;
         $(window)
             .off("resize.game")
@@ -522,4 +519,7 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
 
     // ugly circular reference breaking
     mouse_control.game = game;
+    minimap.can_travel = function () {
+        return input_mode === enums.mouse_mode.COMMAND && ui_state === enums.ui.NORMAL;
+    };
 });
