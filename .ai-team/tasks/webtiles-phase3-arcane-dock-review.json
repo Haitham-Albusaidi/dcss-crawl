@@ -1,0 +1,28 @@
+{
+  "task_id": "webtiles-phase3-arcane-dock-review",
+  "title": "Review the Phase 3 Quick-Cast Arcane Dock and Talent Bar",
+  "assigned_agent": "antigravity",
+  "worktree_path": "C:\\Users\\Tempc\\Desktop\\dcss\\arcane-dock-dev",
+  "branch": "feature/webtiles-arcane-dock",
+  "base_commit": "f1934b6c28",
+  "implementation_commit": "5c68eefc918fb292224446dcbde2a4c9b76b835e",
+  "mode": "plan",
+  "timeout_seconds": 90,
+  "context_files": [],
+  "description": "Read-only cross-agent review of the implementation commit and verification in HANDOFF.md. Return APPROVE, REQUEST_CHANGES, or NEEDS_DISCUSSION with specific findings and file locations. Keep the assigned worktree read-only during this adapter run. Publication is a separate step for the publishing manager after review.",
+  "target_files": [
+    "crawl-ref/source/tileweb.cc",
+    "crawl-ref/source/main.cc",
+    "crawl-ref/source/macro.cc",
+    "crawl-ref/source/webserver/game_data/static/arcane_dock.js",
+    "crawl-ref/source/webserver/game_data/static/game.js",
+    "crawl-ref/source/webserver/game_data/static/style.css",
+    "crawl-ref/source/webserver/arcane_dock_test.js"
+  ],
+  "acceptance_criteria": [
+    "Trace the native spell and ability entry points, targeting, confirmation, and resource checks.",
+    "Check that mixed inputs cannot leak a selection into a later prompt and that native keyboard replay remains usable.",
+    "Check live slot metadata, native hotkey labels, MP and status restrictions, authentic sprites, and the memorisation fallback.",
+    "Check the dock placement with the Action Dock, Chronicle, chat, and sidebar at the four tested viewport sizes."
+  ]
+}

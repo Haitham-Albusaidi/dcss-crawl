@@ -716,3 +716,56 @@ and archived message rows.
   - Direct keyboard shortcut integration (e.g., matching DCSS cast commands).
   - Mouse-click quick-casting with targeting integration.
   - Cohesive dark-fantasy styling consistent with Hero HUD and Tactical Chronicle.
+
+### Local implementation and verification
+
+- Assignment base `f1934b6c28`
+- Implementation `5c68eefc918fb292224446dcbde2a4c9b76b835e`
+- [Antigravity cross-agent review and publishing handoff](.ai-team/tasks/webtiles-phase3-arcane-dock-review.json)
+
+`TilesFramework` sends native selection letters, GUI tiles, costs, failure
+percentages and availability. Talent preview restores the saved letter table
+after using the normal ability assignment logic. The client updates the dock
+from player deltas and reserves space for the Chronicle and overlapping chat.
+The existing Action Dock opens its popovers above its controls, with the
+Arcane Dock below.
+
+A dock click sends one command-selection request. The engine accepts it while
+waiting for command input, then invokes the native cast, ability or memorise
+command. Normal targeting, confirmation, resource payment and failure rolls
+apply. The mouse action leaves the previous keyboard replay sequence available.
+
+The WSL WebTiles build linked Crawl and generated static assets. All 51
+self-contained WebTiles JavaScript checks and 29 coordinator Python tests
+passed. The JavaScript checks include six dock scenarios and a player-delta
+test. The separate character creation and item inspection payload validators
+require recorded input frames.
+
+Headless Chromium rendered the Magic Dart and Spit Poison tiles and shortcut
+badges. Both clicks entered native targeting and executed after confirmation.
+Magic Dart spent one MP. Spit Poison's breath cooldown disabled its slot. The
+Formicid Fighter's Memorise button ran the native empty-library command. The
+dock cleared the Chronicle, sidebar and visible chat at 1920×1080, 1280×720,
+390×844 and 320×640, including with the Chronicle drawer open. Automated tests
+cover MP checks, server-reported restrictions and spectator input.
+Antigravity sign-off and publication are pending.
+
+| File under `crawl-ref/source/` | Added | Removed | Component |
+| --- | ---: | ---: | --- |
+| `ability.cc` | 12 | 1 | Native talent selection |
+| `ability.h` | 1 | 1 | Ability entry point |
+| `command.h` | 2 | 1 | Command entry point |
+| `macro.cc` | 5 | 0 | Mouse command input boundary |
+| `main.cc` | 18 | 6 | Command loop and replay state |
+| `spl-cast.cc` | 2 | 2 | Native spell selection |
+| `spl-cast.h` | 1 | 1 | Spell entry point |
+| `tileweb.cc` | 158 | 4 | Player metadata and guarded socket input |
+| `tileweb.h` | 26 | 2 | `TilesFramework` dock state |
+| `webserver/arcane_dock_test.js` | 169 | 0 | Dock fixtures and regression tests |
+| `webserver/game_data/static/arcane_dock.js` | 115 | 0 | Slot rendering and dispatch |
+| `webserver/game_data/static/game.js` | 23 | 9 | Responsive layout and input-mode checks |
+| `webserver/game_data/static/modern_ui.js` | 1 | 1 | Action Dock popover clearance |
+| `webserver/game_data/static/player.js` | 3 | 0 | Retained player deltas |
+| `webserver/game_data/static/style.css` | 147 | 6 | Responsive slot and chat geometry |
+| `webserver/game_data/templates/game.html` | 12 | 1 | Arcane Dock and Talent Bar structure |
+| `webserver/hero_hud_test.js` | 15 | 2 | Player-delta integration test |
