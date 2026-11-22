@@ -534,3 +534,60 @@ indicator based on the existing marker.
   - Rebuilt and synchronized C++ WebTiles binary (20,650,304 bytes).
   - All 22 Node examination tests, 9 floating event tests, and 22 .ai-team Python tests passed.
   - Development worktree `examination-card-dev` and historical feature worktrees preserved.
+
+## Phase 1 — WebTiles Hero HUD
+
+- Branch `feature/webtiles-hero-hud` in `C:\Users\Tempc\Desktop\dcss\hero-hud-dev`
+- Base `049c8b6cae`
+- Implementation `65097481ca15f2ba783740cfe26d448b8550130b`
+- Identification follow-up `c857273f317d30b80cb486dc83d5fd881d414c9b`
+- [Antigravity review and publication handoff](.ai-team/tasks/webtiles-hero-hud-review.json)
+
+The hero crest reads the existing map doll through `DungeonCellRenderer`.
+The HUD consumes the normal `player` deltas. `TilesFramework` adds the saved
+background, equipped shield slot, and known ego text. The equipment dock uses
+the established inventory name and sprite fields and opens the existing item
+inspection action. Ego chips require identification and follow the engine's
+suppression flag for unique artefacts.
+
+The sidebar puts the HUD, minimap, and inventory in document order. At narrow
+widths the sidebar scrolls vertically and the fixed-size inventory canvas can
+scroll horizontally. Effects use the game's descriptions where available.
+The compact HP and MP meters ease value changes and respect reduced motion.
+
+### Checks
+
+- `make -j4 WEBTILES=y crawl webserver` passed under WSL with the worktree's
+  Git paths mapped to Linux.
+- Node passed 5 Hero HUD, 22 examination card, and 9 floating event tests,
+  plus the keybind suite.
+- `python -m unittest discover -s .ai-team/tests` passed all 22 tests.
+- Headless Chromium connected to the seeded WebTiles server on port 8088.
+  It verified new-game lineage, high-DPI portrait and equipment pixels, shield
+  display, the weapon inspection action, and a live turn update. Controlled
+  `player` deltas exercised the HP thresholds, poison preview, and status
+  tooltip. Layout checks passed at 1920×1080, 1280×720, 390×844, and 320×640.
+  The reduced-motion check verified that meter transitions were disabled.
+
+### Implementation diff from the base
+
+| File under `crawl-ref/source/` | Added | Removed | Component |
+| --- | ---: | ---: | --- |
+| `tileweb.cc` | 13 | 0 | `TilesFramework` player and item deltas |
+| `tileweb.h` | 2 | 0 | `player_info` |
+| `webserver/game_data/static/display.js` | 46 | 2 | Doll and item canvas rendering |
+| `webserver/game_data/static/game.js` | 2 | 2 | Sidebar and minimap width |
+| `webserver/game_data/static/player.js` | 281 | 326 | Crest, meters, deck, equipment, and live condition rendering |
+| `webserver/game_data/static/style.css` | 268 | 339 | `.er-panel`, `.er-card`, `.er-badge`, `.er-meter`, and `.er-tooltip` |
+| `webserver/game_data/templates/game.html` | 84 | 96 | Semantic HUD sections |
+| `webserver/hero_hud_test.js` | 235 | 0 | Player delta and rendering tests |
+
+### Review status
+
+- Cross-agent review completed by Antigravity: **APPROVED** (status recorded in `.ai-team/reviews/webtiles-phase1-hero-hud_review.json`).
+- Live WebTiles browser QA passed across all Phase 1 components:
+  - Hero Crest: character doll avatar canvas, name in Cinzel gold, species/background calling, and Trog piety stars.
+  - Vigour & Arcane meters: tabular 19/19 HP and 0/0 MP gauges with color-coded health states and poison survival preview.
+  - Dark Fantasy Attribute Deck: STR/INT/DEX, AC/EV/SH, XL progress, and Noise meter cards with mechanics tooltips.
+  - Armament Dock: equipped weapon with sprite, slot hotkey badge, and working inspection modal.
+  - Clean responsive layout without overlapping from 1920x1080 down to mobile viewports.

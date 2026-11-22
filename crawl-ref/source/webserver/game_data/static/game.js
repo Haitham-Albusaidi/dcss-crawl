@@ -113,7 +113,7 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
         if (window_width < 640)
             stat_width_px = Math.min(stat_width_px, Math.floor(window_width * 0.42));
 
-        $("#stats").css("width", stat_width_px + "px");
+        $("#right_column").width(stat_width_px);
         var left_edge = $("#left_column")[0].getBoundingClientRect().left;
         var side_edge = $("#right_column")[0].getBoundingClientRect().left;
         var remaining_width = Math.max(17, Math.floor(side_edge - left_edge - 8));
@@ -150,7 +150,7 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
         dungeon_renderer.fit_to(remaining_width, remaining_height,
                                 show_diameter);
 
-        minimap.fit_to(stat_width_px, window_height);
+        minimap.fit_to(Math.max(1, stat_width_px - 2), window_height);
 
         $("#mobile_input input").width(remaining_width-12); // 2*padding+2*border
 

@@ -1,0 +1,30 @@
+{
+  "task_id": "webtiles-hero-hud-review",
+  "title": "Review the Phase 1 WebTiles Hero HUD",
+  "description": "Review the local feature/webtiles-hero-hud branch against 049c8b6cae through c857273f317d30b80cb486dc83d5fd881d414c9b. Return a structured review status with concrete findings and file locations. This review is read-only. The publishing manager can stage and open the PR after recording the review and checking HANDOFF.md.",
+  "assigned_agent": "antigravity",
+  "worktree_path": "C:\\Users\\Tempc\\Desktop\\dcss\\hero-hud-dev",
+  "branch": "feature/webtiles-hero-hud",
+  "base_commit": "049c8b6cae",
+  "implementation_commit": "c857273f317d30b80cb486dc83d5fd881d414c9b",
+  "mode": "plan",
+  "timeout_seconds": 150,
+  "context_files": [],
+  "target_files": [
+    "crawl-ref/source/tileweb.cc",
+    "crawl-ref/source/tileweb.h",
+    "crawl-ref/source/webserver/game_data/static/display.js",
+    "crawl-ref/source/webserver/game_data/static/game.js",
+    "crawl-ref/source/webserver/game_data/static/player.js",
+    "crawl-ref/source/webserver/game_data/static/style.css",
+    "crawl-ref/source/webserver/game_data/templates/game.html",
+    "crawl-ref/source/webserver/hero_hud_test.js"
+  ],
+  "acceptance_criteria": [
+    "Confirm the portrait, health and magic, attributes, progression, equipment and condition pills render in the stacked sidebar at desktop and mobile widths.",
+    "Check new-game and resumed-player deltas and verify game inputs and equipment inspection still work.",
+    "Verify item name, enchantment, ego and sprite presentation respect identification, including inventory slot reuse.",
+    "Check poison survival, HP thresholds, reduced motion, accessible focus and tooltip behavior.",
+    "Record the review before publication."
+  ]
+}

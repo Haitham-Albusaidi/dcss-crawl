@@ -89,118 +89,106 @@
     </div>
   </div>
   <div id="right_column">
-    <div id="stats">
-      <div id="stats_wizmode" style="float: right"></div>
-      <div id="stats_titleline"></div>
-      <div>
-        <span id="stats_species_god"></span>
-        <span id="stats_piety"></span>
-        <span id="stats_gozag_gold_label" class="stats_caption"></span>
-        <span id="stats_gozag_gold"></span>
-      </div>
-      <div id="stats_hpline">
-        <!-- These <span>s must be on the same logical line to prevent rendering bugs -->
-        <span id="stats_hp_bar" class="bar" style="float: right; width: 55%; height: 1em"><span id="stats_hp_bar_full"></span><span id="stats_hp_bar_poison"></span><span id="stats_hp_bar_decrease"></span><span id="stats_hp_bar_increase"></span></span>
-        <span class="stats_caption">HP:</span>
-        <!-- These <span>s must be on the same logical line to prevent rendering bugs -->
-        <span id="stats_hp"></span><span id="stats_hp_separator">/</span><span id="stats_hp_max"></span>
-        <span id="stats_real_hp_max"></span>
-      </div>
-      <div id="stats_mpline">
-        <!-- These <span>s must be on the same logical line to prevent rendering bugs -->
-        <span id="stats_mp_bar" class="bar" style="float: right; width: 55%; height: 1em"><span id="stats_mp_bar_full"></span><span id="stats_mp_bar_decrease"></span><span id="stats_mp_bar_increase"></span></span>
-        <span class="stats_caption">Magic:</span>
-        <!-- These <span>s must be on the same logical line to prevent rendering bugs -->
-        <span id="stats_mp"></span><span id="stats_mp_separator">/</span><span id="stats_mp_max"></span>
-        <span id="stats_dd_real_mp_max"></span>
-      </div>
-      <div>
-        <div id="stats_leftcolumn" style="float: left; width: 45%">
-          <div>
-            <span class="stats_caption">AC:</span> <span id="stats_ac"></span>
+    <aside id="stats" class="er-panel" aria-label="Hero status">
+      <header id="hero_crest">
+        <canvas id="hero_portrait" width="40" height="40" class="er-card" aria-hidden="true"></canvas>
+        <div class="hero_identity">
+          <h2 id="stats_titleline"></h2>
+          <div id="stats_species_god"></div>
+          <div id="hero_devotion">
+            <span id="stats_god"></span>
+            <span id="stats_piety"></span>
+            <span id="stats_gozag_gold"></span>
           </div>
-          <div>
-            <span class="stats_caption">EV:</span> <span id="stats_ev"></span>
+          <span id="stats_wizmode" class="er-badge" hidden></span>
+        </div>
+      </header>
+      <section id="hero_meters" aria-label="Health and magic">
+        <div id="stats_hpline" class="hero_gauge">
+          <div class="hero_readout">
+            <span class="stats_caption">Vigour</span>
+            <span><span id="stats_hp"></span><span id="stats_hp_separator"> / </span><span id="stats_hp_max"></span> HP <span id="stats_real_hp_max"></span></span>
           </div>
-          <div>
-            <span class="stats_caption">SH:</span> <span id="stats_sh"></span>
+          <div id="stats_hp_bar" class="er-meter" aria-hidden="true">
+            <span id="stats_hp_bar_full" class="er-meter-fill"></span>
+            <span id="stats_hp_bar_poison"></span>
           </div>
-          <div>
-            <span class="stats_caption">XL:</span>
-            <span id="stats_xl"></span>
-            <span class="stats_caption">Next:</span>
-            <span id="stats_progress"></span>%
+          <div id="hero_poison_preview" hidden></div>
+        </div>
+        <div id="stats_mpline" class="hero_gauge">
+          <div class="hero_readout">
+            <span class="stats_caption">Arcane</span>
+            <span><span id="stats_mp"></span><span id="stats_mp_separator"> / </span><span id="stats_mp_max"></span> MP <span id="stats_dd_real_mp_max"></span></span>
           </div>
-          <div id="stats_noise" style="float: left; width: 95%">
-            <div id="stats_noise_inter" style="float: right; height: 1em">
-              <!-- These <span>s must be on the same logical line to prevent rendering bugs -->
-              <span
-                id="stats_noise_bar"
-                class="bar"
-                style="float: left; height: 1em"
-                ><span id="stats_noise_bar_full"></span
-                ><span id="stats_noise_bar_decrease"></span
-              ></span>
-            </div>
-            <span
-              id="stats_noise_status"
-              style="float: right; width: 0%"
-            ></span>
-            <span class="stats_caption">Noise:</span>
-            <span id="stats_noise_num"></span>
+          <div id="stats_mp_bar" class="er-meter" aria-hidden="true">
+            <span id="stats_mp_bar_full" class="er-meter-fill"></span>
           </div>
         </div>
-        <div id="stats_rightcolumn" style="float: right; width: 55%">
-          <div>
-            <span class="stats_caption">Str:</span> <span id="stats_str"></span>
-            <span id="stats_doom_ui"><span class="stats_caption" style="margin-left:2.2em">Doom:</span><span id="stats_doom"></span></span>
+      </section>
+      <section id="hero_deck" aria-label="Attributes, defences and progression">
+        <div class="hero_stat_grid">
+          <div class="er-card hero_stat" title="Strength influences physical attacks and helps offset armour encumbrance."><span class="stats_caption">STR</span> <span id="stats_str"></span></div>
+          <div class="er-card hero_stat" title="Intelligence improves spell power and spell success."><span class="stats_caption">INT</span> <span id="stats_int"></span></div>
+          <div class="er-card hero_stat" title="Dexterity improves evasion and helps attacks with dexterity-based weapons."><span class="stats_caption">DEX</span> <span id="stats_dex"></span></div>
+          <div class="er-card hero_stat" title="Armour Class reduces damage from many attacks."><span class="stats_caption">AC</span> <span id="stats_ac"></span></div>
+          <div class="er-card hero_stat" title="Evasion helps you dodge attacks completely."><span class="stats_caption">EV</span> <span id="stats_ev"></span></div>
+          <div class="er-card hero_stat" title="Shield Block helps you block eligible attacks."><span class="stats_caption">SH</span> <span id="stats_sh"></span></div>
+        </div>
+        <div class="hero_progress_grid">
+          <div class="er-card hero_gauge" title="Experience level and progress toward the next level.">
+            <div class="hero_readout"><span><span class="stats_caption">XL</span> <span id="stats_xl"></span></span> <span id="stats_progress"></span></div>
+            <div class="er-meter" aria-hidden="true"><span id="hero_xl_fill" class="er-meter-fill"></span></div>
           </div>
-          <div>
-            <span class="stats_caption">Int:</span> <span id="stats_int"></span>
-            <span id="stats_contam_ui"><span class="stats_caption" style="margin-left:1.1em">Contam:</span><span id="stats_contam"></span></span>
-          </div>
-          <div>
-            <span class="stats_caption">Dex:</span> <span id="stats_dex"></span>
-          </div>
-          <div>
-            <span class="stats_caption">Place:</span>
-            <span id="stats_place"></span>
-          </div>
-          <div>
-            <span class="stats_caption" id="stats_time_caption"></span>
-            <span id="stats_time"></span>
+          <div id="stats_noise" class="er-card hero_gauge" title="Noise can alert nearby monsters.">
+            <div class="hero_readout"><span class="stats_caption">Noise</span> <span><span id="stats_noise_status"></span><span id="stats_noise_num"></span></span></div>
+            <div class="er-meter" aria-hidden="true"><span id="stats_noise_bar_full" class="er-meter-fill"></span></div>
           </div>
         </div>
-        <div style="float: left; width: 100%">
-          <span class="stats_caption" id="stats_weapon_letter"></span>
-          <span id="stats_weapon_container"
-            ><span id="stats_weapon"></span
-          ></span>
+        <div class="hero_badges">
+          <span id="stats_place" class="er-badge"></span>
+          <span class="er-badge"><span id="stats_time_caption"></span> <span id="stats_time"></span></span>
+          <span id="hero_gold_badge" class="er-badge">Gold <span id="hero_gold"></span></span>
+          <span id="stats_doom_ui" class="er-badge">Doom <span id="stats_doom"></span></span>
+          <span id="stats_contam_ui" class="er-badge">Contam <span id="stats_contam"></span></span>
         </div>
-        <div id="stats_offhand_weapon_line" style="float: left; width: 100%">
-          <span class="stats_caption" id="stats_offhand_weapon_letter"></span>
-          <span id="stats_offhand_weapon_container"
-            ><span id="stats_offhand_weapon"></span
-          ></span>
-        </div>
-        <div id="stats_quiver_line" style="float: left; width: 100%">
-          <span class="stats_caption" id="stats_quiver_letter"></span>
-          <span id="stats_quiver"></span>
-        </div>
-        <div id="stats_quiver_line" style="float: left; width:100%;">
-          <span class="stats_caption" id="stats_quiver_letter"></span>
-          <span id="stats_quiver"></span>
-        </div>
-        <div id="stats_status_lights" style="float: left; width: 100%"></div>
-        <div id="stats_status_lights_tooltip" class="fg7" style="display: none;"></div>
-      </div>
-    </div>
+      </section>
+      <section id="hero_armament" aria-label="Armament">
+        <button type="button" id="stats_weapon_container" class="er-card hero_equipment" disabled>
+          <canvas width="32" height="32" aria-hidden="true" hidden></canvas>
+          <span class="hero_equipment_copy">
+            <span class="stats_caption">Main weapon</span>
+            <span id="stats_weapon"></span>
+          </span>
+          <span class="hero_equipment_details"></span>
+        </button>
+        <button type="button" id="stats_offhand_weapon_container" class="er-card hero_equipment" disabled>
+          <canvas width="32" height="32" aria-hidden="true" hidden></canvas>
+          <span class="hero_equipment_copy">
+            <span class="stats_caption">Offhand</span>
+            <span id="stats_offhand_weapon"></span>
+          </span>
+          <span class="hero_equipment_details"></span>
+        </button>
+        <button type="button" id="stats_quiver_container" class="er-card hero_equipment" disabled>
+          <canvas width="32" height="32" aria-hidden="true" hidden></canvas>
+          <span class="hero_equipment_copy">
+            <span class="stats_caption">Quiver</span>
+            <span id="stats_quiver"></span>
+          </span>
+          <span class="hero_equipment_details"></span>
+        </button>
+      </section>
+      <section id="hero_status_effects" aria-label="Active effects">
+        <div id="stats_status_lights" class="hero_badges"></div>
+      </section>
+    </aside>
     <div id="minimap_block">
       <canvas id="minimap"></canvas>
       <canvas id="minimap_overlay"></canvas>
     </div>
     <div id="tiles_tab_panel" class="tiles-tab-panel"></div>
   </div>
+  <div id="stats_status_lights_tooltip" class="er-tooltip" role="tooltip" hidden></div>
   <div id="tooltip" style="display: none"></div>
 </div>
 

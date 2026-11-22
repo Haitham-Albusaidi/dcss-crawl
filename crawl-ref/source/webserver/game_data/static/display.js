@@ -1,12 +1,55 @@
 define(["jquery", "comm", "./map_knowledge", "./view_data", "./monster_list",
-        "./minimap", "./dungeon_renderer", "./floating_events", "./examination_card"],
+        "./minimap", "./dungeon_renderer", "./floating_events", "./examination_card",
+        "./player", "./cell_renderer"],
 function ($, comm, map_knowledge, view_data, monster_list, minimap,
-          dungeon_renderer, floating_events, examination_card) {
+          dungeon_renderer, floating_events, examination_card, player, cr) {
     "use strict";
 
     // Message indicating any invisible monsters nearby whose location was
     // never known to the player.
     var inv_mons_msg;
+
+    var hero_renderer = new cr.DungeonCellRenderer();
+
+    function draw_hero_sprite(canvas, draw, padding)
+    {
+        var ratio = window.devicePixelRatio || 1;
+        var offset = Math.round(padding * ratio);
+        var size = Math.round((32 + 2 * padding) * ratio);
+        if (canvas.width !== size || canvas.height !== size)
+            canvas.width = canvas.height = size;
+        hero_renderer.set_cell_size(32, 32);
+        hero_renderer.init(canvas);
+        hero_renderer.ctx.clearRect(0, 0, size, size);
+        draw(offset);
+    }
+
+    function update_hero_portrait()
+    {
+        var canvas = $("#hero_portrait")[0];
+        if (!canvas || !map_knowledge.player_on_level())
+            return;
+
+        var cell = map_knowledge.get(player.pos.x, player.pos.y);
+        if (!cell.t || !cell.t.doll || !cell.t.doll.length)
+            return;
+
+        draw_hero_sprite(canvas, function (offset) {
+            for (var part of cell.t.doll)
+                hero_renderer.draw_player(part[0], offset, offset, 0, 0, part[1]);
+        }, 4);
+    }
+
+    $(document).on("hero_position_update", update_hero_portrait)
+        .on("hero_equipment_update", function () {
+            $("#hero_armament canvas:not([hidden])").each(function () {
+                var tiles = $(this).data("tiles");
+                draw_hero_sprite(this, function () {
+                    for (var tile of tiles)
+                        hero_renderer.draw_main(tile, 0, 0);
+                }, 0);
+            });
+        });
 
     function invalidate(minimap_too)
     {
@@ -91,6 +134,7 @@ function ($, comm, map_knowledge, view_data, monster_list, minimap,
         if (data.cells)
             map_knowledge.merge(data.cells);
 
+        update_hero_portrait();
         examination_card.onMapChange(data);
 
         if ("invis_mon_desc" in data)

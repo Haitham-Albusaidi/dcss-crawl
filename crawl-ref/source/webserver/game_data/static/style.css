@@ -51,209 +51,6 @@ canvas {
 .colour_yellow { color: yellow; }
 .colour_white { color: white; }
 
-#stats {
-    display: inline-block;
-    position: static;
-    color: var(--color-7); /* lightgray */
-    font-family: var(--stat-font);
-}
-
-#stats_titleline, #stats_species_god {
-    color: var(--color-14); /* yellow */
-}
-#stats_piety {
-    color: var(--color-14); /* yellow */
-}
-#stats_piety.penance {
-    color: var(--color-4); /* red */
-}
-#stats_piety.monk {
-    color: var(--color-8); /* darkgray */
-}
-#stats_wizmode {
-    color: var(--color-1); /* blue */
-}
-.stats_caption {
-    color: var(--color-6); /* brown */
-}
-
-.degenerated_stat {
-    color: var(--color-14); /* yellow */
-}
-.zero_stat {
-    color: var(--color-12); /* lightred */
-}
-.low_stat {
-    color: var(--color-4); /* red */
-}
-.boosted_stat {
-    color: var(--color-9); /* lightblue */
-}
-
-.degenerated_defense {
-    color: var(--color-4); /* red */
-}
-.boosted_defense {
-    color: var(--color-9); /* lightblue */
-}
-
-.bar span {
-    display: inline-block;
-    height: 100%;
-}
-
-/* Some of these values are also hard coded to cell_renderer.js */
-#stats_hp_bar {
-    background-color: var(--color-8); /* darkgray */
-}
-#stats_hp_bar_full {
-    background-color: var(--color-10); /* lightgreen */
-}
-#stats_hp_bar_decrease {
-    background-color: var(--color-4); /* red */
-}
-#stats_hp_bar_poison {
-    background-color: var(--color-14); /* yellow */
-}
-#stats_hp_bar_increase {
-    background-color: var(--color-2); /* green */
-}
-
-#stats_mp_bar {
-    background-color: var(--color-8); /* darkgray */
-}
-#stats_mp_bar_full {
-    background-color: var(--color-9); /* lightblue */
-}
-#stats_mp_bar_decrease {
-    background-color: var(--color-5); /* magenta */
-}
-#stats_mp_bar_increase {
-    background-color: var(--color-1); /* blue */
-}
-
-#stats_doom_bar {
-    background-color: var(--color-8); /* darkgray */
-}
-#stats_doom_bar_full {
-    background-color: var(--color-5); /* lightblue */
-}
-#stats_doom_bar_decrease {
-    background-color: var(--color-5); /* magenta */
-}
-#stats_doom_bar_increase {
-    background-color: var(--color-13); /* blue */
-}
-
-/* default color when showing "Silenced" */
-#stats_noise_status {
-    color: #FF00FF; /* magenta */
-}
-
-/* default bar background color */
-#stats_noise_bar {
-    background-color: #2F2F2F; /* dark slate gray */
-}
-
-/* default bar change color */
-#stats_noise_bar_decrease {
-    background-color: var(--color-8); /* darkgray */
-}
-
-/* clear the bar entirely */
-#stats_noise[data-level="blank"] #stats_noise_bar,
-#stats_noise[data-level="blank"] #stats_noise_bar_full {
-    background-color: #000000; /* black */
-}
-
-/* noise number is printed here in wizmode */
-#stats_noise_num {
-    color: #D3D3D3; /* default gray */
-    width: 0;
-}
-#stats_noise[data-shownum] #stats_noise_num {
-    width: 2em;
-}
-
-/* use attribute selectors to adjust the bar and number (wizmode) color depending on `data-level`. */
-#stats_noise[data-level="quiet"] #stats_noise_bar_full {
-    background-color: #D3D3D3; /* lightgray */
-}
-#stats_noise[data-level="quiet"] #stats_noise_num {
-    color: #D3D3D3;
-}
-#stats_noise[data-level="loud"] #stats_noise_bar_full {
-    background-color: #FFD700; /* gold */
-}
-#stats_noise[data-level="loud"] #stats_noise_num {
-    color: #FFD700;
-}
-#stats_noise[data-level="veryloud"] #stats_noise_bar_full {
-    background-color: #FF0000; /* red */
-}
-#stats_noise[data-level="veryloud"] #stats_noise_num {
-    color: #FF0000;
-}
-#stats_noise[data-level="superloud"]  #stats_noise_bar_full {
-    background-color: #FF00FF; /* magenta */
-}
-#stats_noise[data-level="superloud"] #stats_noise_num {
-    color: #FF00FF;
-}
-
-/* make the bar go to eleven on superloud sounds. */
-#stats_noise_bar { width: 82%; }
-#stats_noise[data-level="superloud"] #stats_noise_bar {
-    width: 100%;
-}
-
-/* shrink the bar to the right in wizmode (if `data-shownum` is set). */
-#stats_noise_inter { width: 61%; }
-#stats_noise[data-shownum] #stats_noise_inter {
-     width: 45%;
-}
-
-#stats_weapon_letter
-{
-    float: left;
-    display: block;
-    margin-right:0.5em;
-}
-
-#stats_weapon
-{
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    display: block;
-    overflow: hidden;
-}
-
-#stats_offhand_weapon_letter
-{
-    float: left;
-    display: block;
-    margin-right:0.5em;
-}
-
-#stats_offhand_weapon
-{
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    display: block;
-    overflow: hidden;
-}
-
-#stats_status_lights_tooltip
-{
-    position: absolute;
-    z-index: 100;
-
-    border: 5px solid black;
-    background-color: #040204;
-    outline: 2px solid #7d623c;
-    margin: 10px;
-}
-
 #message_pane {
     width: 100%;
     box-sizing: border-box;
@@ -2375,133 +2172,272 @@ body {
     color: #c9c3b4;
 }
 
-/* ==========================================================================
-   2. Player Stats Panel (Elden Ring / Souls Diegetic HUD)
-   ========================================================================== */
+/* --- Phase 1: Player Hero HUD --- */
+:root {
+    --er-surface: rgba(16, 20, 26, 0.94);
+    --er-surface-deep: rgba(10, 13, 18, 0.96);
+    --er-brass: #c49a45;
+    --er-gold-highlight: #e5c158;
+    --er-gold-ink: #d8b462;
+    --er-brass-line: rgba(196, 154, 69, 0.35);
+    --er-brass-glow: 0 0 10px rgba(196, 154, 69, 0.25);
+    --er-font-serif: Cinzel, "Cormorant Garamond", Georgia, serif;
+    --er-emerald: #8cc6a6;
+    --er-amber: #e5b877;
+    --er-crimson: #f09999;
+}
+
+.er-panel {
+    color: var(--er-text-primary);
+    background: var(--er-surface);
+    border: 1px solid var(--er-brass-line);
+    border-radius: 6px;
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.45), inset 0 1px var(--er-brass-line);
+}
+
+.er-card,
+.er-badge {
+    color: inherit;
+    background: var(--er-surface-deep);
+    border: 1px solid var(--er-brass-line);
+    border-radius: 4px;
+}
+
+.er-badge {
+    display: inline-block;
+    padding: 1px 5px;
+    font: inherit;
+}
+
+.er-meter {
+    position: relative;
+    display: block;
+    height: 0.55em;
+    overflow: hidden;
+    border: 1px solid var(--er-brass-line);
+    border-radius: 3px;
+    box-shadow: inset 0 1px 3px #000;
+    background: var(--er-surface-deep);
+}
+
+.er-meter-fill {
+    display: block;
+    width: 0;
+    height: 100%;
+    background: var(--er-meter-color, var(--er-brass));
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.22),
+                inset 0 -2px 0 rgba(0, 0, 0, 0.24);
+    transition: width 180ms ease-out, background-color 220ms ease-out;
+}
+
+.er-tooltip {
+    position: fixed;
+    z-index: 100;
+    max-width: min(24em, calc(100vw - 16px));
+    box-sizing: border-box;
+    padding: 7px 9px;
+    border: 1px solid var(--er-brass-line);
+    border-radius: 4px;
+    color: var(--er-text-primary);
+    background: var(--er-surface-deep);
+    box-shadow: var(--er-brass-glow);
+    font: 0.8125rem/1.35 var(--er-font-sans);
+    pointer-events: none;
+}
+
+#right_column {
+    max-height: calc(100vh - 3rem);
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--er-brass-line) transparent;
+}
+
 #stats {
-    background: var(--er-obsidian-85) !important;
-    backdrop-filter: blur(14px) !important;
-    -webkit-backdrop-filter: blur(14px) !important;
-    border: 1px solid var(--er-gold-border) !important;
-    border-radius: 6px !important;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.6) !important;
-    padding: 12px 14px !important;
-    margin: 6px !important;
-    box-sizing: border-box !important;
-    font-family: var(--er-font-sans) !important;
-    line-height: 1.4 !important;
+    position: static;
+    display: grid;
+    gap: 0.5em;
+    box-sizing: border-box;
+    padding: 0.65em;
+    margin: 4px;
+    line-height: 1.3;
+    font-family: var(--stat-font, var(--er-font-sans));
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
 }
 
-/* Character Title & Name Header */
+/* Keep the existing inventory canvas scrollable in a narrow sidebar. */
+#right_column #tiles_tab_panel {
+    width: calc(100% - 8px) !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+}
+
+#right_column #tiles_tab_panel .dcss-tiles-menu-container,
+#right_column #tiles_tab_panel .dcss-tiles-panel-wrap {
+    width: max-content !important;
+    min-width: 100%;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+}
+
+#stats [hidden] { display: none; }
+
+#hero_crest {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5em;
+    padding-bottom: 0.5em;
+    border-bottom: 1px solid var(--er-brass-line);
+}
+
+#hero_portrait {
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-color: var(--er-brass);
+    background: radial-gradient(ellipse at 50% 85%, #383125, #10141a 78%);
+    box-shadow: var(--er-brass-glow);
+    image-rendering: pixelated;
+}
+
+.hero_identity { flex: 1 1 8em; min-width: 0; }
 #stats_titleline {
-    font-family: var(--er-font-title) !important;
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.06em !important;
-    color: var(--er-gold-bright) !important;
-    text-transform: uppercase !important;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9) !important;
-    margin-bottom: 2px !important;
+    margin: 0;
+    color: var(--er-gold-highlight);
+    font: 700 1.25em/1.15 var(--er-font-serif);
+}
+#stats_species_god { color: var(--er-text-primary); font-size: 0.9em; }
+#hero_devotion { display: flex; flex-wrap: wrap; gap: 0 0.45em; font-size: 0.85em; }
+#stats_piety, #stats_gozag_gold { color: var(--er-gold-ink); }
+#stats_piety.penance { color: var(--er-crimson); }
+
+#hero_meters,
+#hero_deck,
+#hero_armament {
+    display: grid;
+    gap: 0.3em;
+    min-width: 0;
 }
 
-#stats_species_god {
-    font-family: var(--er-font-title) !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    color: var(--er-gold-primary) !important;
-    letter-spacing: 0.04em !important;
+.hero_readout {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0 0.3em;
 }
 
-#stats_piety {
-    color: #38bdf8 !important;
-    font-size: 11px !important;
-}
-
-/* Bar Container Styling (Crimson HP & Sorcery MP) */
-#stats_hpline, #stats_mpline {
-    display: flex !important;
-    align-items: center !important;
-    margin: 6px 0 !important;
-    padding: 4px 8px !important;
-    background: rgba(0, 0, 0, 0.4) !important;
-    border-radius: 4px !important;
-    border: 1px solid rgba(197, 160, 89, 0.15) !important;
-}
-
-#stats_hp_bar, #stats_mp_bar {
-    border-radius: 3px !important;
-    overflow: hidden !important;
-    height: 12px !important;
-    border: 1px solid rgba(197, 160, 89, 0.3) !important;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8) !important;
-}
-
-/* Souls-style Crimson HP Fill */
-#stats_hp_bar {
-    background: rgba(26, 12, 12, 0.9) !important;
-}
-
-#stats_hp_bar_full {
-    background: var(--er-hp-gradient) !important;
-    box-shadow: 0 0 10px rgba(220, 38, 38, 0.4) !important;
-}
-
-#stats_hp_bar_decrease {
-    background: #eab308 !important;
-}
-
-#stats_hp_bar_poison {
-    background: linear-gradient(90deg, #713f12, #a16207) !important;
-}
-
-/* Souls-style Cerulean Sorcery MP Fill */
-#stats_mp_bar {
-    background: rgba(10, 16, 28, 0.9) !important;
-}
-
-#stats_mp_bar_full {
-    background: var(--er-mp-gradient) !important;
-    box-shadow: 0 0 10px rgba(56, 189, 248, 0.45) !important;
-}
-
-#stats_mp_bar_decrease {
-    background: #6366f1 !important;
-}
-
-/* Stat Grid & Captions */
+.hero_gauge { display: grid; gap: 2px; }
 .stats_caption {
-    font-family: var(--er-font-title) !important;
-    color: var(--er-gold-dim) !important;
-    font-weight: 600 !important;
-    font-size: 11px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.05em !important;
-    margin-right: 4px !important;
+    color: var(--er-gold-ink);
+    font: 600 0.84em/1.3 var(--er-font-serif);
 }
 
-#stats span {
-    font-family: var(--er-font-mono) !important;
-    font-weight: 600 !important;
-    color: var(--er-text-primary) !important;
+#stats_hpline { --er-meter-color: #478867; }
+#stats_hpline[data-health="injured"] { --er-meter-color: #b88342; }
+#stats_hpline[data-health="critical"] { --er-meter-color: #be5260; }
+#stats_mpline { --er-meter-color: #4f79b7; }
+#stats_hp_bar_poison {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: repeating-linear-gradient(135deg, #d2a75f 0 3px, #7e5733 3px 6px);
+    transition: left 180ms ease-out, width 180ms ease-out;
+}
+#stats_hpline[data-health="critical"] .er-meter {
+    border-color: var(--er-crimson);
+    animation: hero-danger 1.8s ease-out 3;
+}
+@keyframes hero-danger {
+    50% { box-shadow: 0 0 8px rgba(240, 153, 153, 0.55); }
 }
 
-#stats_leftcolumn, #stats_rightcolumn {
-    background: rgba(0, 0, 0, 0.2) !important;
-    border-radius: 4px !important;
-    padding: 6px 8px !important;
-    border: 1px solid rgba(197, 160, 89, 0.1) !important;
-    box-sizing: border-box !important;
+#hero_poison_preview {
+    color: var(--er-amber);
+    font-size: 0.8em;
+    text-align: right;
 }
 
-/* Noise bar */
-#stats_noise_bar {
-    border-radius: 2px !important;
-    height: 6px !important;
-    background: rgba(30, 30, 35, 0.8) !important;
-    border: 1px solid rgba(197, 160, 89, 0.2) !important;
+.hero_stat_grid, .hero_progress_grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25em;
 }
-#stats_noise_bar_full {
-    background: var(--er-gold-dim) !important;
+.hero_stat { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 0.25em; }
+.hero_stat, .hero_progress_grid > .er-card { padding: 1px 0.32em; }
+.hero_progress_grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.hero_progress_grid .er-meter { height: 0.28em; }
+#stats_noise[data-noise="Quiet"] { --er-meter-color: #729780; }
+#stats_noise[data-noise="Very loud"] { --er-meter-color: #b96d61; }
+
+.hero_badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25em;
+    font-size: 0.84em;
+}
+
+.hero_equipment {
+    display: flex;
+    align-items: center;
+    gap: 0.45em;
+    min-width: 0;
+    width: 100%;
+    padding: 2px 0.4em;
+    text-align: left;
+    font: inherit;
+}
+.hero_equipment:not(:disabled) { cursor: pointer; }
+.hero_equipment:not(:disabled):hover,
+.hero_equipment:focus-visible,
+.hero_status:focus-visible {
+    border-color: var(--er-gold-highlight);
+    outline: none;
+    box-shadow: var(--er-brass-glow);
+}
+.hero_equipment canvas {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    image-rendering: pixelated;
+}
+.hero_equipment_copy { min-width: 0; flex: 1; }
+.hero_equipment_copy > span { display: block; }
+#game #stats_quiver .fg8 { color: var(--er-text-secondary); }
+.hero_equipment_details {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.2em;
+    max-width: 38%;
+    color: var(--er-gold-ink);
+    font-size: 0.8em;
+}
+.hero_equipment_details:empty { display: none; }
+
+#stats .boosted_stat, #stats .boosted_defense { color: var(--er-emerald); }
+#stats .degenerated_stat, #stats .zero_stat,
+#stats .degenerated_defense { color: var(--er-crimson); }
+
+.hero_status[data-severity="beneficial"] { color: var(--er-emerald); }
+.hero_status[data-severity="warning"] { color: var(--er-amber); }
+.hero_status[data-severity="danger"] { color: var(--er-crimson); }
+button.hero_status { cursor: help; }
+
+@media (max-width: 639px) {
+    #stats { margin: 2px; padding: 0.35em; font-size: 0.75rem; }
+    #hero_portrait { width: 34px; height: 34px; }
+    .hero_stat_grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .hero_progress_grid { grid-template-columns: minmax(0, 1fr); }
+    .hero_equipment { flex-wrap: wrap; }
+    .hero_equipment_details { max-width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .er-meter-fill, #stats_hp_bar_poison { transition: none; }
+    #stats_hpline[data-health="critical"] .er-meter { animation: none; }
 }
 
 /* ==========================================================================
@@ -4837,13 +4773,6 @@ body {
     color: #ffe5a1;
     padding: 3px 7px;
     font: 12px var(--er-font-sans);
-}
-button.status_light {
-    font: inherit;
-    background: transparent;
-    border: 0;
-    padding: 0;
-    cursor: help;
 }
 .menu_pickup .inv-tile-box { position: relative; }
 .pickup-quantity {

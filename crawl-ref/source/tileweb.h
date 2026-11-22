@@ -51,6 +51,7 @@ struct player_info
     bool explore;
     string species;
     string species_display_name;
+    string background;
     string god;
     bool under_penance;
     int piety_rank;
@@ -106,6 +107,7 @@ struct player_info
 
     int8_t weapon_index;
     int8_t offhand_index;
+    int8_t shield_index;
 };
 
 class TilesFramework

@@ -13,134 +13,82 @@ function ($, comm, client, enums, map_knowledge, messages, options, util, keybin
         "mp": "divinely vigorous"
     };
 
-    /**
-     * Update the stats area bar of the given type.
-     * @param name     The name of the bar.
-     * @param propname The player property name, if it is different from the
-     *                 name of the bar defined in game_data/template/game.html
-     */
-    function update_bar(name, propname)
+    function percent(value, max)
     {
-        if (!propname) propname = name;
-
-        var value = player[propname], max = player[propname + "_max"];
-        var old_value;
-        if ("old_" + propname in player)
-            old_value = player["old_" + propname];
-        else
-            old_value = value;
-        if (value < 0)
-            value = 0;
-        if (old_value > max)
-            old_value = max;
-        player["old_" + propname] = value;
-        var increase = old_value < value;
-        // XX should both of these be floor?
-        var full_bar = Math.round(10000 * (increase ? old_value : value) / max);
-        var change_bar = Math.floor(10000 * Math.abs(old_value - value) / max);
-        // Use poison_survival to display our remaining hp after poison expires.
-        if (name == "hp")
-        {
-            $("#stats_hp_bar_poison").css("width", 0);
-            var poison_survival = player["poison_survival"]
-            if (poison_survival < value)
-            {
-                var poison_bar = Math.round(10000 * (value - poison_survival)
-                                            / max);
-                full_bar = Math.round(10000 * poison_survival / max);
-                $("#stats_hp_bar_poison").css("width", (poison_bar / 100)
-                                              + "%");
-            }
-            if (full_bar + poison_bar + change_bar > 10000)
-                change_bar = 10000 - poison_bar - full_bar;
-        }
-        else if (full_bar + change_bar > 10000)
-        {
-            change_bar = 10000 - full_bar;
-        }
-
-        $("#stats_" + name + "_bar_full").css("width", (full_bar / 100) + "%");
-        $("#stats_" + name + "_bar_" + (increase ? "increase" : "decrease"))
-            .css("width", (change_bar / 100) + "%");
-        $("#stats_" + name + "_bar_" + (increase ? "decrease" : "increase"))
-            .css("width", 0);
+        return max > 0 ? Math.max(0, Math.min(100, value / max * 100)) : 0;
     }
 
-    function update_bar_noise()
+    function meter(value, max, survival)
     {
-        player.noise_max = 1000;
-        var level = player.adjusted_noise, max = player.noise_max;
-        var old_value;
-        if ("old_noise" in player)
-            old_value = player.old_noise
-        else
-            old_value = level;
-        if (level < 0)
-            level = 0;
-        if (old_value > max)
-            old_value = max;
-
-        // The adjusted_noise value has already been rescaled in
-        // player.cc:get_adjusted_noise. It ranges from 0 to 1000.
-        var adjusted_level = 0, noise_cat = "";
-
-        // colors are set in `style.css` via the selector `data-level`.
-        if (level <= 333)
-            noise_cat = "quiet";
-        else if (level <= 666)
-            noise_cat = "loud";
-        else if (level < 1000)
-            noise_cat = "veryloud";
-        else
-            noise_cat = "superloud";
-
-        var silenced = player.has_status("silence")
-        if (silenced)
-        {
-            level = 0;
-            old_value = 0;
-            noise_cat = "blank";
-            // I couldn't get this to work just directly putting the text in #stats_noise_bar,
-            // because clearing the text later will adjust the span width.
-            $("#stats_noise_status").text("Silenced");
-        } else {
-            $("#stats_noise_status").text("");
-        }
-        $("#stats_noise").attr("data-level", noise_cat);
-
-        player.old_noise = level;
-
-
-        var full_bar = Math.round(10000 * level / max);
-        var change_bar = Math.round(10000 * Math.abs(old_value - level) / max);
-        if (full_bar + change_bar > 10000)
-        {
-            change_bar = 10000 - full_bar;
-        }
-
-        if (player.wizard && !silenced)
-        {
-            // the exact value is too hard to interpret to show outside of
-            // wizmode, because noise propagation is very complicated.
-            $("#stats_noise").attr("data-shownum", true);
-            $("#stats_noise_num").text(player.noise);
-        }
-        else
-        {
-            $("#stats_noise").attr("data-shownum", null);
-            $("#stats_noise_num").text("");
-        }
-
-        $("#stats_noise_bar_full").css("width", (full_bar / 100) + "%");
-        if (adjusted_level < old_value)
-            $("#stats_noise_bar_decrease").css("width", (change_bar / 100) + "%");
-        else
-            $("#stats_noise_bar_decrease").css("width", 0);
+        var width = percent(value, max);
+        var projected = max > 0 && Number.isFinite(survival) && survival < value
+            ? Math.max(0, survival) : null;
+        var safe = projected === null ? width : percent(projected, max);
+        return {
+            width: safe,
+            poison: width - safe,
+            projected: projected,
+            state: max <= 0 || width > 60 ? "healthy"
+                : width >= 30 ? "injured" : "critical"
+        };
     }
 
-    function repeat_string(s, n)
+    function crest(data)
     {
-        return Array(n+1).join(s);
+        var rank = Math.max(0, Math.min(6, data.piety_rank || 0));
+        var lost = Math.max(0, Math.min(6 - rank, data.ostracism_pips || 0));
+        var piety = "";
+        var label = "";
+        if (data.god === "Xom")
+        {
+            var tension = data.piety_rank;
+            piety = Number.isInteger(tension) && tension >= 0 && tension < 6
+                ? "\u25cb".repeat(tension) + "\u25c6" + "\u25cb".repeat(5 - tension)
+                : "\u25cb".repeat(6);
+            label = "Xom's interest";
+        }
+        else if (data.god !== "Gozag" && (data.god || rank))
+        {
+            piety = "\u2605".repeat(rank) + "\u2606".repeat(6 - rank - lost)
+                + "\u00d7".repeat(lost);
+            label = data.god ? "Piety " + rank + " of 6"
+                : "Monk starting piety " + rank + " of 6";
+            if (lost)
+                label += ", " + lost + " lost to ostracism";
+        }
+        if (data.penance)
+            label += " (under penance)";
+        return {
+            name: data.name,
+            lineage: [data.species_display_name || data.species, data.background]
+                .filter(Boolean).join(" "),
+            deity: data.god || "Atheist",
+            piety: piety,
+            pietyLabel: label,
+            gozagGold: data.god === "Gozag" ? data.gold + " gold" : ""
+        };
+    }
+
+    function noise_meter(noise, silenced)
+    {
+        return {
+            width: silenced ? 0 : percent(noise, 1000),
+            label: silenced ? "Silenced" : noise <= 333 ? "Quiet"
+                : noise <= 666 ? "Loud" : "Very loud"
+        };
+    }
+
+    function attribute(value, max)
+    {
+        return value < max ? value + " (" + max + ")" : String(value);
+    }
+
+    function progression(xl, progress)
+    {
+        return {
+            label: xl >= 27 ? "Max" : "Next " + progress + "%",
+            width: xl >= 27 ? 100 : percent(progress, 100)
+        };
     }
 
     function index_to_letter(index)
@@ -171,28 +119,44 @@ function ($, comm, client, enums, map_knowledge, messages, options, util, keybin
     }
     player.inventory_item_desc = inventory_item_desc;
 
-    function wielded_weapon(offhand=false)
+    function equipment(item, fallback, stack)
     {
-        var elem;
-        var wielded = offhand ? player.offhand_index : player.weapon_index;
-        var colour = offhand ? player.offhand_weapon_colour
-                             : player.weapon_colour;
-        if (wielded == -1)
-        {
-            elem = $("<span>");
-            elem.text(player.unarmed_attack);
-            elem.addClass("fg" + colour);
-        }
-        else
-            elem = inventory_item_desc(wielded, false, colour);
+        if (!item || item.quantity <= 0 || !item.name)
+            return {name: fallback, tiles: [], ego: "", quantity: ""};
 
-        return elem;
+        // The inventory name, tiles and known ego are identification-aware
+        // server fields. Raw pluses, flags and item subtypes are not used.
+        return {
+            name: item.name,
+            tiles: Array.isArray(item.tile) ? item.tile : [],
+            ego: item.known_ego || "",
+            quantity: stack && item.quantity > 0 ? "\u00d7" + item.quantity : "",
+            slot: item.slot
+        };
     }
 
-    function quiver()
+    function status_pill(status)
     {
-        // any use for player.quiver_available any more?
-        return util.formatted_string_to_html(player.quiver_desc);
+        var text = status.text || status.light || "";
+        var labels = {
+            Pois: "Poisoned", Conf: "Confused", Sil: "Silenced",
+            Invis: "Invisible", Fly: "Flight"
+        };
+        var danger = /^(confused|paraly|petrif|silenc|asleep|sleeping|held)/i;
+        var warning = /^(slow|hasted and slowed)|backlit and visible/i;
+        var benefit = /^(berserk|fast|haste|invis|flight|flying|vitalis|divinely vigorous)/i;
+        var severity = status.light === "Pois" || status.light === "Sil" || danger.test(text) ? "danger"
+            : warning.test(text) ? "warning"
+            : benefit.test(text) ? "beneficial"
+            : [4, 12].includes(status.col) ? "danger"
+            : [1, 2, 3, 9, 10, 11].includes(status.col)
+                ? "beneficial" : "warning";
+        return {
+            label: Object.prototype.hasOwnProperty.call(labels, status.light)
+                ? labels[status.light] : status.light,
+            severity: severity,
+            description: status.desc || ""
+        };
     }
 
     player.has_status_light = function (status_light, col)
@@ -227,38 +191,17 @@ function ($, comm, client, enums, map_knowledge, messages, options, util, keybin
 
     function update_defense(type)
     {
-        var elem = $("#stats_"+type);
-        elem.text(player[type]);
-        elem.removeClass();
-
-        if (type == "ac")
-        {
-            if (player.ac_mod > 0)
-                elem.addClass("boosted_defense");
-            else if (player.ac_mod < 0)
-                elem.addClass("degenerated_defense");
-        }
-        else if (type == "ev")
-        {
-            if (player.ev_mod > 0)
-                elem.addClass("boosted_defense");
-            else if (player.ev_mod < 0)
-                elem.addClass("degenerated_defense");
-        }
-        else if (type == "sh")
-        {
-            if (player.sh_mod > 0)
-                elem.addClass("boosted_defense");
-            else if (player.sh_mod < 0)
-                elem.addClass("degenerated_defense");
-        }
+        var modifier = player[type + "_mod"];
+        $("#stats_" + type).text(player[type])
+            .toggleClass("boosted_defense", modifier > 0)
+            .toggleClass("degenerated_defense", modifier < 0);
     }
 
     function stat_class(stat)
     {
         var val = player[stat];
         var max_val = player[stat + "_max"];
-        if (player.has_status("lost " + stat))
+        if (val <= 0 || player.has_status("lost " + stat))
             return "zero_stat";
 
         var limits = options.get("stat_colour")
@@ -277,14 +220,7 @@ function ($, comm, client, enums, map_knowledge, messages, options, util, keybin
 
     function update_stat(stat)
     {
-        var val = player[stat];
-        var max_val = player[stat + "_max"];
-        var elem = $("<span>");
-        elem.text(val);
-        if (val < max_val)
-        {
-            elem.append(" (" + max_val + ")");
-        }
+        var elem = $("<span>").text(attribute(player[stat], player[stat + "_max"]));
         elem.addClass(stat_class(stat));
         $("#stats_" + stat).html(elem);
     }
@@ -314,17 +250,9 @@ function ($, comm, client, enums, map_knowledge, messages, options, util, keybin
             colour = "fg14";
 
         elem.addClass(colour);
-        var tooltip = $("#stats_status_lights_tooltip");
-        // Hide the tooltip so that it goes away if expired.
-        tooltip.hide();
         $("#stats_doom").html(elem);
-
-        elem.on("mouseenter mousemove", ev => {
-                tooltip.css({top: ev.pageY + "px"});
-                tooltip.html(util.formatted_string_to_html(player["doom_desc"]));
-                tooltip.show();
-            });
-        elem.on("mouseleave", ev => tooltip.hide());
+        $("#stats_doom_ui").attr("title",
+            $("<span>").html(util.formatted_string_to_html(player.doom_desc || "")).text());
     }
 
     function update_contam()
@@ -386,169 +314,186 @@ function ($, comm, client, enums, map_knowledge, messages, options, util, keybin
             $("#stats_" + name).addClass("colour_" + colour);
     }
 
-    var simple_stats = ["hp", "hp_max", "mp", "mp_max", "xl", "progress"];
-    /**
-     * Update the stats pane area based on the player's current properties.
-     */
-    function update_stats_pane()
+    function update_vitals()
     {
-        $("#stats_titleline").text(player.name + player.title);
-        $("#stats_wizmode").text(player.wizard ? "*WIZARD*" : player.explore ? "*EXPLORE*" : "");
-
-        var species_god = player.species_display_name;
-        if (player.god != "")
-            species_god += " of " + player.god;
-        if (player.god == "Xom")
+        for (var name of ["hp", "mp"])
         {
-            if (player.piety_rank >=0)
+            var value = player[name];
+            var max = player[name + "_max"];
+            var gauge = meter(value, max, name === "hp" ? player.poison_survival : null);
+            $("#stats_" + name).text(value);
+            $("#stats_" + name + "_max").text(max);
+            $("#stats_" + name + "_bar_full").css("width", gauge.width + "%");
+            percentage_color(name);
+            if (name === "hp")
             {
-                $("#stats_piety").text(repeat_string(".",player.piety_rank) + "*"
-                                       + repeat_string(".",5-player.piety_rank));
+                $("#stats_hpline").attr("data-health", gauge.state);
+                $("#stats_hp_bar_poison").css({left: gauge.width + "%", width: gauge.poison + "%"});
+                $("#hero_poison_preview").prop("hidden", gauge.projected === null)
+                    .text(gauge.projected === null ? "" : gauge.projected + " HP after poison");
             }
-            else
-                $("#stats_piety").text("......"); // very special plaything
         }
-        else if ((player.piety_rank > 0 || player.god != "")
-                 && player.god != "Gozag")
-        {
-            $("#stats_piety").html(repeat_string("*", player.piety_rank)
-                                   + repeat_string(".", 6-player.piety_rank-player.ostracism_pips)
-                                   + "<span class=fg5>"
-                                   + repeat_string("X", player.ostracism_pips)
-                                   + "</span>");
-        }
-        else
-            $("#stats_piety").text("");
+        $("#stats_real_hp_max").text(player.real_hp_max && player.real_hp_max !== player.hp_max
+            ? "(" + player.real_hp_max + ")" : "");
+        $("#stats_dd_real_mp_max").text(player.dd_real_mp_max && player.dd_real_mp_max !== player.mp_max
+            ? "(" + player.dd_real_mp_max + ")" : "");
+        $("#stats_mpline").prop("hidden", player.species === "Djinni");
+    }
 
-        if (player.god == "Gozag")
-        {
-            $("#stats_gozag_gold_label").text(" Gold: ");
-            $("#stats_gozag_gold_label").css("padding-left", "0.5em");
-            $("#stats_gozag_gold").text(player.gold);
-        } else {
-            $("#stats_gozag_gold_label").text("");
-            $("#stats_gozag_gold").text("");
-            $("#stats_gozag_gold_label").css("padding-left", "0");
-        }
-        $("#stats_gozag_gold").toggleClass("boosted_stat", !!player.has_status("gold aura"));
-
-        $("#stats_species_god").text(species_god);
-        $("#stats_piety").toggleClass("penance", !!player.penance);
-        $("#stats_piety").toggleClass("monk", player.god == "");
-
-        for (var i = 0; i < simple_stats.length; ++i)
-            $("#stats_" + simple_stats[i]).text(player[simple_stats[i]]);
-
-        $("#stats_hpline > .stats_caption").text(
-            (player.real_hp_max != player.hp_max) ? "HP:" : "Health:");
-
-        if (player.real_hp_max != player.hp_max)
-            $("#stats_real_hp_max").text("(" + player.real_hp_max + ")");
-        else
-            $("#stats_real_hp_max").text("");
-
-        if (player.species == "Deep Dwarf" && player.dd_real_mp_max != player.mp_max)
-            $("#stats_dd_real_mp_max").text("(" + player.dd_real_mp_max + ")");
-        else
-            $("#stats_dd_real_mp_max").text("");
-
-        percentage_color("hp");
-        percentage_color("mp");
-        update_bar("hp");
-        // is there a better place to do this?
-        if (player.species == "Djinni")
-            $("#stats_mpline").hide();
-        else
-            $("#stats_mpline").show();
-
-        update_bar("mp");
-
+    function update_deck()
+    {
+        ["str", "int", "dex"].forEach(update_stat);
+        ["ac", "ev", "sh"].forEach(update_defense);
         update_doom();
         update_contam();
 
-        update_defense("ac");
-        update_defense("ev");
-        update_defense("sh");
+        var xp = progression(player.xl, player.progress);
+        $("#stats_xl").text(player.xl);
+        $("#stats_progress").text(xp.label);
+        $("#hero_xl_fill").css("width", xp.width + "%");
 
-        update_stat("str");
-        update_stat("int");
-        update_stat("dex");
-        update_bar_noise();
+        var silenced = player.has_status("silence");
+        var noise = noise_meter(player.adjusted_noise, silenced);
+        $("#stats_noise").attr("data-noise", noise.label);
+        $("#stats_noise_status").text(noise.label);
+        $("#stats_noise_num").text(player.wizard && !silenced ? " (" + player.noise + ")" : "");
+        $("#stats_noise_bar_full").css("width", noise.width + "%");
 
-        if (options.get("show_game_time") === true)
+        $("#hero_gold").text(player.gold);
+        $("#hero_gold_badge").prop("hidden", player.god === "Gozag");
+        $("#stats_place").text(player.place + (player.depth ? ":" + player.depth : ""));
+
+        var time = options.get("show_game_time") === true;
+        var delta = player.time_delta ? " (" + (player.time_delta / 10).toFixed(1) + ")" : "";
+        $("#stats_time_caption").text(time ? "Time" : "Turn");
+        $("#stats_time").text((time ? (player.time / 10).toFixed(1) : player.turn) + delta);
+    }
+
+    function keep_hud_keys_local(ev)
+    {
+        if (["Tab", "Enter", " ", "Escape"].includes(ev.key))
+            ev.stopPropagation();
+        if (ev.key === "Escape" && ev.type === "keydown")
+            ev.currentTarget.blur();
+    }
+
+    var displayed_status;
+    function update_status_effects()
+    {
+        if (displayed_status === player.status)
+            return;
+
+        displayed_status = player.status;
+        var $list = $("#stats_status_lights").empty();
+        var $tooltip = $("#stats_status_lights_tooltip").prop("hidden", true);
+        var statuses = player.status;
+        if (player.has_status("silence") && !player.has_status_light(/^Sil$/))
         {
-            $("#stats_time_caption").text("Time:");
-            $("#stats_time").text((player.time / 10.0).toFixed(1));
+            statuses = statuses.concat({
+                light: "Sil",
+                desc: "Silence prevents spellcasting and other actions that require sound."
+            });
         }
-        else
+        for (var status of statuses)
         {
-            $("#stats_time_caption").text("Turn:");
-            $("#stats_time").text(player.turn);
-        }
+            if (!status.light)
+                continue;
 
-        if (player.time_delta)
-            $("#stats_time").append(" (" + (player.time_delta / 10.0).toFixed(1) + ")");
-
-        var place_desc = player.place;
-        if (player.depth) place_desc += ":" + player.depth;
-        $("#stats_place").text(place_desc);
-
-        var tooltip = $("#stats_status_lights_tooltip");
-        // Hide the tooltip so that it goes away if expired.
-        tooltip.hide();
-        $("#stats_status_lights").html("");
-        for (var i = 0; i < player.status.length; ++i)
-        {
-            let status_inf = player.status[i];
-            if (!status_inf.light) continue;
-            let status = $(status_inf.desc ? '<button type="button">' : "<span>");
-            status.addClass("status_light");
-            status.addClass("fg" + status_inf.col);
-            if (status_inf.use_html)
-                status.html(util.formatted_string_to_html(status_inf.light))
+            let pill = status_pill(status);
+            let $pill = $(pill.description ? '<button type="button">' : "<span>")
+                .addClass("er-badge hero_status").attr("data-severity", pill.severity);
+            if (status.use_html)
+                $pill.html(util.formatted_string_to_html(status.light));
             else
-                status.text(status_inf.light);
+                $pill.text(pill.label);
 
-            status.on("focus click mouseenter", () => {
-                if (!status_inf.desc) return;
-                tooltip.css({top: status[0].getBoundingClientRect().bottom + 4 + "px"});
-                tooltip.css("position", "fixed");
-                tooltip.html(util.formatted_string_to_html(status_inf.desc));
-                tooltip.show();
-            });
-            status.on("mouseleave blur", () => {
-                if (!status.is(":focus")) tooltip.hide();
-            }).on("keydown keypress", ev => {
-                if ([9, 13, 32].includes(ev.which)) ev.stopPropagation();
-                if (ev.which === 27) { status.blur(); ev.stopPropagation(); }
-            });
-            $("#stats_status_lights").append(status, " ");
+            if (pill.description)
+            {
+                $pill.attr("aria-describedby", "stats_status_lights_tooltip");
+                $pill.on("focus click mouseenter", () => {
+                    var anchor = $pill[0].getBoundingClientRect();
+                    $tooltip.html(util.formatted_string_to_html(pill.description))
+                        .prop("hidden", false);
+                    var width = $tooltip.outerWidth();
+                    var height = $tooltip.outerHeight();
+                    $tooltip.css({
+                        left: Math.max(8, Math.min(anchor.left, window.innerWidth - width - 8)),
+                        top: anchor.bottom + height + 8 < window.innerHeight
+                            ? anchor.bottom + 4 : Math.max(8, anchor.top - height - 4)
+                    });
+                }).on("blur", () => $tooltip.prop("hidden", true))
+                    .on("mouseleave", () => {
+                        if (!$pill.is(":focus"))
+                            $tooltip.prop("hidden", true);
+                    }).on("keydown keypress", keep_hud_keys_local);
+            }
+            $list.append($pill);
         }
+        $("#hero_status_effects").prop("hidden", !$list.children().length);
+    }
 
-        var $weaponLetter = $("#stats_weapon_letter").empty();
-        if (player.weapon_index >= 0)
-            $weaponLetter.append(keybinds.badge(index_to_letter(player.weapon_index)));
-        $("#stats_weapon").html(wielded_weapon());
+    function update_armament()
+    {
+        var offhand = player.offhand_index >= 0 ? player.offhand_index : player.shield_index;
+        var slots = {
+            weapon: equipment(player.inv[player.weapon_index], player.unarmed_attack || "Unarmed"),
+            offhand_weapon: equipment(player.inv[offhand], "Empty offhand"),
+            quiver: equipment(player.inv[player.quiver_item], "Empty quiver", true)
+        };
 
-        if (player.offhand_weapon) // Coglin dual wielding
-            $("#stats_offhand_weapon_line").show();
+        // Non-item actions (e.g. spells and abilities) have no inventory slot.
+        if (player.quiver_desc)
+            $("#stats_quiver").html(util.formatted_string_to_html(player.quiver_desc));
         else
-            $("#stats_offhand_weapon_line").hide();
+            $("#stats_quiver").text(slots.quiver.name);
 
-        var $offhandLetter = $("#stats_offhand_weapon_letter").empty();
-        if (player.offhand_index >= 0)
-            $offhandLetter.append(keybinds.badge(index_to_letter(player.offhand_index)));
-        $("#stats_offhand_weapon").html(wielded_weapon(true));
+        for (var name in slots)
+        {
+            let slot = slots[name];
+            let $card = $("#stats_" + name + "_container");
+            if (name !== "quiver")
+                $("#stats_" + name).text(slot.name);
+            var $details = $card.find(".hero_equipment_details").empty();
+            if (slot.ego)
+                $details.append($("<span>").addClass("er-badge").text(slot.ego));
+            if (slot.quantity)
+                $details.append($("<span>").addClass("er-badge").text(slot.quantity));
+            if (Number.isInteger(slot.slot) && name !== "quiver")
+                $details.append(keybinds.badge(index_to_letter(slot.slot)));
 
-        $("#stats_quiver").html(quiver());
+            $card.find("canvas").prop("hidden", !slot.tiles.length).data("tiles", slot.tiles);
+            $card.prop("disabled", !Number.isInteger(slot.slot) || client.is_watching())
+                .data("slot", slot.slot ?? null);
+        }
+        $(document).triggerHandler("hero_equipment_update");
+    }
+
+    function update_stats_pane()
+    {
+        var identity = crest(player);
+        $("#stats_titleline").text(identity.name).attr("title", (player.title || "").trim());
+        $("#stats_species_god").text(identity.lineage);
+        $("#stats_god").text(identity.deity);
+        $("#stats_piety").text(identity.piety).attr("title", identity.pietyLabel)
+            .attr("aria-label", identity.pietyLabel).toggleClass("penance", !!player.penance);
+        $("#stats_gozag_gold").text(identity.gozagGold)
+            .toggleClass("boosted_stat", player.has_status("gold aura"));
+        var mode = player.wizard ? "Wizard" : player.explore ? "Explore" : "";
+        $("#stats_wizmode").text(mode).prop("hidden", !mode);
+
+        update_vitals();
+        update_deck();
+        update_status_effects();
+        update_armament();
     }
 
     function handle_player_message(data)
     {
         for (var i in data.inv)
         {
-            player.inv[i] = player.inv[i] || {};
-            $.extend(player.inv[i], data.inv[i]);
+            if (data.inv[i].quantity === 0)
+                delete player.inv[i];
+            player.inv[i] = $.extend(player.inv[i] || {}, data.inv[i]);
             player.inv[i].slot = Number(i); // XX why is i a string?
             player.inv[i].letter = index_to_letter(player.inv[i].slot);
         }
@@ -591,6 +536,8 @@ function ($, comm, client, enums, map_knowledge, messages, options, util, keybin
         }
 
         update_stats_pane();
+        if ("pos" in data)
+            $(document).triggerHandler("hero_position_update");
 
         if ("hp" in data || "hp_max" in data ||
             "mp" in data || "mp_max" in data)
@@ -615,10 +562,9 @@ function ($, comm, client, enums, map_knowledge, messages, options, util, keybin
 
         var family = options.get("tile_font_stat_family");
         if (family !== "" && family !== "monospace")
-        {
-            family += ", monospace";
-            document.documentElement.style.setProperty("--stat-font", family);
-        }
+            document.documentElement.style.setProperty("--stat-font", family + ", monospace");
+        else
+            document.documentElement.style.removeProperty("--stat-font");
     });
 
     comm.register_handlers({
@@ -629,34 +575,43 @@ function ($, comm, client, enums, map_knowledge, messages, options, util, keybin
         .on("game_init.player", function () {
             $.extend(player, {
                 name: "", god: "", title: "", species: "",
-                species_display_name: "",
-                hp: 0, hp_max: 0, real_hp_max: 0, poison_survival: 0,
+                species_display_name: "", background: "",
+                hp: 0, hp_max: 0, real_hp_max: 0, poison_survival: null,
                 mp: 0, mp_max: 0, dd_real_mp_max: 0,
                 ac: 0, ev: 0, sh: 0,
+                ac_mod: 0, ev_mod: 0, sh_mod: 0,
                 xl: 0, progress: 0,
                 time: 0, time_delta: 0,
                 gold: 0,
                 str: 0, int: 0, dex: 0,
                 str_max: 0, int_max: 0, dex_max: 0,
-                piety_rank: 0, penance: false,
+                piety_rank: 0, penance: false, ostracism_pips: 0,
                 status: [],
                 inv: {},
                 weapon_index: -1,
-                offhand_index: -1,
+                offhand_index: -1, shield_index: -1,
                 weapon_colour: 0,
                 offhand_weapon_colour: 0,
-                quiver_item: -1,
+                quiver_item: -1, quiver_desc: "",
                 unarmed_attack: "",
                 pos: {x: 0, y: 0},
                 wizard: 0, explore: 0,
-                depth: 0, place: "",
-                contam: 0,
+                depth: 0, place: "", turn: 0,
+                doom: 0, doom_desc: "", contam: 0,
                 noise: 0,
                 adjusted_noise: 0
             });
-            delete player["old_hp"];
-            delete player["old_mp"];
+            displayed_status = null;
             last_time = null;
+
+            $("#hero_armament").off(".heroHUD")
+                .on("click.heroHUD", ".hero_equipment", function () {
+                    var slot = $(this).data("slot");
+                    if (!client.is_watching() && Number.isInteger(slot))
+                        comm.send_message("inv_item_describe", {slot: slot});
+                }).on("keydown.heroHUD keypress.heroHUD", ".hero_equipment", keep_hud_keys_local);
+            $("#right_column").off("scroll.heroHUD").on("scroll.heroHUD", () =>
+                $("#stats_status_lights_tooltip").prop("hidden", true));
         });
 
     return player;
