@@ -1786,7 +1786,10 @@ void TilesFramework::_send_item(item_def& current, const item_def& next,
     if (changed && defined)
     {
         string name = next.name(DESC_A, true, false, true);
+        const auto* unrand = is_unrandom_artefact(next)
+                             ? get_unrand_entry(next.unrand_idx) : nullptr;
         const bool show_ego = next.is_identified()
+                              && !(unrand && (unrand->flags & UNRAND_FLAG_SKIP_EGO))
                               && (next.base_type == OBJ_WEAPONS
                                   || next.base_type == OBJ_ARMOUR
                                   || next.base_type == OBJ_MISSILES);
