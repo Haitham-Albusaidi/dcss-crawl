@@ -82,6 +82,21 @@
     ></canvas>
     <div id="action_dock_row"></div>
     <div id="message_pane">
+      <div id="chronicle_controls">
+        <div class="chronicle-bar" role="group" aria-label="Tactical chronicle">
+          <button type="button" data-channel="all" aria-pressed="true">All</button>
+          <button type="button" data-channel="combat" aria-pressed="false">Combat</button>
+          <button type="button" data-channel="alerts" aria-pressed="false">Alerts &amp; Danger
+            <span id="chronicle_unread" aria-label="Unread alerts" hidden></span>
+          </button>
+          <button type="button" data-channel="story" aria-pressed="false">Story &amp; Discoveries</button>
+          <button type="button" id="chronicle_toggle" aria-controls="chronicle_search_row messages_container" aria-expanded="false">Chronicle</button>
+          <button type="button" id="chronicle_latest" hidden>Jump to Latest</button>
+        </div>
+        <div id="chronicle_search_row" hidden>
+          <input id="chronicle_search" type="search" aria-label="Search chronicle" placeholder="Search chronicle" autocomplete="off">
+        </div>
+      </div>
       <div id="messages_container">
         <div id="messages"></div>
       </div>
@@ -182,12 +197,20 @@
         <div id="stats_status_lights" class="hero_badges"></div>
       </section>
     </aside>
-    <div id="minimap_block">
-      <canvas id="minimap"></canvas>
-      <canvas id="minimap_overlay"></canvas>
-    </div>
+    <section id="minimap_block" aria-label="Cartographer minimap">
+      <header class="cartographer-header">
+        <span id="cartographer_place"></span>
+        <span class="cartographer-north" aria-label="North">▲ N</span>
+      </header>
+      <div id="minimap_surface">
+        <canvas id="minimap"></canvas>
+        <canvas id="minimap_overlay"></canvas>
+        <div id="minimap_landmarks"></div>
+      </div>
+    </section>
     <div id="tiles_tab_panel" class="tiles-tab-panel"></div>
   </div>
+  <div id="minimap_tooltip" class="er-tooltip" role="tooltip" hidden></div>
   <div id="stats_status_lights_tooltip" class="er-tooltip" role="tooltip" hidden></div>
   <div id="tooltip" style="display: none"></div>
 </div>

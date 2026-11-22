@@ -606,3 +606,83 @@ The compact HP and MP meters ease value changes and respect reduced motion.
   - Rebuilt and synchronized C++ WebTiles binary (20,650,304 bytes).
   - All 5 Hero HUD suites, 22 examination card tests, 9 floating event tests, and 22 .ai-team Python tests passed.
   - Development worktree `hero-hud-dev` and all historical worktrees preserved.
+
+## Phase 2 — Tactical Chronicle and Cartographer Minimap
+
+- Branch: `feature/webtiles-chronicle-minimap`
+- Worktree: `C:\Users\Tempc\Desktop\dcss\chronicle-minimap-dev`
+- Base: `1c25572cfd`
+- Implementation: `05308a24c66e1bbd06463fc99386220c50eb817e`
+- [Antigravity review and publication handoff](.ai-team/tasks/webtiles-phase2-chronicle-minimap-review.json)
+
+The Chronicle keeps server-formatted messages and their turn markers in order.
+The compact All view detaches older rows into an in-memory history and restores
+them for filtering or the drawer. Rollbacks cover both compact and detached rows.
+The drawer participates in the normal game layout so its controls sit below the
+action dock. Game prompts and the text cursor remain visible while filtering.
+
+The minimap renders POIs from the map stream's `poi` field. The engine derives
+the field from terrain in `map_knowledge` with the seen flag. It reads a live
+shop name only when the remembered shop is visible, and clears markers when
+their remembered feature disappears or the map resets. The minimap uses the
+engine's existing travel trail for breadcrumbs. Landmark clicks use `click_cell`
+and check command mode, current floor, remembered terrain and travel safety
+before starting travel to the tile.
+
+### Verification
+
+- The incremental WSL WebTiles build recompiled `tileweb.o`, relinked `crawl`
+  and generated the WebTiles assets.
+- Passed 7 Chronicle and minimap tests, 5 Hero HUD tests, 22 examination card
+  tests, 9 floating event tests, the keybind suite and 22 coordinator tests.
+- Headless Chromium connected to a seeded isolated WebTiles server on port
+  18088 because the main checkout was already serving port 8088. It verified
+  the exit stair's tooltip, click payload and actual arrival. Controlled
+  message deltas verified retained history, channel and keyword filtering,
+  unread alerts, scroll restoration and Jump to Latest. The open drawer
+  cleared the action dock at 1920×1080, 1280×720, 390×844 and 320×640.
+  The live run exercised stairs. Unit fixtures exercised all landmark glyphs.
+
+### Implementation diff from the base
+
+| File under `crawl-ref/source/` | Added | Removed | Component |
+| --- | ---: | ---: | --- |
+| `tileweb.cc` | 76 | 3 | `TilesFramework` map protocol and travel |
+| `webserver/chronicle_minimap_test.js` | 125 | 0 | Chronicle and minimap tests |
+| `webserver/game_data/static/game.js` | 18 | 18 | Drawer layout and travel mode |
+| `webserver/game_data/static/messages.js` | 171 | 16 | Message history, filters and drawer state |
+| `webserver/game_data/static/minimap.js` | 125 | 19 | Landmark overlay, breadcrumbs and tooltips |
+| `webserver/game_data/static/player.js` | 1 | 0 | Branch and depth heading |
+| `webserver/game_data/static/style.css` | 140 | 8 | Chronicle and cartographer styling |
+| `webserver/game_data/templates/game.html` | 27 | 4 | Chronicle and minimap controls |
+
+### Layout follow-up
+
+Commit `1029ee6c7304d383ffc7b95a828f8ee510857107` reserves space for the
+fixed chat strip and preserves the latest-message position across resizes,
+including widths that change line wrapping. It adds 12 lines and removes 4
+in `webserver/game_data/static/game.js` and adds 11 lines in
+`webserver/game_data/static/messages.js`.
+
+Chromium reverified all four viewports, chat and action dock clearance,
+the latest-message position on resize, and rollback across the compact
+and archived message rows.
+
+### Antigravity QA Sign-off & Publication
+
+- **Reviewing Agent:** Google Antigravity (Sole GitHub Publishing Manager & QA Lead)
+- **Status:** `APPROVE`
+- **Reviewed Head:** `ff8d9e1adf`
+- **Automated Verification:**
+  - `chronicle_minimap_test.js`: 7/7 tests passed.
+  - `hero_hud_test.js`: 5/5 tests passed.
+  - `examination_card_test.js`: 22/22 tests passed.
+  - `floating_events_test.js`: 9/9 tests passed.
+  - `.ai-team` test suite: 24/24 tests passed.
+  - C++ WebTiles build recompiled and verified fresh (20,654,480 bytes).
+- **Live Gameplay Verification:**
+  - Verified on port 8088 with Minotaur Fighter.
+  - Tactical Chronicle channel tabs (`All`, `Combat`, `Alerts & Danger`, `Story & Discoveries`) switch cleanly without affecting raw message history.
+  - Expandable drawer opens and collapses smoothly; live search filters messages accurately (tested `staircase`). Action dock clearance preserved.
+  - Cartographer minimap renders antique gold corner frame, compass (`▲ N`), branch/depth breadcrumb (`Dungeon: 1`), and discovered POI marker (`<` staircase) with hover tooltip.
+  - Zero gameplay or rendering regressions detected. Ready for Pull Request publication.

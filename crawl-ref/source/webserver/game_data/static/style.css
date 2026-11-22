@@ -2443,14 +2443,6 @@ button.hero_status { cursor: help; }
 /* ==========================================================================
    3. Minimap & Messages Integration
    ========================================================================== */
-#minimap_block {
-    background: var(--er-obsidian-85) !important;
-    border: 1px solid var(--er-gold-border) !important;
-    border-radius: 6px !important;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8) !important;
-    overflow: hidden !important;
-}
-
 #messages {
     background: rgba(8, 9, 12, 0.75) !important;
     backdrop-filter: blur(10px) !important;
@@ -5838,4 +5830,144 @@ button:focus-visible:has(> .keybind-badge) {
 
 @media (prefers-reduced-motion: reduce) {
     .er-examine-card, .er-examine-health-fill { transition: none; }
+}
+
+/* --- Phase 2: Tactical Chronicle & Cartographer Minimap --- */
+#message_pane, #minimap_block, #minimap_tooltip {
+    background: rgba(16, 20, 26, 0.94);
+    border: 1px solid #c49a45;
+    border-radius: 6px;
+}
+
+.chronicle-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    padding-block: 2px 4px;
+}
+
+#chronicle_controls button, #chronicle_search {
+    font: 600 12px/1.25 var(--er-font-sans, system-ui, sans-serif);
+    color: #e5d6b7;
+    background: #1c2027;
+    border: 1px solid #695331;
+    border-radius: 5px;
+    padding: 4px 7px;
+}
+
+#chronicle_controls button { cursor: pointer; }
+
+#chronicle_controls button[aria-pressed="true"],
+#chronicle_controls button[aria-expanded="true"],
+#chronicle_controls button:hover,
+#chronicle_controls :focus-visible,
+.minimap-landmark:focus-visible {
+    border-color: #c49a45;
+    color: #ffdf91;
+    background: #382e20;
+}
+
+#chronicle_toggle { margin-inline-start: auto; }
+
+#chronicle_toggle::after { content: " ▾"; }
+#chronicle_toggle[aria-expanded="true"]::after { content: " ▴"; }
+
+#chronicle_unread {
+    background: #782b3e;
+    color: #ffe8ed;
+    border-radius: 10px;
+    padding: 0 4px;
+}
+
+#chronicle_search_row { padding-bottom: 4px; }
+#chronicle_search { width: 100%; box-sizing: border-box; }
+
+#messages_container { overflow-y: auto; scrollbar-width: thin; overflow-anchor: none; }
+#messages .chronicle-filtered { display: none; }
+#messages .chronicle-filtered:has(input, #text_cursor),
+#message_pane.chronicle-prompt #messages .game_message:last-child {
+    display: block;
+}
+
+#messages .message-recovery {
+    border-color: #50c999;
+    background: rgba(40, 145, 109, 0.15);
+}
+
+.chronicle-expanded #messages_container { animation: chronicle-open 170ms ease-out; }
+
+@keyframes chronicle-open {
+    from { clip-path: inset(0 0 65% 0); }
+    to { clip-path: inset(0); }
+}
+
+#minimap_block {
+    box-sizing: border-box;
+    display: table;
+    max-width: 100%;
+    padding: 4px;
+    box-shadow: inset 0 0 0 2px #131315, inset 0 0 0 3px #645233;
+}
+
+.cartographer-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 3px 4px;
+    font: 700 12px/1.3 Cinzel, Georgia, serif;
+    color: #e5ca8c;
+}
+
+.cartographer-north { white-space: nowrap; }
+
+#minimap_surface { position: relative; margin-inline: auto; }
+
+#minimap_landmarks {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.minimap-landmark {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
+    cursor: pointer;
+    color: #ffdd85;
+    background: #19181e;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    font: bold 9px/9px monospace;
+    padding: 0;
+    width: 11px;
+    height: 11px;
+    touch-action: manipulation;
+}
+
+.minimap-landmark:hover, .minimap-landmark:focus-visible { z-index: 1; }
+.minimap-landmark[data-glyph="<"] { color: #b7ddfc; }
+.minimap-landmark[data-glyph=">"] { color: #f2a082; }
+.minimap-landmark[data-glyph="_"] { color: #a4e7c9; }
+.minimap-landmark[data-glyph="+"] { color: #d0adfa; }
+
+#minimap_tooltip {
+    position: fixed;
+    z-index: 10;
+    pointer-events: none;
+    max-width: calc(100vw - 8px);
+}
+
+@media (max-width: 639px) {
+    .chronicle-bar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #chronicle_controls button { font-size: 11px; padding-inline: 2px; white-space: normal; }
+    #chronicle_toggle { margin-inline-start: 0; }
+    .cartographer-header { font-size: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chronicle-expanded #messages_container { animation: none; }
 }
