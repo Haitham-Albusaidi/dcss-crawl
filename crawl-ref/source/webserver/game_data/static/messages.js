@@ -75,6 +75,15 @@ function ($, comm, client, textinput, util, options) {
         $("#chronicle_latest").prop("hidden", scroll_position() === Infinity);
     }
 
+    function fit_height(height, position)
+    {
+        $("#messages_container").css({
+            height: expanded ? height : "",
+            "max-height": height
+        });
+        restore_scroll(position);
+    }
+
     function filter_message(element)
     {
         $(element).toggleClass("chronicle-filtered",
@@ -364,6 +373,8 @@ function ($, comm, client, textinput, util, options) {
         hide: hide,
         show: show,
         new_command: new_command,
+        scroll_position: scroll_position,
+        fit_height: fit_height,
         set_prompt_mode: set_prompt_mode,
         remove_old_messages: remove_old_messages,
         matches_message: matches_message,

@@ -96,6 +96,7 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
         if (!force && !layout_params_differ(layout_parameters, params))
             return false;
 
+        var message_scroll = messages.scroll_position();
         layout_parameters = params;
 
         var state = ui_state;
@@ -125,7 +126,16 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
         var pane_padding = $("#message_pane").outerHeight() - $("#message_pane").height();
         var available = window_height - dock_height - pane_padding
             - $("#chronicle_controls").outerHeight() - line_height;
-        var log_height = messages.is_expanded()
+        var expanded = messages.is_expanded();
+        // Leave room for the fixed chat strip where it crosses the drawer.
+        var chat_bar = $("#chat:visible");
+        if (expanded && chat_bar.length
+            && chat_bar[0].getBoundingClientRect().left < left_edge + remaining_width)
+        {
+            available -= parseFloat(chat_bar.css("bottom")) + chat_bar.outerHeight()
+                - ($("#chat_body:visible").outerHeight() || 0);
+        }
+        var log_height = expanded
             ? Math.min(line_height * 22, available * 0.55)
             : line_height * msg_height;
         log_height = Math.max(line_height, Math.min(log_height, available - 17));
@@ -136,9 +146,7 @@ function ($, exports, comm, client, key_conversion, dungeon_renderer, display,
 
         // Position controls
         client.set_layer("normal");
-        $("#messages_container").css({
-            "max-height": log_height
-        });
+        messages.fit_height(log_height, message_scroll);
         dungeon_renderer.fit_to(remaining_width, remaining_height,
                                 show_diameter);
 
