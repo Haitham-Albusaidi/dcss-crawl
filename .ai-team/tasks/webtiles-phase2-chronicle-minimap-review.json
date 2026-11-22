@@ -1,0 +1,29 @@
+{
+  "task_id": "webtiles-phase2-chronicle-minimap-review",
+  "title": "Review the Phase 2 Tactical Chronicle and Cartographer Minimap",
+  "description": "Review implementation commit 05308a24c66e1bbd06463fc99386220c50eb817e against base 1c25572cfd in the assigned Codex worktree. This adapter run is read-only and review-only. Return a review status (APPROVE, REQUEST_CHANGES, or NEEDS_DISCUSSION) with findings and file locations. The publishing manager can use the handoff to prepare the PR after review.",
+  "assigned_agent": "antigravity",
+  "worktree_path": "C:\\Users\\Tempc\\Desktop\\dcss\\chronicle-minimap-dev",
+  "branch": "feature/webtiles-chronicle-minimap",
+  "base_commit": "1c25572cfd",
+  "implementation_commit": "05308a24c66e1bbd06463fc99386220c50eb817e",
+  "mode": "plan",
+  "timeout_seconds": 90,
+  "context_files": [],
+  "target_files": [
+    "crawl-ref/source/tileweb.cc",
+    "crawl-ref/source/webserver/chronicle_minimap_test.js",
+    "crawl-ref/source/webserver/game_data/static/game.js",
+    "crawl-ref/source/webserver/game_data/static/messages.js",
+    "crawl-ref/source/webserver/game_data/static/minimap.js",
+    "crawl-ref/source/webserver/game_data/static/player.js",
+    "crawl-ref/source/webserver/game_data/static/style.css",
+    "crawl-ref/source/webserver/game_data/templates/game.html"
+  ],
+  "acceptance_criteria": [
+    "Review message order, rollback, active prompts, scroll restoration, search, unread alerts, and dock clearance.",
+    "Trace POI serialization from seen map knowledge and verify that mapping-only cells, hidden terrain, and stale landmarks cannot produce radar markers.",
+    "Check the existing click_cell path for player/spectator behavior, command mode restrictions, coordinate handling, and travel safety.",
+    "Review the verification results in HANDOFF.md before publishing."
+  ]
+}
