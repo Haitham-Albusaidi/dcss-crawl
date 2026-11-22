@@ -794,9 +794,9 @@ bool can_cast_spells(bool quiet, bool ignore_silence)
     return true;
 }
 
-void do_cast_spell_cmd(bool force)
+void do_cast_spell_cmd(bool force, spell_type spell)
 {
-    if (cast_a_spell(!force) == spret::abort)
+    if (cast_a_spell(!force, spell) == spret::abort)
         flush_input_buffer(FLUSH_ON_FAILURE);
 }
 

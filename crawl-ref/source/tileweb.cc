@@ -16,6 +16,7 @@
 #include <unistd.h>
 #endif
 
+#include "ability.h"
 #include "artefact.h"
 #include "attack.h"
 #include "branch.h"
@@ -44,15 +45,19 @@
 #include "mon-util.h"
 #include "monster.h"
 #include "mon-info-flag-name.h"
+#include "mutation.h"
 #include "notes.h"
 #include "options.h"
 #include "output.h"
 #include "player.h"
 #include "player-equip.h"
+#include "prompt.h"
 #include "religion.h"
 #include "scroller.h"
 #include "showsymb.h"
 #include "skills.h"
+#include "spl-cast.h"
+#include "spl-util.h"
 #include "state.h"
 #include "status.h"
 #include "shopping.h"
@@ -341,7 +346,7 @@ void TilesFramework::_await_connection()
         _receive_control_message();
 }
 
-wint_t TilesFramework::_receive_control_message()
+wint_t TilesFramework::_receive_control_message(bool waiting)
 {
     if (m_sock_name.empty())
         return 0;
@@ -364,7 +369,7 @@ wint_t TilesFramework::_receive_control_message()
     string data(buf, len);
     try
     {
-        return _handle_control_message(srcaddr, data);
+        return _handle_control_message(srcaddr, data, waiting);
     }
     catch (JsonWrapper::MalformedException&)
     {
@@ -779,7 +784,8 @@ static char32_t _remove_first_character_utf8(string& text)
     return result;
 }
 
-wint_t TilesFramework::_handle_control_message(sockaddr_un addr, string data)
+wint_t TilesFramework::_handle_control_message(sockaddr_un addr, string data,
+                                              bool waiting)
 {
     JsonWrapper obj = json_decode(data.c_str());
     obj.check(JSON_OBJECT);
@@ -808,6 +814,21 @@ wint_t TilesFramework::_handle_control_message(sockaddr_un addr, string data)
 
         // TODO: remove this fixup call
         c = (int) keycode->number_;
+    }
+    else if (msgtype == "quick_cast" && waiting)
+    {
+        JsonWrapper kind = json_find_member(obj.node, "kind");
+        JsonWrapper letter = json_find_member(obj.node, "letter");
+        JsonWrapper id = json_find_member(obj.node, "id");
+        kind.check(JSON_STRING);
+        letter.check(JSON_STRING);
+        id.check(JSON_NUMBER);
+        const double value = id->number_;
+        if (value >= -1 && value <= numeric_limits<int>::max() && value == (int) value
+            && _queue_quick_cast(kind->string_, letter->string_, (int) value))
+        {
+            c = CK_MOUSE_CMD;
+        }
     }
     else if (msgtype == "spectator_joined")
     {
@@ -1103,7 +1124,7 @@ wint_t TilesFramework::await_input(bool(*has_console_input)())
         {
             if (FD_ISSET(m_sock, &fds))
             {
-                c = _receive_control_message();
+                c = _receive_control_message(true);
                 if (c != 0)
                     return c;
             }
@@ -1499,6 +1520,138 @@ static uint8_t _stats_weapon_colour(const item_def* weapon)
     return (uint8_t) wielded_weapon_colour(*weapon);
 }
 
+bool TilesFramework::_queue_quick_cast(const string& kind, const string& letter,
+                                     int id)
+{
+    if (m_ui_state != UI_NORMAL || !crawl_state.waiting_for_command
+        || mouse_control::current_mode() != MOUSE_MODE_COMMAND || you.paralysed()
+        || crawl_state.is_replaying_keys() || crawl_state.cmd_repeat_start)
+    {
+        return false;
+    }
+
+    if (kind == "memorise")
+    {
+        m_pending_quick_cast = { CMD_MEMORISE_SPELL, -1 };
+        return true;
+    }
+
+    if (letter.size() != 1 || !isaalpha(letter[0])
+        || (kind != "spell" && kind != "ability"))
+    {
+        return false;
+    }
+
+    const bool spell = kind == "spell";
+    const auto& slots = spell ? m_quick_spells : m_quick_abilities;
+    for (const auto& entry : slots)
+    {
+        if (entry.id != id || entry.letter != letter[0] || !entry.available)
+        {
+            continue;
+        }
+        if (spell && get_spell_by_letter(letter[0]) != id)
+            return false;
+        m_pending_quick_cast = { spell ? CMD_CAST_SPELL : CMD_USE_ABILITY, id };
+        return true;
+    }
+    return false;
+}
+
+bool TilesFramework::take_quick_cast(command_type& command, int& slot)
+{
+    // A mouse command has no follow-up key to replay in a prompt.
+    const bool received = command == CMD_NEXT_CMD && m_pending_quick_cast.first != CMD_NEXT_CMD;
+    if (received)
+        std::tie(command, slot) = m_pending_quick_cast;
+    m_pending_quick_cast = { CMD_NEXT_CMD, -1 };
+    return received;
+}
+
+void TilesFramework::_send_quick_cast(bool force_full)
+{
+    if (crawl_state.game_is_arena())
+        return;
+
+    vector<quick_slot> spells, abilities;
+    const bool can_act = !you.paralysed();
+    const bool can_cast = can_act && can_cast_spells(true);
+    const bool hp_casting = you.has_mutation(MUT_HP_CASTING);
+    for (int i = 0; i < 52; ++i)
+    {
+        const char letter = index_to_letter(i);
+        const spell_type spell = get_spell_by_letter(letter);
+        if (!is_valid_spell(spell))
+            continue;
+        const int cost = spell_mana(spell);
+        spells.push_back({ spell, letter, tileidx_spell(spell), hp_casting ? 0 : cost,
+                           failure_rate_to_int(raw_spell_fail(spell)),
+                           can_cast && casting_uselessness_reason(spell, true).empty(),
+                           spell_title(spell),
+                           make_stringf("%d %s", cost, hp_casting ? "HP" : "MP") });
+    }
+
+    {
+        // Talent enumeration normally allocates persistent shortcuts.
+        // Preview the native assignment without changing the save or the next menu.
+        unwind_var<decltype(you.ability_letter_table)> letters(you.ability_letter_table);
+        const auto active = your_talents();
+        for (const talent& tal : your_talents(true))
+        {
+            const auto match = find_if(active.begin(), active.end(), [&](const talent& entry) {
+                return entry.which == tal.which;
+            });
+            const bool available = can_act && match != active.end()
+                                   && check_ability_possible(tal.which, true);
+            const char letter = match != active.end() ? match->hotkey : tal.hotkey;
+            abilities.push_back({ tal.which, letter, tileidx_ability(tal.which),
+                                  (int) ability_mp_cost(tal.which),
+                                  failure_rate_to_int(tal.fail), available,
+                                  ability_name(tal.which), make_cost_description(tal.which) });
+        }
+    }
+
+    const auto label = [](command_type cmd) {
+        const int key = command_to_key(cmd);
+        return key ? keycode_to_name(key) : "";
+    };
+    auto keys = make_tuple(label(CMD_CAST_SPELL), label(CMD_USE_ABILITY),
+                           label(CMD_MEMORISE_SPELL));
+    if (!force_full && spells == m_quick_spells && abilities == m_quick_abilities
+        && keys == m_quick_keys)
+    {
+        return;
+    }
+
+    m_quick_spells = std::move(spells);
+    m_quick_abilities = std::move(abilities);
+    m_quick_keys = std::move(keys);
+    json_open_object("quick_cast");
+    json_write_string("spell_key", std::get<0>(m_quick_keys));
+    json_write_string("ability_key", std::get<1>(m_quick_keys));
+    json_write_string("memorise_key", std::get<2>(m_quick_keys));
+    const auto write_slots = [&](const char* name, const vector<quick_slot>& slots) {
+        json_open_array(name);
+        for (const auto& slot : slots)
+        {
+            json_open_object();
+            json_write_int("id", slot.id);
+            json_write_string("letter", slot.letter ? string(1, slot.letter) : "");
+            json_write_int("tile", slot.tile);
+            json_write_int("mp", slot.mp);
+            json_write_int("failure", slot.failure);
+            json_write_bool("available", slot.available);
+            json_write_string("name", slot.title);
+            json_write_string("cost", slot.cost);
+            json_close_object();
+        }
+        json_close_array();
+    };
+    write_slots("spells", m_quick_spells);
+    write_slots("abilities", m_quick_abilities);
+    json_close_object();
+}
+
 /**
  * Send the player properties to the webserver. Any player properties that
  * must be available to the WebTiles client must be sent here through an
@@ -1528,6 +1681,7 @@ void TilesFramework::_send_player(bool force_full)
     json_open_object();
     json_write_string("msg", "player");
     json_treat_as_empty();
+    _send_quick_cast(force_full);
 
     _update_string(force_full, c.name, you.your_name, "name");
     _update_string(force_full, c.job_title, filtered_lang(player_title()),

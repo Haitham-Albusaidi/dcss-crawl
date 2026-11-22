@@ -111,7 +111,7 @@ spret cast_a_spell(bool check_range, spell_type spell = SPELL_NO_SPELL,
 
 void inspect_spells();
 bool can_cast_spells(bool quiet = false, bool ignore_silence = false);
-void do_cast_spell_cmd(bool force);
+void do_cast_spell_cmd(bool force, spell_type spell = SPELL_NO_SPELL);
 
 int hex_success_chance(const int wl, int powc, int scale,
                        bool round_up = false);

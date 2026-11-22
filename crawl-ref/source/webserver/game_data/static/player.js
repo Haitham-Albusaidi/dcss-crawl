@@ -510,6 +510,8 @@ function ($, comm, client, enums, map_knowledge, messages, options, util, keybin
         delete data.msg;
 
         $.extend(player, data);
+        if ("quick_cast" in data || "mp" in data)
+            $(document).triggerHandler("arcane_dock_update", [player.quick_cast, player.mp]);
 
         // chick if a forced player update has given us an explicit last
         // time to show in the hud for spectators (only). Otherwise, this value
@@ -579,6 +581,7 @@ function ($, comm, client, enums, map_knowledge, messages, options, util, keybin
                 species_display_name: "", background: "",
                 hp: 0, hp_max: 0, real_hp_max: 0, poison_survival: null,
                 mp: 0, mp_max: 0, dd_real_mp_max: 0,
+                quick_cast: null,
                 ac: 0, ev: 0, sh: 0,
                 ac_mod: 0, ev_mod: 0, sh_mod: 0,
                 xl: 0, progress: 0,
