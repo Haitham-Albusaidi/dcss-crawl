@@ -655,3 +655,15 @@ before starting travel to the tile.
 | `webserver/game_data/static/player.js` | 1 | 0 | Branch and depth heading |
 | `webserver/game_data/static/style.css` | 140 | 8 | Chronicle and cartographer styling |
 | `webserver/game_data/templates/game.html` | 27 | 4 | Chronicle and minimap controls |
+
+### Layout follow-up
+
+Commit `1029ee6c7304d383ffc7b95a828f8ee510857107` reserves space for the
+fixed chat strip and preserves the latest-message position across resizes,
+including widths that change line wrapping. It adds 12 lines and removes 4
+in `webserver/game_data/static/game.js` and adds 11 lines in
+`webserver/game_data/static/messages.js`.
+
+Chromium reverified all four viewports, chat and action dock clearance,
+the latest-message position on resize, and rollback across the compact
+and archived message rows.
