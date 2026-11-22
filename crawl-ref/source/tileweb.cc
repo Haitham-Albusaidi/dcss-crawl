@@ -1493,6 +1493,7 @@ void TilesFramework::_send_player(bool force_full)
                    "species");
     _update_string(force_full, c.species_display_name, player_species_name(),
                    "species_display_name");
+    _update_string(force_full, c.background, you.chr_class_name, "background");
     string god = "";
     if (you_worship(GOD_JIYVA))
         god = god_name_jiyva(true);
@@ -1654,6 +1655,10 @@ void TilesFramework::_send_player(bool force_full)
     item_def* offhand = you.offhand_weapon();
     _update_int(force_full, c.weapon_index, (int8_t) (weapon ? weapon->link : -1), "weapon_index");
     _update_int(force_full, c.offhand_index, (int8_t) (offhand ? offhand->link : -1), "offhand_index");
+    const item_def* shield = you.equipment.get_first_slot_item(SLOT_OFFHAND);
+    _update_int(force_full, c.shield_index,
+                (int8_t) (shield && shield->base_type == OBJ_ARMOUR
+                          ? shield->link : -1), "shield_index");
     _update_int(force_full, c.offhand_weapon, (bool) offhand, "offhand_weapon");
 
     _update_string(force_full, c.unarmed_attack,
@@ -1781,6 +1786,11 @@ void TilesFramework::_send_item(item_def& current, const item_def& next,
     if (changed && defined)
     {
         string name = next.name(DESC_A, true, false, true);
+        const bool show_ego = next.is_identified()
+                              && (next.base_type == OBJ_WEAPONS
+                                  || next.base_type == OBJ_ARMOUR
+                                  || next.base_type == OBJ_MISSILES);
+        json_write_string("known_ego", show_ego ? ego_type_string(next) : "");
         if (force_full || current.name(DESC_A, true, false, true) != name
             || xp_evoker_changed)
         {
